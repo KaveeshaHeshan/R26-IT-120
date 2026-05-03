@@ -1,0 +1,9 @@
+{
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix latex-dashboard/frontend run dev",
+    "build": "npm --prefix latex-dashboard/frontend run build",
+    "lint": "npm --prefix latex-dashboard/frontend run lint",
+    "preview": "npm --prefix latex-dashboard/frontend run preview"
+  }
+}

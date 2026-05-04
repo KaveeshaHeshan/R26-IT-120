@@ -66,12 +66,12 @@ class _LoginScreenState extends State<LoginScreen> {
         String role = query.docs.first['role'];
 
         if (role == 'farmer') {
-          // Farmer screen එකට යනවා
+          // Farmer screen 
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Welcome Farmer! 🌿')),
           );
         } else if (role == 'supervisor') {
-          // OTP screen එකට යනවා
+          // OTP screen 
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Supervisor! OTP එනවා... 📱')),
           );

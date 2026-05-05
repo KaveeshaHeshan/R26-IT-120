@@ -31,9 +31,9 @@ class MyApp extends StatelessWidget {
   }
 }
 
-// =====================
+
 // LOGIN SCREEN
-// =====================
+
 class LoginScreen extends StatefulWidget {
   @override
   _LoginScreenState createState() => _LoginScreenState();

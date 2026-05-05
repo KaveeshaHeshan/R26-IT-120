@@ -31,23 +31,33 @@ class MyApp extends StatelessWidget {
   }
 }
 
+
+// LOGIN SCREEN
 class LoginScreen extends StatefulWidget {
   @override
   _LoginScreenState createState() => _LoginScreenState();
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-
   final emailController    = TextEditingController();
   final passwordController = TextEditingController();
   bool passwordVisible     = false;
   bool isLoading           = false;
 
   Future<void> loginUser() async {
+    if (emailController.text.isEmpty || passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Please enter Email and Password!'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
     setState(() => isLoading = true);
 
     try {
-      // Firebase Auth login
       UserCredential userCredential = await FirebaseAuth.instance
           .signInWithEmailAndPassword(
             email: emailController.text.trim(),
@@ -56,31 +66,55 @@ class _LoginScreenState extends State<LoginScreen> {
 
       String uid = userCredential.user!.uid;
 
-      // Firestore එකෙන් role ගන්නවා
-      QuerySnapshot query = await FirebaseFirestore.instance
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance
           .collection('users')
-          .where('email', isEqualTo: emailController.text.trim())
+          .doc(uid)
           .get();
 
-      if (query.docs.isNotEmpty) {
-        String role = query.docs.first['role'];
+      if (userDoc.exists) {
+        String role = userDoc['role'];
+        bool isNew  = userDoc['isNew'] ?? false;
 
-        if (role == 'farmer') {
-          // Farmer screen 
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Welcome Farmer! 🌿')),
+        if (isNew) {
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(uid)
+              .update({'isNew': false});
+
+          Navigator.push(context,
+            MaterialPageRoute(
+              builder: (context) => OTPScreen(
+                email: emailController.text.trim(),
+                role: role,
+              ),
+            ),
           );
-        } else if (role == 'supervisor') {
-          // OTP screen 
+        } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Supervisor! OTP එනවා... 📱')),
+            SnackBar(
+              content: Text(
+                role == 'farmer'
+                  ? 'Welcome Back Farmer! 🌿'
+                  : 'Welcome Back Supervisor! 👷'
+              ),
+              backgroundColor: Colors.green,
+            ),
           );
         }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('User data not found! Contact support.'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
-
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Login Failed! Check email/password')),
+        SnackBar(
+          content: Text('Login Failed! Email/Password check කරන්න'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
 
@@ -92,15 +126,505 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SizedBox(height: 60),
+
+                // Logo
+                Icon(Icons.eco, size: 80, color: Colors.green),
+                SizedBox(height: 16),
+
+                // Title
+                Text(
+                  'Rubber Collection System',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.green[800],
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: 8),
+
+                // Subtitle
+                Text(
+                  'Welcome Back!',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey,
+                  ),
+                ),
+                SizedBox(height: 40),
+
+                // Email Field
+                TextField(
+                  controller: emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: InputDecoration(
+                    labelText: 'Email',
+                    prefixIcon: Icon(Icons.email, color: Colors.green),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.green),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 16),
+
+                // Password Field
+                TextField(
+                  controller: passwordController,
+                  obscureText: !passwordVisible,
+                  decoration: InputDecoration(
+                    labelText: 'Password',
+                    prefixIcon: Icon(Icons.lock, color: Colors.green),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        passwordVisible
+                          ? Icons.visibility
+                          : Icons.visibility_off,
+                        color: Colors.grey,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          passwordVisible = !passwordVisible;
+                        });
+                      },
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.green),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 8),
+
+                // Forgot Password
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () {
+                      if (emailController.text.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Please enter your email!'),
+                            backgroundColor: Colors.orange,
+                          ),
+                        );
+                      } else {
+                        FirebaseAuth.instance.sendPasswordResetEmail(
+                          email: emailController.text.trim(),
+                        );
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Password reset email sent! 📧'),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                      }
+                    },
+                    child: Text(
+                      'Forgot Password?',
+                      style: TextStyle(color: Colors.green),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 16),
+
+                // Login Button
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: isLoading ? null : loginUser,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: isLoading
+                      ? CircularProgressIndicator(color: Colors.white)
+                      : Text(
+                          'Login',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                  ),
+                ),
+                SizedBox(height: 16),
+
+                // Sign Up Button
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: OutlinedButton(
+                    onPressed: () {
+                      Navigator.push(context,
+                        MaterialPageRoute(
+                          builder: (context) => SignUpScreen(),
+                        ),
+                      );
+                    },
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: Colors.green),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      'Sign Up',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.green,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// SIGN UP SCREEN
+class SignUpScreen extends StatefulWidget {
+  @override
+  _SignUpScreenState createState() => _SignUpScreenState();
+}
+
+class _SignUpScreenState extends State<SignUpScreen> {
+  final nameController     = TextEditingController();
+  final emailController    = TextEditingController();
+  final passwordController = TextEditingController();
+  final phoneController    = TextEditingController();
+  bool passwordVisible     = false;
+  bool isLoading           = false;
+  String selectedRole      = 'farmer';
+
+  Future<void> signUpUser() async {
+    if (nameController.text.isEmpty ||
+        emailController.text.isEmpty ||
+        passwordController.text.isEmpty ||
+        phoneController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Please fill all fields!'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    setState(() => isLoading = true);
+
+    try {
+      UserCredential userCredential = await FirebaseAuth.instance
+          .createUserWithEmailAndPassword(
+            email: emailController.text.trim(),
+            password: passwordController.text.trim(),
+          );
+
+      String uid = userCredential.user!.uid;
+
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .set({
+            'name': nameController.text.trim(),
+            'email': emailController.text.trim(),
+            'phone': phoneController.text.trim(),
+            'role': selectedRole,
+            'isNew': true,
+            'createdAt': DateTime.now().toString(),
+          });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Account created! OTP verify කරන්න 📱'),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      Navigator.pushReplacement(context,
+        MaterialPageRoute(
+          builder: (context) => OTPScreen(
+            email: emailController.text.trim(),
+            role: selectedRole,
+          ),
+        ),
+      );
+
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Sign Up Failed! Try again'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+
+    setState(() => isLoading = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.green,
+        title: Text('Sign Up', style: TextStyle(color: Colors.white)),
+        iconTheme: IconThemeData(color: Colors.white),
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: EdgeInsets.all(24),
+            child: Column(
+              children: [
+                SizedBox(height: 20),
+                Icon(Icons.eco, size: 60, color: Colors.green),
+                SizedBox(height: 16),
+                Text(
+                  'Create Account',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.green[800],
+                  ),
+                ),
+                SizedBox(height: 30),
+
+                // Name Field
+                TextField(
+                  controller: nameController,
+                  decoration: InputDecoration(
+                    labelText: 'Full Name',
+                    prefixIcon: Icon(Icons.person, color: Colors.green),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.green),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 16),
+
+                // Email Field
+                TextField(
+                  controller: emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: InputDecoration(
+                    labelText: 'Email',
+                    prefixIcon: Icon(Icons.email, color: Colors.green),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.green),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 16),
+
+                // Phone Field
+                TextField(
+                  controller: phoneController,
+                  keyboardType: TextInputType.phone,
+                  decoration: InputDecoration(
+                    labelText: 'Phone Number (+94XXXXXXXXX)',
+                    prefixIcon: Icon(Icons.phone, color: Colors.green),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.green),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 16),
+
+                // Password Field
+                TextField(
+                  controller: passwordController,
+                  obscureText: !passwordVisible,
+                  decoration: InputDecoration(
+                    labelText: 'Password',
+                    prefixIcon: Icon(Icons.lock, color: Colors.green),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        passwordVisible
+                          ? Icons.visibility
+                          : Icons.visibility_off,
+                        color: Colors.grey,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          passwordVisible = !passwordVisible;
+                        });
+                      },
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.green),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 16),
+
+                // Role Dropdown
+                DropdownButtonFormField<String>(
+                  value: selectedRole,
+                  decoration: InputDecoration(
+                    labelText: 'Role',
+                    prefixIcon: Icon(Icons.badge, color: Colors.green),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  items: [
+                    DropdownMenuItem(
+                      value: 'farmer',
+                      child: Text('Farmer 🌿'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'supervisor',
+                      child: Text('Supervisor 👷'),
+                    ),
+                  ],
+                  onChanged: (value) {
+                    setState(() {
+                      selectedRole = value!;
+                    });
+                  },
+                ),
+                SizedBox(height: 24),
+
+                // Sign Up Button
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: isLoading ? null : signUpUser,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: isLoading
+                      ? CircularProgressIndicator(color: Colors.white)
+                      : Text(
+                          'Sign Up',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// =====================
+// OTP SCREEN
+// =====================
+class OTPScreen extends StatefulWidget {
+  final String email;
+  final String role;
+  OTPScreen({required this.email, required this.role});
+
+  @override
+  _OTPScreenState createState() => _OTPScreenState();
+}
+
+class _OTPScreenState extends State<OTPScreen> {
+  final otpController = TextEditingController();
+  final String demoOTP = "123456";
+
+  Future<void> verifyOTP() async {
+    if (otpController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Please enter OTP code!'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    if (otpController.text == demoOTP) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            widget.role == 'farmer'
+              ? 'Welcome Farmer! 🌿'
+              : 'Welcome Supervisor! 👷'
+          ),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Wrong OTP! Try again'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.green,
+        title: Text('OTP Verification',
+          style: TextStyle(color: Colors.white)),
+        iconTheme: IconThemeData(color: Colors.white),
+      ),
+      body: SafeArea(
         child: Padding(
           padding: EdgeInsets.all(24),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.eco, size: 80, color: Colors.green),
+              Icon(Icons.phone_android, size: 80, color: Colors.green),
               SizedBox(height: 16),
               Text(
-                'Rubber Collection System',
+                'OTP Verification',
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
@@ -108,64 +632,88 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               SizedBox(height: 8),
-              Text('Login to continue',
-                style: TextStyle(color: Colors.grey)),
-              SizedBox(height: 40),
-              TextField(
-                controller: emailController,
-                keyboardType: TextInputType.emailAddress,
-                decoration: InputDecoration(
-                  labelText: 'Email',
-                  prefixIcon: Icon(Icons.email, color: Colors.green),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+              Text(
+                '${widget.email}\'OTP has been sent',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey),
+              ),
+              SizedBox(height: 8),
+              Container(
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.orange[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.orange),
+                ),
+                child: Text(
+                  'Demo OTP: 123456',
+                  style: TextStyle(
+                    color: Colors.orange[800],
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
-              SizedBox(height: 16),
+              SizedBox(height: 40),
+
+              // OTP Field
               TextField(
-                controller: passwordController,
-                obscureText: !passwordVisible,
+                controller: otpController,
+                keyboardType: TextInputType.number,
+                maxLength: 6,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 24,
+                  letterSpacing: 8,
+                ),
                 decoration: InputDecoration(
-                  labelText: 'Password',
-                  prefixIcon: Icon(Icons.lock, color: Colors.green),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      passwordVisible
-                        ? Icons.visibility
-                        : Icons.visibility_off,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        passwordVisible = !passwordVisible;
-                      });
-                    },
-                  ),
+                  hintText: '------',
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.green),
+                  ),
+                  counterText: '',
                 ),
               ),
               SizedBox(height: 24),
+
+              // Verify Button
               SizedBox(
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
-                  onPressed: isLoading ? null : loginUser,
+                  onPressed: verifyOTP,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: isLoading
-                    ? CircularProgressIndicator(color: Colors.white)
-                    : Text('Login',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        )),
+                  child: Text(
+                    'Verify OTP',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(height: 16),
+              TextButton(
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('OTP Resent! 📱'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                },
+                child: Text(
+                  'Resend OTP',
+                  style: TextStyle(color: Colors.green),
                 ),
               ),
             ],

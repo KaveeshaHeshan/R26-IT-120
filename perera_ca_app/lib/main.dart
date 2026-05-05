@@ -31,8 +31,9 @@ class MyApp extends StatelessWidget {
   }
 }
 
-
+// =====================
 // LOGIN SCREEN
+// =====================
 class LoginScreen extends StatefulWidget {
   @override
   _LoginScreenState createState() => _LoginScreenState();
@@ -104,7 +105,7 @@ class _LoginScreenState extends State<LoginScreen> {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('User data not found! Contact support.'),
+            content: Text('User not found! Contact Admin'),
             backgroundColor: Colors.red,
           ),
         );
@@ -112,7 +113,7 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Login Failed! Email/Password check කරන්න'),
+          content: Text('Login Failed! Check Email and Password'),
           backgroundColor: Colors.red,
         ),
       );
@@ -133,12 +134,8 @@ class _LoginScreenState extends State<LoginScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 SizedBox(height: 60),
-
-                // Logo
                 Icon(Icons.eco, size: 80, color: Colors.green),
                 SizedBox(height: 16),
-
-                // Title
                 Text(
                   'Rubber Collection System',
                   style: TextStyle(
@@ -149,18 +146,11 @@ class _LoginScreenState extends State<LoginScreen> {
                   textAlign: TextAlign.center,
                 ),
                 SizedBox(height: 8),
-
-                // Subtitle
                 Text(
                   'Welcome Back!',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey,
-                  ),
+                  style: TextStyle(fontSize: 16, color: Colors.grey),
                 ),
                 SizedBox(height: 40),
-
-                // Email Field
                 TextField(
                   controller: emailController,
                   keyboardType: TextInputType.emailAddress,
@@ -177,8 +167,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 SizedBox(height: 16),
-
-                // Password Field
                 TextField(
                   controller: passwordController,
                   obscureText: !passwordVisible,
@@ -208,8 +196,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 SizedBox(height: 8),
-
-                // Forgot Password
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
@@ -240,8 +226,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 SizedBox(height: 16),
-
-                // Login Button
                 SizedBox(
                   width: double.infinity,
                   height: 50,
@@ -266,8 +250,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 SizedBox(height: 16),
-
-                // Sign Up Button
                 SizedBox(
                   width: double.infinity,
                   height: 50,
@@ -304,26 +286,38 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
+// =====================
 // SIGN UP SCREEN
+// =====================
 class SignUpScreen extends StatefulWidget {
   @override
   _SignUpScreenState createState() => _SignUpScreenState();
 }
 
 class _SignUpScreenState extends State<SignUpScreen> {
-  final nameController     = TextEditingController();
-  final emailController    = TextEditingController();
-  final passwordController = TextEditingController();
-  final phoneController    = TextEditingController();
-  bool passwordVisible     = false;
-  bool isLoading           = false;
-  String selectedRole      = 'farmer';
+  final nameController        = TextEditingController();
+  final nicController         = TextEditingController();
+  final phoneController       = TextEditingController();
+  final emailController       = TextEditingController();
+  final addressController     = TextEditingController();
+  final districtController    = TextEditingController();
+  final landSizeController    = TextEditingController();
+  final rubberTreesController = TextEditingController();
+  final passwordController    = TextEditingController();
+
+  bool passwordVisible      = false;
+  bool isLoading            = false;
+  String selectedRole       = 'farmer';
+  String selectedExperience = 'Less than 1 year';
 
   Future<void> signUpUser() async {
     if (nameController.text.isEmpty ||
+        nicController.text.isEmpty ||
+        phoneController.text.isEmpty ||
         emailController.text.isEmpty ||
-        passwordController.text.isEmpty ||
-        phoneController.text.isEmpty) {
+        addressController.text.isEmpty ||
+        districtController.text.isEmpty ||
+        passwordController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Please fill all fields!'),
@@ -349,8 +343,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
           .doc(uid)
           .set({
             'name': nameController.text.trim(),
-            'email': emailController.text.trim(),
+            'nic': nicController.text.trim(),
             'phone': phoneController.text.trim(),
+            'email': emailController.text.trim(),
+            'address': addressController.text.trim(),
+            'district': districtController.text.trim(),
+            'landSize': landSizeController.text.trim(),
+            'rubberTrees': rubberTreesController.text.trim(),
+            'experience': selectedExperience,
             'role': selectedRole,
             'isNew': true,
             'createdAt': DateTime.now().toString(),
@@ -358,7 +358,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Account created! OTP verify කරන්න 📱'),
+          content: Text('Account created! Please verify OTP 📱'),
           backgroundColor: Colors.green,
         ),
       );
@@ -390,82 +390,62 @@ class _SignUpScreenState extends State<SignUpScreen> {
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.green,
-        title: Text('Sign Up', style: TextStyle(color: Colors.white)),
+        title: Text('Farmer Registration',
+          style: TextStyle(color: Colors.white)),
         iconTheme: IconThemeData(color: Colors.white),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
-            padding: EdgeInsets.all(24),
+            padding: EdgeInsets.all(16),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SizedBox(height: 20),
-                Icon(Icons.eco, size: 60, color: Colors.green),
+                _sectionTitle('Personal Information'),
+                _buildField(nameController, 'Full Name', Icons.person),
+                _buildField(nicController, 'NIC Number', Icons.credit_card),
+                _buildField(phoneController, 'Phone Number', Icons.phone,
+                  type: TextInputType.phone),
+                _buildField(emailController, 'Email Address', Icons.email,
+                  type: TextInputType.emailAddress),
                 SizedBox(height: 16),
-                Text(
-                  'Create Account',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.green[800],
-                  ),
-                ),
-                SizedBox(height: 30),
 
-                // Name Field
-                TextField(
-                  controller: nameController,
+                _sectionTitle('Location Details'),
+                _buildField(addressController, 'Home Address', Icons.home),
+                _buildField(districtController, 'District', Icons.location_city),
+                SizedBox(height: 16),
+
+                _sectionTitle('Farm Information'),
+                _buildField(landSizeController, 'Land Size (Acres)',
+                  Icons.landscape, type: TextInputType.number),
+                _buildField(rubberTreesController, 'Number of Rubber Trees',
+                  Icons.park, type: TextInputType.number),
+                SizedBox(height: 8),
+
+                DropdownButtonFormField<String>(
+                  value: selectedExperience,
                   decoration: InputDecoration(
-                    labelText: 'Full Name',
-                    prefixIcon: Icon(Icons.person, color: Colors.green),
+                    labelText: 'Tapping Experience',
+                    prefixIcon: Icon(Icons.work, color: Colors.green),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.green),
-                    ),
                   ),
+                  items: [
+                    'Less than 1 year',
+                    '1-3 years',
+                    '3-5 years',
+                    'More than 5 years',
+                  ].map((e) => DropdownMenuItem(
+                    value: e, child: Text(e),
+                  )).toList(),
+                  onChanged: (value) {
+                    setState(() => selectedExperience = value!);
+                  },
                 ),
                 SizedBox(height: 16),
 
-                // Email Field
-                TextField(
-                  controller: emailController,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: InputDecoration(
-                    labelText: 'Email',
-                    prefixIcon: Icon(Icons.email, color: Colors.green),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.green),
-                    ),
-                  ),
-                ),
-                SizedBox(height: 16),
-
-                // Phone Field
-                TextField(
-                  controller: phoneController,
-                  keyboardType: TextInputType.phone,
-                  decoration: InputDecoration(
-                    labelText: 'Phone Number (+94XXXXXXXXX)',
-                    prefixIcon: Icon(Icons.phone, color: Colors.green),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.green),
-                    ),
-                  ),
-                ),
-                SizedBox(height: 16),
-
-                // Password Field
+                _sectionTitle('Account Setup'),
                 TextField(
                   controller: passwordController,
                   obscureText: !passwordVisible,
@@ -496,7 +476,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 ),
                 SizedBox(height: 16),
 
-                // Role Dropdown
                 DropdownButtonFormField<String>(
                   value: selectedRole,
                   decoration: InputDecoration(
@@ -507,24 +486,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     ),
                   ),
                   items: [
-                    DropdownMenuItem(
-                      value: 'farmer',
-                      child: Text('Farmer 🌿'),
-                    ),
-                    DropdownMenuItem(
-                      value: 'supervisor',
-                      child: Text('Supervisor 👷'),
-                    ),
+                    DropdownMenuItem(value: 'farmer', child: Text('Farmer 🌿')),
+                    DropdownMenuItem(value: 'supervisor', child: Text('Supervisor 👷')),
                   ],
                   onChanged: (value) {
-                    setState(() {
-                      selectedRole = value!;
-                    });
+                    setState(() => selectedRole = value!);
                   },
                 ),
                 SizedBox(height: 24),
 
-                // Sign Up Button
                 SizedBox(
                   width: double.infinity,
                   height: 50,
@@ -539,7 +509,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     child: isLoading
                       ? CircularProgressIndicator(color: Colors.white)
                       : Text(
-                          'Sign Up',
+                          'Register',
                           style: TextStyle(
                             fontSize: 16,
                             color: Colors.white,
@@ -548,8 +518,49 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         ),
                   ),
                 ),
+                SizedBox(height: 24),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _sectionTitle(String title) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: 12),
+      child: Text(
+        title,
+        style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+          color: Colors.green[800],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildField(
+    TextEditingController controller,
+    String label,
+    IconData icon, {
+    TextInputType type = TextInputType.text,
+  }) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: 12),
+      child: TextField(
+        controller: controller,
+        keyboardType: type,
+        decoration: InputDecoration(
+          labelText: label,
+          prefixIcon: Icon(icon, color: Colors.green),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.green),
           ),
         ),
       ),
@@ -633,7 +644,7 @@ class _OTPScreenState extends State<OTPScreen> {
               ),
               SizedBox(height: 8),
               Text(
-                '${widget.email}\'OTP has been sent',
+                '${widget.email}\nOTP has been sent',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: Colors.grey),
               ),
@@ -654,17 +665,12 @@ class _OTPScreenState extends State<OTPScreen> {
                 ),
               ),
               SizedBox(height: 40),
-
-              // OTP Field
               TextField(
                 controller: otpController,
                 keyboardType: TextInputType.number,
                 maxLength: 6,
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 24,
-                  letterSpacing: 8,
-                ),
+                style: TextStyle(fontSize: 24, letterSpacing: 8),
                 decoration: InputDecoration(
                   hintText: '------',
                   border: OutlineInputBorder(
@@ -678,8 +684,6 @@ class _OTPScreenState extends State<OTPScreen> {
                 ),
               ),
               SizedBox(height: 24),
-
-              // Verify Button
               SizedBox(
                 width: double.infinity,
                 height: 50,

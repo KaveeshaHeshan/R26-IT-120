@@ -18,8 +18,9 @@ const LoginPage = () => {
   useEffect(() => {
     const token = localStorage.getItem('token')
     const role  = localStorage.getItem('role')
+    const userId = localStorage.getItem('user_id')
 
-    if (token && role) {
+    if (token && role && userId) {
       // Redirect based on role
       if (role === 'manager' || role === 'admin') {
         navigate('/', { replace: true })

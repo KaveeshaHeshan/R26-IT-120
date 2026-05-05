@@ -1,7 +1,7 @@
 // src/App.jsx
 
-import { Routes, Route, Navigate } from 'react-router-dom'
-import { useState, useEffect }     from 'react'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { useState } from 'react'
 
 // ── Pages ─────────────────────────────────────────────────────────────────────
 import LoginPage         from './pages/LoginPage'
@@ -18,18 +18,40 @@ import Sidebar from './components/layout/Sidebar'
 // ── Constants ─────────────────────────────────────────────────────────────────
 import { ROLES } from './constants/roles'
 
+// ── Auth Helper ───────────────────────────────────────────────────────────────
+const getAuth = () => ({
+  token:  localStorage.getItem('token'),
+  role:   localStorage.getItem('role'),
+  userId: localStorage.getItem('user_id'),
+})
+
+const isAuthenticated = () => {
+  const { token, role, userId } = getAuth()
+  return Boolean(token && role && userId)
+}
+
 // ── Protected Route ───────────────────────────────────────────────────────────
 const ProtectedRoute = ({ allowedRoles, children }) => {
-  const token  = localStorage.getItem('token')
-  const role   = localStorage.getItem('role')
-  const userId = localStorage.getItem('user_id')
+  const location = useLocation()
+  const { token, role, userId } = getAuth()
 
   if (!token || !role || !userId) {
-    return <Navigate to="/login" replace />
+    return <Navigate to="/login" replace state={{ from: location }} />
   }
 
   if (allowedRoles && !allowedRoles.includes(role)) {
     return <Navigate to="/unauthorized" replace />
+  }
+
+  return children
+}
+
+// ── Public Only Route (redirects authenticated users away from /login) ────────
+const PublicOnlyRoute = ({ children }) => {
+  const authenticated = isAuthenticated()
+
+  if (authenticated) {
+    return <Navigate to="/" replace />
   }
 
   return children
@@ -63,20 +85,16 @@ const DashboardLayout = ({ children }) => {
 
 // ── App ───────────────────────────────────────────────────────────────────────
 const App = () => {
-
-  const token = localStorage.getItem('token')
-  const role  = localStorage.getItem('role')
-
   return (
     <Routes>
 
-      {/* ── Public Route ───────────────────────────────────────────────────── */}
+      {/* ── Login (public) ─────────────────────────────────────────────────── */}
       <Route
         path="/login"
         element={
-          token && role
-            ? <Navigate to="/" replace />
-            : <LoginPage />
+          <PublicOnlyRoute>
+            <LoginPage />
+          </PublicOnlyRoute>
         }
       />
 
@@ -146,14 +164,10 @@ const App = () => {
         }
       />
 
-      {/* ── Default redirect ───────────────────────────────────────────────── */}
+      {/* ── Catch-all ──────────────────────────────────────────────────────── */}
       <Route
         path="*"
-        element={
-          token
-            ? <Navigate to="/" replace />
-            : <Navigate to="/login" replace />
-        }
+        element={<Navigate to="/" replace />}
       />
 
     </Routes>

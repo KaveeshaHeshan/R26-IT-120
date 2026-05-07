@@ -32,11 +32,14 @@ const isAuthenticated = () => {
 
 // ── Protected Route ───────────────────────────────────────────────────────────
 const ProtectedRoute = ({ allowedRoles, children }) => {
-  const location = useLocation()
+  const location               = useLocation()
   const { token, role, userId } = getAuth()
 
   if (!token || !role || !userId) {
-    return <Navigate to="/login" replace state={{ from: location }} />
+    return (
+      <Navigate to="/login" replace
+        state={{ from: location }} />
+    )
   }
 
   if (allowedRoles && !allowedRoles.includes(role)) {
@@ -46,12 +49,16 @@ const ProtectedRoute = ({ allowedRoles, children }) => {
   return children
 }
 
-// ── Public Only Route (redirects authenticated users away from /login) ────────
+// ── Public Only Route ─────────────────────────────────────────────────────────
 const PublicOnlyRoute = ({ children }) => {
-  const authenticated = isAuthenticated()
+  const { token, role } = getAuth()
 
-  if (authenticated) {
-    return <Navigate to="/" replace />
+  if (token && role) {
+    if (['manager', 'admin'].includes(role)) {
+      return <Navigate to="/" replace />
+    } else if (role === 'qa_officer') {
+      return <Navigate to="/alerts" replace />
+    }
   }
 
   return children
@@ -59,25 +66,14 @@ const PublicOnlyRoute = ({ children }) => {
 
 // ── Dashboard Layout ──────────────────────────────────────────────────────────
 const DashboardLayout = ({ children }) => {
-  const [sidebarOpen, setSidebarOpen] = useState(true)
-
   return (
     <div className="flex flex-col min-h-screen">
-
-      {/* Navbar */}
       <Navbar />
-
-      {/* Body */}
       <div className="flex flex-1 overflow-hidden">
-
-        {/* Sidebar */}
         <Sidebar />
-
-        {/* Main content */}
         <main className="flex-1 overflow-y-auto bg-[#F4F6F9]">
           {children}
         </main>
-
       </div>
     </div>
   )
@@ -136,7 +132,7 @@ const App = () => {
             allowedRoles={[
               ROLES.MANAGER,
               ROLES.QA_OFFICER,
-              ROLES.ADMIN
+              ROLES.ADMIN,
             ]}
           >
             <DashboardLayout>
@@ -154,7 +150,7 @@ const App = () => {
             allowedRoles={[
               ROLES.MANAGER,
               ROLES.QA_OFFICER,
-              ROLES.ADMIN
+              ROLES.ADMIN,
             ]}
           >
             <DashboardLayout>
@@ -167,7 +163,11 @@ const App = () => {
       {/* ── Catch-all ──────────────────────────────────────────────────────── */}
       <Route
         path="*"
-        element={<Navigate to="/" replace />}
+        element={
+          isAuthenticated()
+            ? <Navigate to="/" replace />
+            : <Navigate to="/login" replace />
+        }
       />
 
     </Routes>

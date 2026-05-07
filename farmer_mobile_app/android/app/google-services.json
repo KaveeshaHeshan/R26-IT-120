@@ -1,0 +1,68 @@
+{
+  "project_info": {
+    "project_number": "1039456219056",
+    "project_id": "rubberquality-33cab",
+    "storage_bucket": "rubberquality-33cab.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1039456219056:android:72a996882a39484c4d3075",
+        "android_client_info": {
+          "package_name": "com.example.farmer_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1039456219056-i0ph4822k50rokgcg64gm55q4ooj57s4.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCCExyleaIBGApwu-PoIoz_kTQ7Bzg8AGc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1039456219056-i0ph4822k50rokgcg64gm55q4ooj57s4.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1039456219056:android:970395e26f0bceed4d3075",
+        "android_client_info": {
+          "package_name": "com.example.farmer_mobile_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1039456219056-i0ph4822k50rokgcg64gm55q4ooj57s4.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCCExyleaIBGApwu-PoIoz_kTQ7Bzg8AGc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1039456219056-i0ph4822k50rokgcg64gm55q4ooj57s4.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

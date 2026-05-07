@@ -46,7 +46,7 @@ class _LoginScreenState extends State<LoginScreen> {
     if (emailController.text.isEmpty || passwordController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Please enter Email and Password!'),
+          content: Text('⚠️ Please enter your email and password to continue!'),
           backgroundColor: Colors.orange,
         ),
       );
@@ -92,8 +92,8 @@ class _LoginScreenState extends State<LoginScreen> {
             SnackBar(
               content: Text(
                 role == 'farmer'
-                  ? 'Welcome Back Farmer! 🌿'
-                  : 'Welcome Back Supervisor! 👷'
+                  ? '✅ Welcome back! Redirecting to your dashboard...'
+                  : '✅ Welcome back Supervisor! Redirecting to dashboard...'
               ),
               backgroundColor: Colors.green,
             ),
@@ -102,7 +102,7 @@ class _LoginScreenState extends State<LoginScreen> {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('User not found! Contact Admin'),
+            content: Text('❌ Account not found! Please sign up or contact admin.'),
             backgroundColor: Colors.red,
           ),
         );
@@ -110,7 +110,7 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Login Failed! Check Email and Password'),
+          content: Text('❌ Login failed! Invalid email or password. Please try again.'),
           backgroundColor: Colors.red,
         ),
       );
@@ -200,7 +200,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       if (emailController.text.isEmpty) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('Please enter your email!'),
+                            content: Text('⚠️ Please enter your email address to reset password!'),
                             backgroundColor: Colors.orange,
                           ),
                         );
@@ -210,7 +210,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         );
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('Password reset email sent! 📧'),
+                            content: Text('✅ Password reset email sent! Please check your inbox.'),
                             backgroundColor: Colors.green,
                           ),
                         );
@@ -306,18 +306,97 @@ class _SignUpScreenState extends State<SignUpScreen> {
   String selectedExperience = 'Less than 1 year';
 
   Future<void> signUpUser() async {
-    if (nameController.text.isEmpty ||
-        nicController.text.isEmpty ||
-        phoneController.text.isEmpty ||
-        emailController.text.isEmpty ||
-        passwordController.text.isEmpty) {
+    if (nameController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Please fill all fields!'),
+          content: Text('⚠️ Please enter your full name!'),
           backgroundColor: Colors.orange,
         ),
       );
       return;
+    }
+
+    if (nicController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('⚠️ Please enter your NIC number!'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    if (phoneController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('⚠️ Please enter your phone number!'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    if (emailController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('⚠️ Please enter your email address!'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    if (passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('⚠️ Please enter a password!'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    if (passwordController.text.length < 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('⚠️ Password must be at least 6 characters!'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    if (selectedRole == 'farmer') {
+      if (addressController.text.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('⚠️ Please enter your home address!'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+      if (districtController.text.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('⚠️ Please enter your district!'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+    }
+
+    if (selectedRole == 'supervisor') {
+      if (employeeIdController.text.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('⚠️ Please enter your Employee ID!'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
     }
 
     setState(() => isLoading = true);
@@ -362,7 +441,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Account created! Please verify OTP 📱'),
+          content: Text('✅ Account created successfully! Please verify OTP 📱'),
           backgroundColor: Colors.green,
         ),
       );
@@ -379,7 +458,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Sign Up Failed! Try again'),
+          content: Text('❌ Registration failed! Email may already be in use.'),
           backgroundColor: Colors.red,
         ),
       );
@@ -652,7 +731,7 @@ class _OTPScreenState extends State<OTPScreen> {
     if (otpController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Please enter OTP code!'),
+          content: Text('⚠️ Please enter the 6-digit OTP code sent to your phone!'),
           backgroundColor: Colors.orange,
         ),
       );
@@ -664,8 +743,8 @@ class _OTPScreenState extends State<OTPScreen> {
         SnackBar(
           content: Text(
             widget.role == 'farmer'
-              ? 'Welcome Farmer! 🌿'
-              : 'Welcome Supervisor! 👷'
+              ? '✅ OTP verified! Welcome Farmer! Redirecting to login...'
+              : '✅ OTP verified! Welcome Supervisor! Redirecting to login...'
           ),
           backgroundColor: Colors.green,
         ),
@@ -680,7 +759,7 @@ class _OTPScreenState extends State<OTPScreen> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Wrong OTP! Try again'),
+          content: Text('❌ Invalid OTP! Please check and try again.'),
           backgroundColor: Colors.red,
         ),
       );
@@ -781,7 +860,7 @@ class _OTPScreenState extends State<OTPScreen> {
                 onPressed: () {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('OTP Resent! 📱'),
+                      content: Text('📱 OTP has been resent to your registered phone number!'),
                       backgroundColor: Colors.green,
                     ),
                   );

@@ -1,6 +1,6 @@
 // src/components/auth/Login.jsx
 
-import { useState, useEffect }          from 'react'
+import { useState }                     from 'react'
 import { useNavigate }                  from 'react-router-dom'
 import { auth, db }                     from '../../firebase/config'
 import { signInWithEmailAndPassword }   from 'firebase/auth'
@@ -14,18 +14,8 @@ const Login = () => {
   const [loading,  setLoading]  = useState(false)
   const navigate = useNavigate()
 
-  // ── Already logged in ───────────────────────────────────────────────────────
-  useEffect(() => {
-    const token = localStorage.getItem('token')
-    const role  = localStorage.getItem('role')
-    if (token && role) {
-      if (['manager','admin'].includes(role)) {
-        navigate('/')
-      } else {
-        navigate('/alerts')
-      }
-    }
-  }, [navigate])
+  // ── useEffect REMOVE ✅ ──────────────────────────────────────────────────────
+  // Already handled by App.jsx PublicOnlyRoute + LoginPage.jsx
 
   // ── Handle Login ────────────────────────────────────────────────────────────
   const handleLogin = async () => {
@@ -37,13 +27,11 @@ const Login = () => {
     setError('')
 
     try {
-      // Firebase Auth direct
       const cred = await signInWithEmailAndPassword(
         auth, email, password
       )
       const uid = cred.user.uid
 
-      // Get role from Realtime DB
       const snap     = await get(ref(db, `roles/${uid}`))
       const roleData = snap.val()
 
@@ -53,7 +41,6 @@ const Login = () => {
         return
       }
 
-      // Store
       const token = await cred.user.getIdToken()
       localStorage.setItem('token',   token)
       localStorage.setItem('uid',     uid)
@@ -61,7 +48,6 @@ const Login = () => {
       localStorage.setItem('user_id', roleData.user_id)
       localStorage.setItem('name',    roleData.name)
 
-      // Redirect
       if (['manager','admin'].includes(roleData.role)) {
         navigate('/')
       } else if (roleData.role === 'qa_officer') {
@@ -87,19 +73,16 @@ const Login = () => {
     setLoading(false)
   }
 
-  // ── Handle Enter ────────────────────────────────────────────────────────────
   const handleKeyDown = (e) => {
     if (e.key === 'Enter') handleLogin()
   }
 
-  // ── Render ──────────────────────────────────────────────────────────────────
   return (
     <div className="w-full max-w-sm">
       <div className="bg-white/10 backdrop-blur-2xl rounded-[3rem]
                       shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] p-10
                       border border-white/20 ring-1 ring-white/10">
 
-        {/* ── Header ─────────────────────────────────────────────────────── */}
         <div className="text-center mb-8">
           <div className="inline-block p-4 bg-white/10 rounded-3xl mb-4
                           border border-white/20 shadow-xl">
@@ -113,15 +96,13 @@ const Login = () => {
                         uppercase mt-3 drop-shadow-sm">
             DASHBOARD PORTAL
           </p>
-
           <div className="flex justify-center gap-2 mt-6">
             <div className="px-3 py-1 bg-white/5 rounded-full
                             border border-white/10 flex items-center
                             gap-2 shadow-sm">
               <span className="w-2 h-2 bg-green-400 rounded-full
                                animate-pulse
-                               shadow-[0_0_8px_rgba(74,222,128,0.8)]">
-              </span>
+                               shadow-[0_0_8px_rgba(74,222,128,0.8)]"/>
               <span className="text-xs font-black text-white/90
                                uppercase tracking-widest">
                 Grade A Secured
@@ -130,7 +111,6 @@ const Login = () => {
           </div>
         </div>
 
-        {/* ── Form ───────────────────────────────────────────────────────── */}
         <div className="space-y-6">
           <div>
             <label className="block text-xs font-black text-white/60
@@ -201,7 +181,6 @@ const Login = () => {
           </button>
         </div>
 
-        {/* ── System Status ──────────────────────────────────────────────── */}
         <div className="mt-10 pt-6 border-t border-white/10
                         grid grid-cols-3 gap-3">
           <div className="text-center group">
@@ -212,8 +191,7 @@ const Login = () => {
             </p>
             <div className="h-1 bg-white/5 rounded-full mt-2 overflow-hidden">
               <div className="h-full bg-green-400 w-full rounded-full
-                              shadow-[0_0_5px_rgba(74,222,128,0.5)]">
-              </div>
+                              shadow-[0_0_5px_rgba(74,222,128,0.5)]"/>
             </div>
           </div>
           <div className="text-center group">
@@ -224,8 +202,7 @@ const Login = () => {
             </p>
             <div className="h-1 bg-white/5 rounded-full mt-2 overflow-hidden">
               <div className="h-full bg-yellow-400 w-[70%] rounded-full
-                              shadow-[0_0_5px_rgba(250,204,21,0.5)]">
-              </div>
+                              shadow-[0_0_5px_rgba(250,204,21,0.5)]"/>
             </div>
           </div>
           <div className="text-center group">
@@ -236,8 +213,7 @@ const Login = () => {
             </p>
             <div className="h-1 bg-white/5 rounded-full mt-2 overflow-hidden">
               <div className="h-full bg-blue-400 w-full rounded-full
-                              shadow-[0_0_5px_rgba(96,165,250,0.5)]">
-              </div>
+                              shadow-[0_0_5px_rgba(96,165,250,0.5)]"/>
             </div>
           </div>
         </div>
@@ -245,7 +221,6 @@ const Login = () => {
         <p className="text-center text-xs text-white/20 mt-6">
           R26-IT-120 · SLIIT · 2026
         </p>
-
       </div>
     </div>
   )

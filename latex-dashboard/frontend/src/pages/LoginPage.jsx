@@ -1,34 +1,19 @@
 // src/pages/LoginPage.jsx
 
 import { useEffect }   from 'react'
-import { useNavigate } from 'react-router-dom'
+//import { useNavigate } from 'react-router-dom'
 import Login           from '../components/auth/Login'
 import rubberBg        from '../assets/rubberproject.png'
 
 const LoginPage = () => {
 
-  const navigate = useNavigate()
+  //const navigate = useNavigate()
 
   // ── Page title ──────────────────────────────────────────────────────────────
   useEffect(() => {
     document.title = 'Login — Latex VFA Dashboard'
     return () => { document.title = 'Latex VFA Dashboard' }
   }, [])
-
-  // ── Already logged in check ─────────────────────────────────────────────────
-  useEffect(() => {
-    const token  = localStorage.getItem('token')
-    const role   = localStorage.getItem('role')
-    const userId = localStorage.getItem('user_id')
-
-    if (token && role && userId) {
-      if (role === 'manager' || role === 'admin') {
-        navigate('/', { replace: true })
-      } else if (role === 'qa_officer') {
-        navigate('/alerts', { replace: true })
-      }
-    }
-  }, []) // ← navigate dependency remove ✅
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (

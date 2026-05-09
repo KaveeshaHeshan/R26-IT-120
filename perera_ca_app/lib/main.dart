@@ -31,9 +31,6 @@ class MyApp extends StatelessWidget {
   }
 }
 
-
-// LOGIN SCREEN
-
 class LoginScreen extends StatefulWidget {
   @override
   _LoginScreenState createState() => _LoginScreenState();
@@ -49,7 +46,7 @@ class _LoginScreenState extends State<LoginScreen> {
     if (emailController.text.isEmpty || passwordController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Please enter Email and Password!'),
+          content: Text('⚠️ Please enter your email and password to continue!'),
           backgroundColor: Colors.orange,
         ),
       );
@@ -95,17 +92,17 @@ class _LoginScreenState extends State<LoginScreen> {
             SnackBar(
               content: Text(
                 role == 'farmer'
-                  ? 'Welcome Back Farmer! 🌿'
-                  : 'Welcome Back Supervisor! 👷'
+                  ? '✅ Welcome back farmer! Redirecting to your dashboard...'
+                  : '✅ Welcome back Supervisor! Redirecting to dashboard...'
               ),
-              backgroundColor: Colors.green,
+              backgroundColor: const Color.fromARGB(255, 49, 152, 53),
             ),
           );
         }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('User not found! Contact Admin'),
+            content: Text('❌ Account not found! Please sign up or contact admin.'),
             backgroundColor: Colors.red,
           ),
         );
@@ -113,7 +110,7 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Login Failed! Check Email and Password'),
+          content: Text('❌ Login failed! Invalid email or password. Please try again.'),
           backgroundColor: Colors.red,
         ),
       );
@@ -125,7 +122,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color.fromARGB(255, 215, 229, 202),
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
@@ -203,7 +200,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       if (emailController.text.isEmpty) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('Please enter your email!'),
+                            content: Text('⚠️ Please enter your email address to reset password!'),
                             backgroundColor: Colors.orange,
                           ),
                         );
@@ -213,7 +210,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         );
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('Password reset email sent! 📧'),
+                            content: Text('✅ Password reset email sent! Please check your inbox.'),
                             backgroundColor: Colors.green,
                           ),
                         );
@@ -286,9 +283,6 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
-// =====================
-// SIGN UP SCREEN
-// =====================
 class SignUpScreen extends StatefulWidget {
   @override
   _SignUpScreenState createState() => _SignUpScreenState();
@@ -299,11 +293,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final nicController         = TextEditingController();
   final phoneController       = TextEditingController();
   final emailController       = TextEditingController();
+  final passwordController    = TextEditingController();
   final addressController     = TextEditingController();
   final districtController    = TextEditingController();
   final landSizeController    = TextEditingController();
   final rubberTreesController = TextEditingController();
-  final passwordController    = TextEditingController();
+  final employeeIdController  = TextEditingController();
 
   bool passwordVisible      = false;
   bool isLoading            = false;
@@ -311,20 +306,97 @@ class _SignUpScreenState extends State<SignUpScreen> {
   String selectedExperience = 'Less than 1 year';
 
   Future<void> signUpUser() async {
-    if (nameController.text.isEmpty ||
-        nicController.text.isEmpty ||
-        phoneController.text.isEmpty ||
-        emailController.text.isEmpty ||
-        addressController.text.isEmpty ||
-        districtController.text.isEmpty ||
-        passwordController.text.isEmpty) {
+    if (nameController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Please fill all fields!'),
+          content: Text('⚠️ Please enter your full name!'),
           backgroundColor: Colors.orange,
         ),
       );
       return;
+    }
+
+    if (nicController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('⚠️ Please enter your NIC number!'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    if (phoneController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('⚠️ Please enter your phone number!'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    if (emailController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('⚠️ Please enter your email address!'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    if (passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('⚠️ Please enter a password!'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    if (passwordController.text.length < 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('⚠️ Password must be at least 6 characters!'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    if (selectedRole == 'farmer') {
+      if (addressController.text.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('⚠️ Please enter your home address!'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+      if (districtController.text.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('⚠️ Please enter your district!'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+    }
+
+    if (selectedRole == 'supervisor') {
+      if (employeeIdController.text.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('⚠️ Please enter your Employee ID!'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
     }
 
     setState(() => isLoading = true);
@@ -338,27 +410,38 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
       String uid = userCredential.user!.uid;
 
+      Map<String, dynamic> userData = {
+        'name': nameController.text.trim(),
+        'nic': nicController.text.trim(),
+        'phone': phoneController.text.trim(),
+        'email': emailController.text.trim(),
+        'role': selectedRole,
+        'isNew': true,
+        'createdAt': DateTime.now().toString(),
+      };
+
+      if (selectedRole == 'farmer') {
+        userData.addAll({
+          'address': addressController.text.trim(),
+          'district': districtController.text.trim(),
+          'landSize': landSizeController.text.trim(),
+          'rubberTrees': rubberTreesController.text.trim(),
+          'experience': selectedExperience,
+        });
+      } else if (selectedRole == 'supervisor') {
+        userData.addAll({
+          'employeeId': employeeIdController.text.trim(),
+        });
+      }
+
       await FirebaseFirestore.instance
           .collection('users')
           .doc(uid)
-          .set({
-            'name': nameController.text.trim(),
-            'nic': nicController.text.trim(),
-            'phone': phoneController.text.trim(),
-            'email': emailController.text.trim(),
-            'address': addressController.text.trim(),
-            'district': districtController.text.trim(),
-            'landSize': landSizeController.text.trim(),
-            'rubberTrees': rubberTreesController.text.trim(),
-            'experience': selectedExperience,
-            'role': selectedRole,
-            'isNew': true,
-            'createdAt': DateTime.now().toString(),
-          });
+          .set(userData);
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Account created! Please verify OTP 📱'),
+          content: Text('✅ Account created successfully! Please verify OTP 📱'),
           backgroundColor: Colors.green,
         ),
       );
@@ -375,7 +458,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Sign Up Failed! Try again'),
+          content: Text('❌ Registration failed! Email may already be in use.'),
           backgroundColor: Colors.red,
         ),
       );
@@ -390,8 +473,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.green,
-        title: Text('Farmer Registration',
-          style: TextStyle(color: Colors.white)),
+        title: Text(
+          selectedRole == 'farmer'
+            ? 'Farmer Registration'
+            : 'Supervisor Registration',
+          style: TextStyle(color: Colors.white),
+        ),
         iconTheme: IconThemeData(color: Colors.white),
       ),
       body: SafeArea(
@@ -401,6 +488,76 @@ class _SignUpScreenState extends State<SignUpScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                _sectionTitle('Select Role'),
+                Row(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => setState(() => selectedRole = 'farmer'),
+                        child: Container(
+                          padding: EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: selectedRole == 'farmer'
+                              ? Colors.green
+                              : Colors.grey[200],
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.agriculture,
+                                color: selectedRole == 'farmer'
+                                  ? Colors.white
+                                  : Colors.grey),
+                              SizedBox(width: 8),
+                              Text('Farmer',
+                                style: TextStyle(
+                                  color: selectedRole == 'farmer'
+                                    ? Colors.white
+                                    : Colors.grey,
+                                  fontWeight: FontWeight.bold,
+                                )),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => setState(() => selectedRole = 'supervisor'),
+                        child: Container(
+                          padding: EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: selectedRole == 'supervisor'
+                              ? Colors.green
+                              : Colors.grey[200],
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.supervisor_account,
+                                color: selectedRole == 'supervisor'
+                                  ? Colors.white
+                                  : Colors.grey),
+                              SizedBox(width: 8),
+                              Text('Supervisor',
+                                style: TextStyle(
+                                  color: selectedRole == 'supervisor'
+                                    ? Colors.white
+                                    : Colors.grey,
+                                  fontWeight: FontWeight.bold,
+                                )),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 24),
+
                 _sectionTitle('Personal Information'),
                 _buildField(nameController, 'Full Name', Icons.person),
                 _buildField(nicController, 'NIC Number', Icons.credit_card),
@@ -410,40 +567,48 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   type: TextInputType.emailAddress),
                 SizedBox(height: 16),
 
-                _sectionTitle('Location Details'),
-                _buildField(addressController, 'Home Address', Icons.home),
-                _buildField(districtController, 'District', Icons.location_city),
-                SizedBox(height: 16),
+                if (selectedRole == 'farmer') ...[
+                  _sectionTitle('Location Details'),
+                  _buildField(addressController, 'Home Address', Icons.home),
+                  _buildField(districtController, 'District', Icons.location_city),
+                  SizedBox(height: 16),
 
-                _sectionTitle('Farm Information'),
-                _buildField(landSizeController, 'Land Size (Acres)',
-                  Icons.landscape, type: TextInputType.number),
-                _buildField(rubberTreesController, 'Number of Rubber Trees',
-                  Icons.park, type: TextInputType.number),
-                SizedBox(height: 8),
+                  _sectionTitle('Farm Information'),
+                  _buildField(landSizeController, 'Land Size (Acres)',
+                    Icons.landscape, type: TextInputType.number),
+                  _buildField(rubberTreesController, 'Number of Rubber Trees',
+                    Icons.park, type: TextInputType.number),
+                  SizedBox(height: 8),
 
-                DropdownButtonFormField<String>(
-                  value: selectedExperience,
-                  decoration: InputDecoration(
-                    labelText: 'Tapping Experience',
-                    prefixIcon: Icon(Icons.work, color: Colors.green),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                  DropdownButtonFormField<String>(
+                    value: selectedExperience,
+                    decoration: InputDecoration(
+                      labelText: 'Tapping Experience',
+                      prefixIcon: Icon(Icons.work, color: Colors.green),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
+                    items: [
+                      'Less than 1 year',
+                      '1-3 years',
+                      '3-5 years',
+                      'More than 5 years',
+                    ].map((e) => DropdownMenuItem(
+                      value: e, child: Text(e),
+                    )).toList(),
+                    onChanged: (value) {
+                      setState(() => selectedExperience = value!);
+                    },
                   ),
-                  items: [
-                    'Less than 1 year',
-                    '1-3 years',
-                    '3-5 years',
-                    'More than 5 years',
-                  ].map((e) => DropdownMenuItem(
-                    value: e, child: Text(e),
-                  )).toList(),
-                  onChanged: (value) {
-                    setState(() => selectedExperience = value!);
-                  },
-                ),
-                SizedBox(height: 16),
+                  SizedBox(height: 16),
+                ],
+
+                if (selectedRole == 'supervisor') ...[
+                  _sectionTitle('Employment Details'),
+                  _buildField(employeeIdController, 'Employee ID', Icons.badge),
+                  SizedBox(height: 16),
+                ],
 
                 _sectionTitle('Account Setup'),
                 TextField(
@@ -473,25 +638,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       borderSide: BorderSide(color: Colors.green),
                     ),
                   ),
-                ),
-                SizedBox(height: 16),
-
-                DropdownButtonFormField<String>(
-                  value: selectedRole,
-                  decoration: InputDecoration(
-                    labelText: 'Role',
-                    prefixIcon: Icon(Icons.badge, color: Colors.green),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  items: [
-                    DropdownMenuItem(value: 'farmer', child: Text('Farmer 🌿')),
-                    DropdownMenuItem(value: 'supervisor', child: Text('Supervisor 👷')),
-                  ],
-                  onChanged: (value) {
-                    setState(() => selectedRole = value!);
-                  },
                 ),
                 SizedBox(height: 24),
 
@@ -568,9 +714,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 }
 
-// =====================
-// OTP SCREEN
-// =====================
 class OTPScreen extends StatefulWidget {
   final String email;
   final String role;
@@ -588,7 +731,7 @@ class _OTPScreenState extends State<OTPScreen> {
     if (otpController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Please enter OTP code!'),
+          content: Text('⚠️ Please enter the 6-digit OTP code sent to your phone!'),
           backgroundColor: Colors.orange,
         ),
       );
@@ -600,16 +743,23 @@ class _OTPScreenState extends State<OTPScreen> {
         SnackBar(
           content: Text(
             widget.role == 'farmer'
-              ? 'Welcome Farmer! 🌿'
-              : 'Welcome Supervisor! 👷'
+              ? '✅ OTP verified! Welcome Farmer! Redirecting to login...'
+              : '✅ OTP verified! Welcome Supervisor! Redirecting to login...'
           ),
           backgroundColor: Colors.green,
         ),
       );
+
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => LoginScreen()),
+        (route) => false,
+      );
+
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Wrong OTP! Try again'),
+          content: Text('❌ Invalid OTP! Please check and try again.'),
           backgroundColor: Colors.red,
         ),
       );
@@ -710,7 +860,7 @@ class _OTPScreenState extends State<OTPScreen> {
                 onPressed: () {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('OTP Resent! 📱'),
+                      content: Text('📱 OTP has been resent to your registered phone number!'),
                       backgroundColor: Colors.green,
                     ),
                   );

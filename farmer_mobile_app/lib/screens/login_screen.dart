@@ -38,7 +38,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   Icon(Icons.eco, size: 80, color: Colors.white),
                   SizedBox(height: 10),
                   Text(
-                    'RubberQuality',
+                    'Latex Guard',
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,

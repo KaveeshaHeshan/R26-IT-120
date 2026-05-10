@@ -151,7 +151,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     Icon(Icons.eco, size: 80, color: Colors.green[300]),
                     SizedBox(height: 16),
                     Text(
-                      'Rubber Collection System',
+                      'Latex Guard',
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,

@@ -1,158 +1,115 @@
 import { Link } from 'react-router-dom';
-import videoBg from '../assets/rubber.mp4';
-import logoImg from '../assets/logo.png';
+import heroImg from '../assets/ttt.png';
+import logoImg from '../assets/logo_transparent.png';
 
 const HomePage = () => {
   return (
-    <div className="w-full min-h-screen bg-[#020e07] text-white font-sans overflow-x-hidden selection:bg-emerald-500/30">
+    <div className="w-full min-h-screen bg-white font-sans overflow-x-hidden selection:bg-teal-500/30 text-gray-800">
       
-      {/* ── HERO SECTION ──────────────────────────────────────────────────────── */}
-      <section className="relative w-full h-screen flex flex-col items-center justify-center">
-        {/* Video Background */}
-        <video
-          autoPlay
-          loop
-          muted
-          playsInline
-          className="absolute top-0 left-0 w-full h-full object-cover opacity-90"
-        >
-          <source src={videoBg} type="video/mp4" />
-        </video>
+      {/* ── NAVBAR ──────────────────────────────────────────────────────── */}
+      <nav className="w-full bg-[#0a3622] text-white px-8 py-5 flex items-center justify-between z-50 relative">
+        <div className="flex items-center gap-2">
+           <img 
+             src={logoImg} 
+             alt="LatexGuard Logo" 
+             className="h-16 md:h-20 lg:h-24 w-auto object-contain drop-shadow-md transition-transform hover:scale-105" 
+           />
+        </div>
+        
+        <div className="hidden md:flex items-center gap-10 text-sm font-medium tracking-wide">
+          <a href="#" className="hover:text-teal-300 transition-colors">HOME</a>
+          <a href="#" className="hover:text-teal-300 transition-colors">OUR SENSORS</a>
+          <a href="#" className="hover:text-teal-300 transition-colors">ANALYTICS</a>
+          <a href="#" className="hover:text-teal-300 transition-colors">SUPPORT</a>
+        </div>
 
-        {/* Gradient Overlay for Cinematic Effect - Lightened drastically */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-[#020e07] pointer-events-none"></div>
+        <Link to="/login">
+          <button className="bg-[#e9eff1] hover:bg-white text-[#0a3622] px-8 py-2.5 rounded-full text-sm font-bold tracking-wide transition-all shadow-sm">
+            LOGIN TO PORTAL
+          </button>
+        </Link>
+      </nav>
+
+      {/* ── HERO SECTION ──────────────────────────────────────────────────────── */}
+      <section className="relative w-full h-[600px] flex items-center bg-[#fcfdfc] overflow-hidden">
+        
+        {/* Background Image (Left Aligned) with Gradient Fade to Right */}
+        <div className="absolute top-0 left-0 w-full h-full flex">
+          <div className="w-[55%] h-full relative">
+             <img src={heroImg} alt="Factory Worker" className="w-full h-full object-cover object-right" />
+             {/* Fade effect so the image blends smoothly into the white right side */}
+             <div className="absolute top-0 right-0 w-48 h-full bg-gradient-to-r from-transparent to-[#fcfdfc]"></div>
+          </div>
+          <div className="w-[45%] h-full bg-[#fcfdfc]"></div>
+        </div>
 
         {/* Content */}
-        <div className="relative z-10 flex flex-col items-center justify-center h-full px-4 text-center mt-12">
-          
-          {/* Logo */}
-          <div className="animate-fade-in-up mb-8">
-            <img 
-              src={logoImg} 
-              alt="LatexGuard Logo" 
-              className="w-32 md:w-48 lg:w-56 h-auto drop-shadow-[0_0_20px_rgba(255,255,255,0.2)]" 
-            />
-          </div>
-
-          {/* Title */}
-          <div className="animate-fade-in-up">
-            <h1 className="text-6xl md:text-8xl lg:text-[8rem] font-black tracking-[0.15em] text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-500 mb-6 drop-shadow-[0_0_30px_rgba(52,211,153,0.25)]">
-              LATEXGUARD
+        <div className="relative z-10 w-full max-w-7xl mx-auto px-8 flex justify-end">
+          <div className="w-1/2 pl-12 flex flex-col justify-center">
+            <h1 className="text-5xl md:text-6xl font-serif font-black text-gray-900 leading-[1.1] mb-6">
+              THE SHIELD OF <br/>
+              QUALITY IN <br/>
+              NATURAL RUBBER
             </h1>
-          </div>
-          
-          {/* Subtitle */}
-          <p className="max-w-2xl text-lg md:text-2xl text-gray-400 font-light tracking-wide mb-14 animate-fade-in-up animation-delay-300">
-            Intelligent, real-time precision monitoring for premium rubber production.
-          </p>
-
-          {/* Action Button */}
-          <div className="animate-fade-in-up animation-delay-600">
-            <Link to="/login">
-              <button className="group relative px-10 py-5 text-sm md:text-base font-bold text-white transition-all duration-500 rounded-full bg-white/5 backdrop-blur-md border border-white/10 hover:bg-white/10 hover:border-emerald-500/50 hover:scale-[1.02] hover:shadow-[0_0_40px_rgba(16,185,129,0.2)] focus:outline-none focus:ring-4 focus:ring-emerald-500/30 overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-r from-emerald-600/20 to-cyan-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-full"></div>
-                <span className="relative z-10 flex items-center gap-3 tracking-[0.2em]">
-                  LOGIN TO PORTAL
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 group-hover:translate-x-1.5 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                  </svg>
-                </span>
-              </button>
-            </Link>
-          </div>
-        </div>
-
-        {/* Scroll Indicator */}
-        <div className="absolute bottom-10 left-0 w-full flex justify-center z-10 animate-fade-in animation-delay-1000">
-          <div className="flex flex-col items-center gap-4">
-            <p className="text-[10px] text-gray-500 tracking-[0.4em] uppercase font-bold">
-              Discover Features
-            </p>
-            <div className="w-[1px] h-16 bg-gradient-to-b from-emerald-500/50 to-transparent animate-pulse"></div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── DETAILS SECTION ────────────────────────────────────────────────────── */}
-      <section className="relative w-full py-32 px-6 md:px-12 lg:px-24 bg-[#020e07] z-20">
-        
-        {/* Decorative Grid Background */}
-        <div className="absolute inset-0 opacity-[0.02] bg-[linear-gradient(rgba(255,255,255,1)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,1)_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none"></div>
-
-        <div className="max-w-7xl mx-auto relative z-10">
-          
-          <div className="text-center mb-24">
-            <h2 className="text-3xl md:text-5xl font-black text-white tracking-tight mb-6">
-              Precision <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-500">Quality Control</span>
-            </h2>
-            <p className="text-gray-400 text-lg md:text-xl max-w-3xl mx-auto font-light leading-relaxed">
-              LatexGuard leverages advanced IoT sensors and machine learning algorithms to monitor the critical parameters of liquid natural rubber in real-time.
-            </p>
-          </div>
-
-          {/* Feature Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             
-            {/* Feature 1 */}
-            <div className="group p-10 rounded-[2rem] bg-white/[0.02] border border-white/5 hover:border-emerald-500/30 hover:bg-white/[0.04] transition-all duration-500 backdrop-blur-sm hover:-translate-y-2">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-emerald-500/5 flex items-center justify-center border border-emerald-500/20 mb-8 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-500">
-                <span className="text-3xl">🧪</span>
-              </div>
-              <h3 className="text-2xl font-bold text-white mb-4 tracking-wide">VFA Level Detection</h3>
-              <p className="text-gray-400 font-light leading-relaxed text-sm md:text-base">
-                Accurately measure Volatile Fatty Acid numbers. Predict early coagulation and ensure the latex meets premium export standards without manual laboratory delays.
-              </p>
-            </div>
+            <p className="text-gray-600 text-lg mb-10 max-w-md leading-relaxed font-light">
+              Sustaining industrial excellence with premium, high-durability natural rubber solutions, powered by intelligent, real-time monitoring.
+            </p>
 
-            {/* Feature 2 */}
-            <div className="group p-10 rounded-[2rem] bg-white/[0.02] border border-white/5 hover:border-cyan-500/30 hover:bg-white/[0.04] transition-all duration-500 backdrop-blur-sm hover:-translate-y-2">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-cyan-500/5 flex items-center justify-center border border-cyan-500/20 mb-8 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-500">
-                <span className="text-3xl">🌡️</span>
-              </div>
-              <h3 className="text-2xl font-bold text-white mb-4 tracking-wide">Environmental Tracking</h3>
-              <p className="text-gray-400 font-light leading-relaxed text-sm md:text-base">
-                Real-time monitoring of pH, turbidity, and ambient temperature. LatexGuard cross-references these parameters to prevent spontaneous degradation.
-              </p>
-            </div>
-
-            {/* Feature 3 */}
-            <div className="group p-10 rounded-[2rem] bg-white/[0.02] border border-white/5 hover:border-teal-500/30 hover:bg-white/[0.04] transition-all duration-500 backdrop-blur-sm hover:-translate-y-2">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-teal-500/20 to-teal-500/5 flex items-center justify-center border border-teal-500/20 mb-8 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-500">
-                <span className="text-3xl">🤖</span>
-              </div>
-              <h3 className="text-2xl font-bold text-white mb-4 tracking-wide">Predictive Analytics</h3>
-              <p className="text-gray-400 font-light leading-relaxed text-sm md:text-base">
-                Our Random Forest Regression models analyze field data instantly, automatically assigning quality grades (A, B, C) and alerting officers before issues arise.
-              </p>
-            </div>
-
-          </div>
-
-          {/* CTA Banner */}
-          <div className="mt-32 p-12 md:p-16 rounded-[3rem] bg-gradient-to-br from-emerald-900/30 to-transparent border border-emerald-500/20 relative overflow-hidden flex flex-col lg:flex-row items-center justify-between gap-10">
-            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-500/10 rounded-full blur-[120px] pointer-events-none"></div>
-            <div className="relative z-10 text-center lg:text-left">
-              <h3 className="text-3xl md:text-4xl font-black text-white mb-4 tracking-tight">Ready to access the dashboard?</h3>
-              <p className="text-gray-400 max-w-xl text-lg font-light">Secure login required for plantation managers and QA officers to view live sensor telemetry and intelligent insights.</p>
-            </div>
-            <Link to="/login" className="relative z-10 shrink-0">
-              <button className="px-12 py-5 text-sm md:text-base font-bold text-[#020e07] uppercase tracking-[0.15em] rounded-full bg-emerald-400 hover:bg-emerald-300 transition-colors shadow-[0_0_40px_rgba(52,211,153,0.3)] hover:scale-105 duration-300">
-                Initialize Session
+            <div className="flex items-center gap-4">
+              <button className="bg-[#0a3622] hover:bg-[#072618] text-white px-8 py-3.5 rounded-full text-sm font-bold tracking-wide transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5">
+                EXPLORE SOLUTIONS
               </button>
-            </Link>
+              <button className="bg-transparent border border-gray-300 hover:border-gray-400 text-gray-700 px-8 py-3.5 rounded-full text-sm font-bold tracking-wide transition-all">
+                LEARN MORE
+              </button>
+            </div>
           </div>
-
         </div>
       </section>
 
-      {/* ── FOOTER ───────────────────────────────────────────────────────────── */}
-      <footer className="py-10 text-center border-t border-white/5 bg-[#020e07]">
-        <p className="text-gray-600 text-[10px] md:text-xs tracking-[0.3em] uppercase font-bold flex items-center justify-center gap-2">
-          <span>© {new Date().getFullYear()} LatexGuard System</span>
-          <span className="text-emerald-500/50">•</span>
-          <span>Precision Rubber Monitoring</span>
-        </p>
-      </footer>
+      {/* ── FEATURES SECTION ────────────────────────────────────────────────────── */}
+      <section className="w-full py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-8">
+          <h2 className="text-center text-3xl font-bold text-gray-900 mb-14 tracking-wide">
+            OUR INTELLIGENT MONITORING
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            
+            {/* Card 1 */}
+            <div className="bg-gradient-to-r from-[#f0f4f4] to-[#f8fafa] rounded-2xl p-8 flex items-center justify-between border border-gray-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] transition-all duration-300 cursor-pointer group">
+              <h3 className="text-base font-black text-gray-800 uppercase tracking-wider leading-snug max-w-[120px]">
+                Real-Time <br/> Tracking
+              </h3>
+              <div className="w-16 h-16 bg-white/60 rounded-2xl shadow-sm border border-white flex items-center justify-center text-3xl group-hover:scale-110 transition-transform">
+                📱
+              </div>
+            </div>
+
+            {/* Card 2 */}
+            <div className="bg-gradient-to-r from-[#f0f4f4] to-[#f8fafa] rounded-2xl p-8 flex items-center justify-between border border-gray-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] transition-all duration-300 cursor-pointer group">
+              <h3 className="text-base font-black text-gray-800 uppercase tracking-wider leading-snug max-w-[120px]">
+                Predictive <br/> Maintenance
+              </h3>
+              <div className="w-16 h-16 bg-white/60 rounded-2xl shadow-sm border border-white flex items-center justify-center text-3xl group-hover:scale-110 transition-transform">
+                ⚙️
+              </div>
+            </div>
+
+            {/* Card 3 */}
+            <div className="bg-gradient-to-r from-[#f0f4f4] to-[#f8fafa] rounded-2xl p-8 flex items-center justify-between border border-gray-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] transition-all duration-300 cursor-pointer group">
+              <h3 className="text-base font-black text-gray-800 uppercase tracking-wider leading-snug max-w-[120px]">
+                Quality <br/> Assurance
+              </h3>
+              <div className="w-16 h-16 bg-white/60 rounded-2xl shadow-sm border border-white flex items-center justify-center text-3xl group-hover:scale-110 transition-transform">
+                🎖️
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
 
     </div>
   );

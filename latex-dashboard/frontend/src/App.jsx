@@ -2,25 +2,26 @@
 
 import { Routes, Route, Navigate } from 'react-router-dom'
 
-import LoginPage         from './pages/LoginPage'
-import LiveMonitorPage   from './pages/LiveMonitorPage'
+import HomePage from './pages/HomePage'
+import LoginPage from './pages/LoginPage'
+import LiveMonitorPage from './pages/LiveMonitorPage'
 import FarmerProfilePage from './pages/FarmerProfilePage'
-import AlertsPage        from './pages/AlertsPage'
-import DailySummaryPage  from './pages/DailySummaryPage'
-import UnauthorizedPage  from './pages/UnauthorizedPage'
-import Navbar            from './components/layout/Navbar'
-import Sidebar           from './components/layout/Sidebar'
-import { ROLES }         from './constants/roles'
+import AlertsPage from './pages/AlertsPage'
+import DailySummaryPage from './pages/DailySummaryPage'
+import UnauthorizedPage from './pages/UnauthorizedPage'
+import Navbar from './components/layout/Navbar'
+import Sidebar from './components/layout/Sidebar'
+import { ROLES } from './constants/roles'
 
-// ── Auth helpers ──────────────────────────────────────────────────────────────
-const getToken  = () => localStorage.getItem('token')
-const getRole   = () => localStorage.getItem('role')
+// Auth helpers 
+const getToken = () => localStorage.getItem('token')
+const getRole = () => localStorage.getItem('role')
 const getUserId = () => localStorage.getItem('user_id')
 
-// ── Protected Route ───────────────────────────────────────────────────────────
+//  Protected Route 
 const ProtectedRoute = ({ allowedRoles, children }) => {
-  const token  = getToken()
-  const role   = getRole()
+  const token = getToken()
+  const role = getRole()
   const userId = getUserId()
 
   if (!token || !role || !userId) {
@@ -32,14 +33,17 @@ const ProtectedRoute = ({ allowedRoles, children }) => {
   return children
 }
 
-// ── Dashboard Layout ──────────────────────────────────────────────────────────
+// Dashboard Layout 
 const DashboardLayout = ({ children }) => (
-  <div className="flex flex-col min-h-screen">
-    <Navbar />
-    <div className="flex flex-1 overflow-hidden">
-      <Sidebar />
-      <main className="flex-1 overflow-y-auto bg-[#F4F6F9]">
-        {children}
+  <div className="flex min-h-screen bg-white">
+    <Sidebar />
+    <div className="flex-1 flex flex-col min-h-screen overflow-hidden relative">
+      <Navbar />
+      
+      <main className="flex-1 overflow-y-auto relative z-10">
+        <div className="max-w-7xl mx-auto p-4 md:p-6">
+          {children}
+        </div>
       </main>
     </div>
   </div>
@@ -47,8 +51,8 @@ const DashboardLayout = ({ children }) => (
 
 // ── App ───────────────────────────────────────────────────────────────────────
 const App = () => {
-  const token  = getToken()
-  const role   = getRole()
+  const token = getToken()
+  const role = getRole()
   const userId = getUserId()
   const isAuth = Boolean(token && role && userId)
 
@@ -60,7 +64,7 @@ const App = () => {
         path="/login"
         element={
           isAuth
-            ? <Navigate to="/" replace />
+            ? <Navigate to="/dashboard" replace />
             : <LoginPage />
         }
       />
@@ -71,9 +75,15 @@ const App = () => {
         element={<UnauthorizedPage />}
       />
 
-      {/* Live Monitor */}
+      {/* Home Page */}
       <Route
         path="/"
+        element={<HomePage />}
+      />
+
+      {/* Live Monitor / Dashboard */}
+      <Route
+        path="/dashboard"
         element={
           <ProtectedRoute allowedRoles={[ROLES.MANAGER, ROLES.ADMIN]}>
             <DashboardLayout>

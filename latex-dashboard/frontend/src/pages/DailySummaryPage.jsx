@@ -1,17 +1,17 @@
-// src/pages/DailySummaryPage.jsx
+﻿// src/pages/DailySummaryPage.jsx
 
-import { useEffect }  from 'react'
-import DailySummary   from '../components/dashboard/DailySummary'
-import { ROLES }      from '../constants/roles'
+import { useEffect } from 'react'
+import DailySummary from '../components/dashboard/DailySummary'
+import { ROLES } from '../constants/roles'
 
 const DailySummaryPage = () => {
 
-  const role   = localStorage.getItem('role')
+  const role = localStorage.getItem('role')
   const userId = localStorage.getItem('user_id')
 
   // ── Page title ──────────────────────────────────────────────────────────────
   useEffect(() => {
-    document.title = 'Daily Summary — Latex VFA Dashboard'
+    document.title = 'Intelligence Summary — Latex VFA Dashboard'
     return () => { document.title = 'Latex VFA Dashboard' }
   }, [])
 
@@ -21,15 +21,15 @@ const DailySummaryPage = () => {
     return (
       <div className="flex flex-col items-center justify-center
                       min-h-[60vh] text-center px-4">
-        <div className="text-6xl mb-4">🔒</div>
-        <h2 className="text-2xl font-bold text-[#1F3864] mb-2">
+        <div className="text-6xl mb-8 filter grayscale opacity-20">🔒</div>
+        <h2 className="text-2xl font-black text-[#052c14] mb-4 tracking-[0.2em] uppercase">
           Access Denied
         </h2>
-        <p className="text-gray-500 text-sm">
-          You do not have permission to view Daily Summary.
+        <p className="text-[#052c14]/30 text-xs font-bold uppercase tracking-widest max-w-xs leading-relaxed">
+          The intelligence summary is restricted to authorized analytical personnel only.
         </p>
-        <p className="text-gray-400 text-xs mt-1">
-          Required role: Manager, QA Officer or Admin
+        <p className="text-[#052c14]/20 text-[10px] font-black mt-6 px-4 py-2 border border-emerald-100 rounded-lg uppercase tracking-widest">
+          Permission Token Required: Manager/QA/Admin
         </p>
       </div>
     )
@@ -37,51 +37,66 @@ const DailySummaryPage = () => {
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
-    <div className="flex flex-col min-h-screen bg-[#F4F6F9]">
+    <div className="flex flex-col min-h-screen bg-white">
 
       {/* ── Page Header ──────────────────────────────────────────────────────── */}
-      <div className="bg-white border-b border-gray-200
-                      px-6 py-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-[#1F3864]
-                         flex items-center gap-2">
-            📊 Daily Summary
-          </h1>
-          <p className="text-gray-500 text-sm mt-0.5">
-            Factory collection statistics and grade distribution
-          </p>
+      <div className="bg-white/80 backdrop-blur-xl border-b border-emerald-100
+                      px-10 py-8 flex items-center justify-between shadow-sm sticky top-0 z-50">
+        <div className="flex items-center gap-6">
+          <div className="w-14 h-14 bg-emerald-50 rounded-2xl flex items-center justify-center border border-emerald-100 shadow-xl">
+             <span className="text-2xl">📊</span>
+          </div>
+          <div>
+            <h1 className="text-2xl font-black text-[#052c14] tracking-tighter uppercase leading-none">
+              Intelligence Summary
+            </h1>
+            <p className="text-[#052c14]/30 text-[9px] mt-2 uppercase tracking-[0.3em] font-black flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
+              Daily Yield Metrics • Statistical Grade Distribution
+            </p>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-[#1F3864] text-xs font-medium
-                           bg-blue-50 px-3 py-1 rounded-full
-                           border border-blue-200">
-            📅 {new Date().toLocaleDateString('en-US', {
-              weekday: 'long',
-              year:    'numeric',
-              month:   'long',
-              day:     'numeric',
-            })}
-          </span>
-          <span className="text-gray-400 text-xs">
-            · {userId}
-          </span>
+        <div className="flex items-center gap-6">
+          <div className="bg-emerald-50 px-5 py-2.5 rounded-2xl border border-emerald-100 shadow-inner flex items-center gap-3">
+             <span className="text-emerald-500 text-lg">📅</span>
+             <span className="text-[#052c14] text-[10px] font-black uppercase tracking-widest">
+               {new Date().toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric',
+                })}
+             </span>
+          </div>
+          <div className="hidden md:block w-[1px] h-8 bg-emerald-100 mx-2"></div>
+          <div className="hidden md:flex flex-col items-end">
+            <span className="text-[#052c14]/20 text-[8px] font-black uppercase tracking-widest mb-1">Authenticated Node</span>
+            <span className="text-[#052c14]/60 text-[10px] font-mono font-bold">{userId?.slice(0, 12)}</span>
+          </div>
         </div>
       </div>
 
       {/* ── Content ──────────────────────────────────────────────────────────── */}
-      <div className="flex-1 p-6">
+      <div className="flex-1 p-10 overflow-x-hidden max-w-[1600px] mx-auto w-full">
         <DailySummary />
       </div>
 
-      {/*  Footer  */}
-      <div className="bg-white border-t border-gray-200
-                      px-6 py-3 flex items-center justify-between">
-        <p className="text-gray-400 text-xs">
-          IoT Sensor Device + ML Model + KPI Dashboard
-        </p>
-        <p className="text-gray-400 text-xs">
-          R26-IT-120 · SLIIT · 2026
-        </p>
+      {/* ── Footer ───────────────────────────────────────────────────────────── */}
+      <div className="bg-emerald-50/30 border-t border-emerald-100/50
+                      px-10 py-8 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+           <div className="w-2 h-2 rounded-full bg-emerald-500/20"></div>
+           <p className="text-[#052c14]/20 text-[9px] font-black uppercase tracking-[0.2em]">
+             Statistical Modeling • VFA Aggregate v1.2 • Secure Lattice
+           </p>
+        </div>
+        <div className="flex items-center gap-4">
+           <span className="text-[#052c14]/30 text-[9px] font-bold tracking-widest bg-white border border-emerald-100 px-4 py-1.5 rounded-full shadow-sm">
+             METRIC SYNC: NOMINAL
+           </span>
+           <p className="text-[#052c14]/40 text-[9px] font-black tracking-widest">
+             © 2026 LATEXGUARD CORE
+           </p>
+        </div>
       </div>
 
     </div>

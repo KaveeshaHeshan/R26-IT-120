@@ -9,17 +9,17 @@ const ProtectedRoute = ({ allowedRoles, children }) => {
   const role   = localStorage.getItem('role')
   const userId = localStorage.getItem('user_id')
 
-  // ── Not logged in ───────────────────────────────────────────────────────────
+  //  Not logged in 
   if (!token || !role || !userId) {
     return <Navigate to="/login" replace />
   }
 
-  // ── Role not allowed ────────────────────────────────────────────────────────
+  // Role not allowed 
   if (allowedRoles && !allowedRoles.includes(role)) {
     return <Navigate to="/unauthorized" replace />
   }
 
-  // ── Allowed ─────────────────────────────────────────────────────────────────
+  //  Allowed 
   return children
 }
 

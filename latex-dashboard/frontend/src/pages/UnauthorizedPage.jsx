@@ -1,4 +1,4 @@
-// src/pages/UnauthorizedPage.jsx
+﻿// src/pages/UnauthorizedPage.jsx
 
 import { useEffect }    from 'react'
 import { useNavigate }  from 'react-router-dom'
@@ -35,135 +35,70 @@ const UnauthorizedPage = () => {
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-[#F4F6F9]
-                    flex items-center justify-center px-4">
-      <div className="bg-white rounded-2xl shadow-xl
-                      p-10 w-full max-w-md text-center">
+    <div className="min-h-screen flex items-center justify-center px-4 bg-white relative overflow-hidden">
+      
+      {/* Background Decor */}
+      <div className="absolute top-0 left-0 w-full h-full opacity-[0.03] pointer-events-none">
+        <div className="absolute top-[-10%] right-[-10%] w-[60%] h-[60%] bg-emerald-500 rounded-full blur-[120px]"></div>
+        <div className="absolute bottom-[-10%] left-[-10%] w-[60%] h-[60%] bg-emerald-500 rounded-full blur-[120px]"></div>
+      </div>
+
+      <div className="bg-white/90 backdrop-blur-xl rounded-[3rem] shadow-2xl border border-emerald-100
+                      p-12 w-full max-w-lg text-center relative z-10 transition-all hover:shadow-emerald-500/5">
 
         {/* ── Icon ─────────────────────────────────────────────────────────── */}
-        <div className="text-7xl mb-4">🔒</div>
+        <div className="w-24 h-24 bg-emerald-50 rounded-[2rem] flex items-center justify-center mx-auto mb-10 border border-emerald-100 shadow-xl relative">
+          <div className="absolute inset-0 bg-red-500/5 animate-pulse rounded-[2rem]"></div>
+          <span className="text-5xl relative z-10">🔒</span>
+        </div>
 
         {/* ── Title ────────────────────────────────────────────────────────── */}
-        <h1 className="text-2xl font-bold text-[#1F3864] mb-2">
-          Access Denied
+        <h1 className="text-3xl font-black text-[#052c14] mb-4 tracking-[0.2em] uppercase leading-none">
+          Access Intercepted
         </h1>
 
         {/* ── Message ──────────────────────────────────────────────────────── */}
-        <p className="text-gray-500 text-sm mb-1">
-          You do not have permission to view this page.
+        <p className="text-[#052c14]/30 text-xs font-bold uppercase tracking-[0.2em] mb-10 max-w-xs mx-auto leading-relaxed">
+          The security layer has denied access to this terminal node based on your current authorization token.
         </p>
 
         {/* ── Current role ─────────────────────────────────────────────────── */}
         {role && (
-          <div className="inline-flex items-center gap-2
-                          bg-[#F4F6F9] px-3 py-1.5
-                          rounded-full mb-6 mt-2">
-            <span className="text-gray-400 text-xs">
-              Logged in as:
-            </span>
-            <span className="text-[#1F3864] text-xs font-semibold">
-              {userId}
-            </span>
-            <span className="text-[#C9A84C] text-xs">
-              · {getRoleLabel(role)}
-            </span>
+          <div className="bg-emerald-50/50 border border-emerald-100/50 rounded-2xl p-6 mb-10 shadow-inner">
+            <p className="text-[#052c14]/20 text-[8px] font-black uppercase tracking-[0.3em] mb-3">Identity Node Information</p>
+            <div className="flex items-center justify-center gap-4">
+              <span className="text-[10px] font-mono font-black text-[#052c14]/40">{userId?.slice(0, 16)}</span>
+              <div className="w-1 h-3 bg-emerald-200"></div>
+              <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">{getRoleLabel(role)}</span>
+            </div>
           </div>
         )}
 
-        {/* ── Access level info ────────────────────────────────────────────── */}
-        <div className="bg-[#F4F6F9] rounded-xl p-4 mb-6 text-left">
-          <p className="text-xs font-semibold text-gray-600 mb-3">
-            Dashboard Access Levels:
-          </p>
-          <div className="space-y-2.5">
-
-            {/* Manager */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-base">🏭</span>
-                <span className="text-xs text-gray-600 font-medium">
-                  Factory Manager
-                </span>
-              </div>
-              <div className="flex gap-1">
-                {['Live', 'Farmer', 'Alerts', 'Summary'].map(v => (
-                  <span key={v}
-                    className="bg-green-100 text-green-700
-                               text-xs px-1.5 py-0.5 rounded">
-                    {v}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            {/* QA Officer */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-base">🔬</span>
-                <span className="text-xs text-gray-600 font-medium">
-                  QA Officer
-                </span>
-              </div>
-              <div className="flex gap-1">
-                {['Alerts', 'Summary'].map(v => (
-                  <span key={v}
-                    className="bg-yellow-100 text-yellow-700
-                               text-xs px-1.5 py-0.5 rounded">
-                    {v}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            {/* Admin */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-base">⚙️</span>
-                <span className="text-xs text-gray-600 font-medium">
-                  Admin
-                </span>
-              </div>
-              <div className="flex gap-1">
-                {['Live', 'Farmer', 'Alerts', 'Summary'].map(v => (
-                  <span key={v}
-                    className="bg-blue-100 text-blue-700
-                               text-xs px-1.5 py-0.5 rounded">
-                    {v}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-          </div>
-        </div>
-
-        {/* ── Buttons ──────────────────────────────────────────────────────── */}
-        <div className="flex gap-3">
-          <button
-            onClick={handleGoBack}
-            className="flex-1 bg-[#1F3864] text-white text-sm
-                       font-medium py-2.5 rounded-xl
-                       hover:bg-[#162a4a] active:bg-[#0f1e35]
-                       transition"
-          >
-            Go to Dashboard
-          </button>
+        {/* ── Action Buttons ───────────────────────────────────────────────── */}
+        <div className="grid grid-cols-2 gap-6">
           <button
             onClick={handleLogout}
-            className="flex-1 bg-gray-100 text-gray-700 text-sm
-                       font-medium py-2.5 rounded-xl
-                       hover:bg-gray-200 active:bg-gray-300
-                       transition"
+            className="px-8 py-5 bg-white hover:bg-red-50 text-red-600 border border-red-100 
+                       text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl transition-all shadow-lg active:scale-95"
           >
-            Logout
+            Terminal Logout
+          </button>
+          <button
+            onClick={handleGoBack}
+            className="px-8 py-5 bg-emerald-600 hover:bg-emerald-700 text-white 
+                       text-[10px] font-black uppercase tracking-[0.25em] rounded-2xl transition-all shadow-xl active:scale-95"
+          >
+            Re-Route Session
           </button>
         </div>
 
-        {/* ── Footer ───────────────────────────────────────────────────────── */}
-        <p className="text-gray-400 text-xs mt-6">
-          R26-IT-120 · SLIIT · 2026
-        </p>
-
+        <div className="mt-12 flex items-center justify-center gap-4">
+          <div className="w-12 h-[1px] bg-emerald-100"></div>
+          <p className="text-[#052c14]/20 text-[9px] font-black uppercase tracking-[0.3em]">
+             Lattice Secure Node 403
+          </p>
+          <div className="w-12 h-[1px] bg-emerald-100"></div>
+        </div>
       </div>
     </div>
   )

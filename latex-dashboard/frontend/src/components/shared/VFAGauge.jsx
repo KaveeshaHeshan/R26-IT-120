@@ -104,7 +104,7 @@ const VFAGauge = ({
         <div className="relative mx-4 mt-1">
           {/* Grade A/B boundary (0.05) */}
           <div
-            className="absolute top-0 w-0.5 h-2 bg-[#C9A84C]"
+            className="absolute top-0 w-0.5 h-2 bg-[#4CBB17]"
             style={{ left: `${(0.05/0.15)*100}%` }}
           />
           {/* Grade B/C boundary (0.08) */}
@@ -117,7 +117,7 @@ const VFAGauge = ({
         {/* Scale labels */}
         <div className="flex justify-between mx-4 mt-3">
           <span className="text-xs text-gray-400">0.00</span>
-          <span className="text-xs text-[#C9A84C] font-medium">
+          <span className="text-xs text-[#4CBB17] font-medium">
             0.05
           </span>
           <span className="text-xs text-[#C00000] font-medium">

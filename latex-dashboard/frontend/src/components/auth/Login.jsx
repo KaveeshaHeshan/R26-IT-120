@@ -1,75 +1,69 @@
-// src/components/auth/Login.jsx
+﻿// src/components/auth/Login.jsx
 
-import { useState }                     from 'react'
-import { useNavigate }                  from 'react-router-dom'
-import { auth, db }                     from '../../firebase/config'
-import { signInWithEmailAndPassword }   from 'firebase/auth'
-import { ref, get }                     from 'firebase/database'
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { auth, db } from '../../firebase/config'
+import { signInWithEmailAndPassword } from 'firebase/auth'
+import { ref, get } from 'firebase/database'
 
 const Login = () => {
-
-  const [email,    setEmail]    = useState('')
+  const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
-  const [error,    setError]    = useState('')
-  const [loading,  setLoading]  = useState(false)
+  const [error, setError]       = useState('')
+  const [loading, setLoading]   = useState(false)
   const navigate = useNavigate()
 
-  // ── useEffect REMOVE ✅ ──────────────────────────────────────────────────────
-  // Already handled by App.jsx PublicOnlyRoute + LoginPage.jsx
-
-  // ── Handle Login ────────────────────────────────────────────────────────────
   const handleLogin = async () => {
     if (!email || !password) {
-      setError('Please enter email and password.')
+      setError('Required: Email and Cipher.')
       return
     }
+
     setLoading(true)
     setError('')
 
     try {
-      const cred = await signInWithEmailAndPassword(
-        auth, email, password
-      )
+      const cred = await signInWithEmailAndPassword(auth, email, password)
       const uid = cred.user.uid
 
-      const snap     = await get(ref(db, `roles/${uid}`))
+      const snap = await get(ref(db, `roles/${uid}`))
       const roleData = snap.val()
 
       if (!roleData) {
-        setError('Role not assigned. Contact admin.')
+        setError('Identity not registered. Contact Hub.')
         setLoading(false)
         return
       }
 
       const token = await cred.user.getIdToken()
-      localStorage.setItem('token',   token)
-      localStorage.setItem('uid',     uid)
-      localStorage.setItem('role',    roleData.role)
+      localStorage.setItem('token', token)
+      localStorage.setItem('uid', uid)
+      localStorage.setItem('role', roleData.role)
       localStorage.setItem('user_id', roleData.user_id)
-      localStorage.setItem('name',    roleData.name)
+      localStorage.setItem('name', roleData.name)
 
-      if (['manager','admin'].includes(roleData.role)) {
+      if (['manager', 'admin'].includes(roleData.role)) {
         navigate('/')
       } else if (roleData.role === 'qa_officer') {
         navigate('/alerts')
       } else {
         navigate('/unauthorized')
       }
-
     } catch (err) {
       switch (err.code) {
         case 'auth/invalid-credential':
         case 'auth/wrong-password':
         case 'auth/user-not-found':
-          setError('Invalid email or password.')
+          setError('Verification failed. Invalid ID.')
           break
         case 'auth/too-many-requests':
-          setError('Too many attempts. Try again later.')
+          setError('Rate limit reached. Session throttled.')
           break
         default:
-          setError('Login failed. Try again.')
+          setError('Terminal error. Sync failed.')
       }
     }
+
     setLoading(false)
   }
 
@@ -78,149 +72,90 @@ const Login = () => {
   }
 
   return (
-    <div className="w-full max-w-sm">
-      <div className="bg-white/10 backdrop-blur-2xl rounded-[3rem]
-                      shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] p-10
-                      border border-white/20 ring-1 ring-white/10">
-
-        <div className="text-center mb-8">
-          <div className="inline-block p-4 bg-white/10 rounded-3xl mb-4
-                          border border-white/20 shadow-xl">
-            <div className="text-5xl drop-shadow-lg">🌿</div>
-          </div>
-          <h1 className="text-4xl font-black text-white tracking-tight
-                         leading-none drop-shadow-md uppercase">
-            Latex VFA
-          </h1>
-          <p className="text-black font-black text-sm tracking-[0.4em]
-                        uppercase mt-3 drop-shadow-sm">
-            DASHBOARD PORTAL
-          </p>
-          <div className="flex justify-center gap-2 mt-6">
-            <div className="px-3 py-1 bg-white/5 rounded-full
-                            border border-white/10 flex items-center
-                            gap-2 shadow-sm">
-              <span className="w-2 h-2 bg-green-400 rounded-full
-                               animate-pulse
-                               shadow-[0_0_8px_rgba(74,222,128,0.8)]"/>
-              <span className="text-xs font-black text-white/90
-                               uppercase tracking-widest">
-                Grade A Secured
-              </span>
+    <div className="w-full max-w-sm mx-auto">
+      <div className="overflow-hidden rounded-[3rem] border border-emerald-100 bg-white/90 shadow-[0_40px_100px_-20px_rgba(5,44,20,0.1)] backdrop-blur-2xl">
+        <div className="border-b border-emerald-50 px-8 py-8">
+          <div className="flex items-center gap-5">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-lg shadow-emerald-600/20">
+              <span className="text-xl">🌿</span>
             </div>
-          </div>
-        </div>
-
-        <div className="space-y-6">
-          <div>
-            <label className="block text-xs font-black text-white/60
-                               hover:text-white uppercase tracking-widest
-                               mb-2 ml-2 transition-colors">
-              Identity Email
-            </label>
-            <input
-              type="email"
-              placeholder="user@lalanrubbers.com"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              onKeyDown={handleKeyDown}
-              className="w-full px-6 py-4 bg-white/5 border border-white/10
-                         rounded-2xl text-base font-bold text-white
-                         placeholder-white/20 focus:outline-none
-                         focus:ring-4 focus:ring-white/5
-                         focus:bg-white/10 focus:border-white/30
-                         transition-all shadow-inner"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-black text-white/60
-                               hover:text-white uppercase tracking-widest
-                               mb-2 ml-2 transition-colors">
-              Security Key
-            </label>
-            <input
-              type="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              onKeyDown={handleKeyDown}
-              className="w-full px-6 py-4 bg-white/5 border border-white/10
-                         rounded-2xl text-base font-bold text-white
-                         placeholder-white/20 focus:outline-none
-                         focus:ring-4 focus:ring-white/5
-                         focus:bg-white/10 focus:border-white/30
-                         transition-all shadow-inner"
-            />
-          </div>
-
-          {error && (
-            <div className="bg-red-500/20 backdrop-blur-md
-                            border border-red-500/30 rounded-2xl
-                            px-4 py-3">
-              <p className="text-red-200 text-sm font-bold
-                            flex items-center gap-2">
-                <span>✕</span> {error}
+            <div>
+              <p className="text-xl font-black tracking-tighter text-[#052c14] uppercase">LatexGuard</p>
+              <p className="text-[9px] font-black uppercase tracking-[0.3em] text-emerald-600/60 mt-0.5">
+                Secure Lattice Portal
               </p>
             </div>
-          )}
-
-          <button
-            onClick={handleLogin}
-            disabled={loading}
-            className="w-full bg-white/10 hover:bg-white/20 text-white
-                       py-5 rounded-2xl font-black text-base
-                       border border-white/20
-                       shadow-[0_20px_40px_-10px_rgba(0,0,0,0.3)]
-                       active:scale-[0.98] hover:translate-y-[-2px]
-                       transition-all disabled:opacity-50
-                       disabled:cursor-not-allowed mt-4
-                       tracking-[0.2em] backdrop-blur-md uppercase"
-          >
-            {loading ? 'AUTHENTICATING...' : 'SECURE LOGIN'}
-          </button>
-        </div>
-
-        <div className="mt-10 pt-6 border-t border-white/10
-                        grid grid-cols-3 gap-3">
-          <div className="text-center group">
-            <p className="text-[10px] font-black text-white/30
-                          group-hover:text-white/60 uppercase
-                          tracking-wider transition-colors">
-              Manager
-            </p>
-            <div className="h-1 bg-white/5 rounded-full mt-2 overflow-hidden">
-              <div className="h-full bg-green-400 w-full rounded-full
-                              shadow-[0_0_5px_rgba(74,222,128,0.5)]"/>
-            </div>
-          </div>
-          <div className="text-center group">
-            <p className="text-[10px] font-black text-white/30
-                          group-hover:text-white/60 uppercase
-                          tracking-wider transition-colors">
-              QA
-            </p>
-            <div className="h-1 bg-white/5 rounded-full mt-2 overflow-hidden">
-              <div className="h-full bg-yellow-400 w-[70%] rounded-full
-                              shadow-[0_0_5px_rgba(250,204,21,0.5)]"/>
-            </div>
-          </div>
-          <div className="text-center group">
-            <p className="text-[10px] font-black text-white/30
-                          group-hover:text-white/60 uppercase
-                          tracking-wider transition-colors">
-              Admin
-            </p>
-            <div className="h-1 bg-white/5 rounded-full mt-2 overflow-hidden">
-              <div className="h-full bg-blue-400 w-full rounded-full
-                              shadow-[0_0_5px_rgba(96,165,250,0.5)]"/>
-            </div>
           </div>
         </div>
 
-        <p className="text-center text-xs text-white/20 mt-6">
-          R26-IT-120 · SLIIT · 2026
-        </p>
+        <div className="px-8 py-10">
+          <div className="mb-8 space-y-3">
+            <h2 className="text-2xl font-black tracking-[0.05em] text-[#052c14] uppercase">
+              Identity Sync
+            </h2>
+            <p className="text-[11px] leading-relaxed font-bold uppercase tracking-widest text-[#052c14]/40">
+              Inject credentials into the terminal to begin secure monitoring of VFA vectors.
+            </p>
+          </div>
+
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <label className="text-[9px] font-black uppercase tracking-[0.2em] text-[#052c14]/20 ml-2">Registry Email</label>
+              <input
+                type="email"
+                placeholder="OPERATOR@SYSTEM.CORE"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                onKeyDown={handleKeyDown}
+                className="block w-full px-5 py-4 text-[10px] font-black tracking-widest uppercase placeholder:text-[#052c14]/10 bg-emerald-50/50 border border-emerald-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-emerald-500/5 focus:border-emerald-500/50 transition-all shadow-inner"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[9px] font-black uppercase tracking-[0.2em] text-[#052c14]/20 ml-2">Access Cipher</label>
+              <input
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                onKeyDown={handleKeyDown}
+                className="block w-full px-5 py-4 text-[10px] font-black tracking-[0.4em] bg-emerald-50/50 border border-emerald-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-emerald-500/5 focus:border-emerald-500/50 transition-all shadow-inner"
+              />
+            </div>
+
+            {error && (
+              <div className="bg-red-50 border border-red-100 rounded-xl p-3 flex items-center gap-3 animate-shake">
+                <span className="text-red-500">⚠️</span>
+                <p className="text-[9px] font-black uppercase tracking-widest text-red-600">
+                  {error}
+                </p>
+              </div>
+            )}
+
+            <button
+              onClick={handleLogin}
+              disabled={loading}
+              className="w-full relative group"
+            >
+              <div className="absolute -inset-1 bg-emerald-600 rounded-2xl blur opacity-20 group-hover:opacity-40 transition-opacity"></div>
+              <div className="relative flex h-14 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-xl transition-all active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100">
+                {loading ? (
+                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+                ) : (
+                  <span className="text-[10px] font-black uppercase tracking-[0.3em]">
+                    Initialize Session
+                  </span>
+                )}
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <div className="border-t border-emerald-50 bg-emerald-50/20 px-8 py-5 text-center">
+          <p className="text-[8px] font-black uppercase tracking-[0.3em] text-[#052c14]/20">
+            Node-to-Hub Encryption Level: Level 7 Active
+          </p>
+        </div>
       </div>
     </div>
   )

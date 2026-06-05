@@ -1,4 +1,5 @@
 {
+  "name": "latexguard",
   "private": true,
   "scripts": {
     "dev": "npm --prefix latex-dashboard/frontend run dev",

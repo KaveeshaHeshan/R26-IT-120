@@ -1,78 +1,65 @@
-// src/pages/LoginPage.jsx
+﻿// src/pages/LoginPage.jsx
 
-import { useEffect }   from 'react'
-//import { useNavigate } from 'react-router-dom'
-import Login           from '../components/auth/Login'
-import rubberBg        from '../assets/rubberproject.png'
+import { useEffect } from 'react'
+import Login from '../components/auth/Login'
+import rubberBg from '../assets/rubberproject.png'
 
 const LoginPage = () => {
 
-  //const navigate = useNavigate()
-
   // ── Page title ──────────────────────────────────────────────────────────────
   useEffect(() => {
-    document.title = 'Login — Latex VFA Dashboard'
-    return () => { document.title = 'Latex VFA Dashboard' }
+    document.title = 'Terminal Login — LatexGuard'
+    return () => { document.title = 'LatexGuard' }
   }, [])
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
     <div
-      className="min-h-screen relative flex flex-col overflow-hidden"
-      style={{
-        backgroundImage:    `url(${rubberBg})`,
-        backgroundSize:     'cover',
-        backgroundPosition: 'center',
-        backgroundAttachment: 'fixed',
-        backgroundRepeat:   'no-repeat',
-      }}
+      className="min-h-screen relative flex flex-col overflow-hidden bg-white"
     >
+      {/* ── Background Layer with subtle image blend ───────────────────────── */}
+      <div 
+        className="absolute inset-0 opacity-40 grayscale"
+        style={{
+          backgroundImage: `url(${rubberBg})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundAttachment: 'fixed',
+        }}
+      />
 
-      {/* ── Background Overlay ───────────────────────────────────────────── */}
-      <div className="absolute inset-0 bg-black/10
-                      pointer-events-none" />
-      <div className="absolute inset-0 backdrop-blur-[0.5px]
-                      pointer-events-none" />
+      {/* ── Gradient Overlay ───────────────────────────────────────────── */}
+      <div className="absolute inset-0 bg-gradient-to-br from-white/95 via-white/80 to-emerald-500/10 pointer-events-none" />
 
       {/* ── Content Wrapper ──────────────────────────────────────────────── */}
       <div className="relative z-10 flex flex-col min-h-screen">
-
-        {/* ── Top Banner ───────────────────────────────────────────────────── */}
-        <div className="bg-black/20 backdrop-blur-md py-3 px-4
-                        text-center border-b border-white/10 shadow-lg">
-          <p className="text-[#C9A84C] text-[13px] font-bold
-                        tracking-wider uppercase">
-            🌿 IoT-Enabled Rubber Latex VFA Prediction System
-            <span className="mx-2 opacity-30">|</span>
-            Lalan Rubbers (Pvt) Ltd
-            <span className="mx-2 opacity-30">|</span>
-            R26-IT-120
-          </p>
+        
+        {/* Simple Brand Header */}
+        <div className="p-10 flex items-center justify-between">
+           <div className="flex items-center gap-4">
+              <div className="w-1 h-6 bg-emerald-600"></div>
+              <p className="text-[10px] font-black uppercase tracking-[0.5em] text-[#052c14]">L-GUARD v2.4</p>
+           </div>
+           <div className="text-[9px] font-black uppercase tracking-widest text-[#052c14]/30 px-4 py-1.5 border border-emerald-100 rounded-full">
+              Region: South Asia Core
+           </div>
         </div>
 
         {/* ── Login Portal ─────────────────────────────────────────────────── */}
-        <div className="flex-1 flex items-center justify-center p-6">
+        <div className="flex-1 flex items-center justify-center p-6 sm:p-12">
           <Login />
         </div>
 
-        {/* ── Bottom Footer ────────────────────────────────────────────────── */}
-        <div className="bg-white/90 backdrop-blur-lg border-t
-                        border-gray-200 px-8 py-3 flex items-center
-                        justify-between
-                        shadow-[0_-5px_20px_rgba(0,0,0,0.05)]">
-          <div className="flex items-center gap-3">
-            <span className="w-2 h-2 bg-green-500 rounded-full
-                             animate-pulse" />
-            <p className="text-gray-700 font-bold text-[11px]
-                          tracking-tight">
-              AI MODEL ACTIVE · SENSOR NETWORK ONLINE
+        {/* Simple Footer */}
+        <div className="p-10 flex items-center justify-center">
+            <p className="text-[9px] font-black uppercase tracking-[0.4em] text-[#052c14]/20 flex items-center gap-4">
+               <span>Secure Access</span>
+               <span className="w-1 h-1 bg-emerald-200 rounded-full"></span>
+               <span>Biometric Encrypted</span>
+               <span className="w-1 h-1 bg-emerald-200 rounded-full"></span>
+               <span>Audit Logged</span>
             </p>
-          </div>
-          <p className="text-gray-500 text-[11px] font-medium">
-            Senarathna V K P K H · IT22167132 · SLIIT · 2026
-          </p>
         </div>
-
       </div>
     </div>
   )

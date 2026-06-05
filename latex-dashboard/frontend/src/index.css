@@ -1,1 +1,91 @@
 @import "tailwindcss";
+
+:root {
+  /* Primary Colors */
+  --primary-dark: #2E7D32;
+  --primary-light: #E8F5E9;
+  --primary-success: #4CAF50;
+  --primary-error: #F44336;
+  
+  /* Backgrounds */
+  --bg-light-grey: #F5F5F5;
+  --bg-white: #FFFFFF;
+  --bg-dark: #2E7D32;
+  
+  /* Text Colors */
+  --text-primary: #212121;
+  --text-secondary: #757575;
+  --text-light: #BDBDBD;
+}
+
+@keyframes gradFlow {
+  0%   { background-position: 0%   50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0%   50%; }
+}
+
+/* Premium Brushed Metal Design System Utilities */
+
+/* Vertical light brushed texture for sidebar */
+.brushed-sidebar {
+  background-color: #f8faf9;
+  background-image: 
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.005) 0px, rgba(0, 0, 0, 0.005) 1px, transparent 1px, transparent 4px),
+    linear-gradient(180deg, #ffffff 0%, #f0f4f2 100%);
+  border-right: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+/* Graphite-green brushed metal nav items (Light version) */
+.brushed-panel {
+  background-color: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.brushed-panel:hover {
+  background-color: #fcfdfc;
+  border-color: rgba(5, 44, 20, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  transform: translateY(-1.5px);
+}
+
+/* Active navigation item with soft emerald glow highlight */
+.brushed-panel-active {
+  background-color: #ecfdf5;
+  border-color: #10b981;
+  box-shadow: 
+    0 0 15px rgba(16, 185, 129, 0.1), 
+    0 0 4px rgba(16, 185, 129, 0.2);
+}
+
+/* 3D profile footer card */
+.profile-card {
+  background: linear-gradient(180deg, #f8faf9 0%, #f1f5f3 100%);
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+/* Cinematic Animations */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 1.2s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+  opacity: 0;
+}
+
+.animate-fade-in {
+  animation: fadeIn 1.5s ease-out forwards;
+  opacity: 0;
+}
+
+.animation-delay-300 { animation-delay: 300ms; }
+.animation-delay-600 { animation-delay: 600ms; }
+.animation-delay-1000 { animation-delay: 1000ms; }

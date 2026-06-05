@@ -14,7 +14,7 @@ const CustomTooltip = ({ active, payload, label }) => {
   const grade = vfa < 0.05 ? 'A' : vfa < 0.08 ? 'B' : 'C'
 
   return (
-    <div className="bg-[#1F3864] text-white rounded-xl
+    <div className="bg-[#228B22] text-white rounded-xl
                     px-4 py-3 shadow-xl text-xs">
       <p className="text-gray-300 mb-1">{label}</p>
       <p className="text-lg font-bold">
@@ -121,7 +121,7 @@ const VFAChart = ({
       {/* ── Legend ────────────────────────────────────────────────────────── */}
       <div className="flex items-center gap-4 mb-3 text-xs text-gray-500">
         <div className="flex items-center gap-1.5">
-          <div className="w-4 h-0.5 bg-[#C9A84C]" />
+          <div className="w-4 h-0.5 bg-[#4CBB17]" />
           <span>Grade B (0.05)</span>
         </div>
         <div className="flex items-center gap-1.5">
@@ -148,16 +148,16 @@ const VFAChart = ({
               <linearGradient id="vfaGradient" x1="0" y1="0"
                               x2="0" y2="1">
                 <stop offset="5%"
-                  stopColor="#1F3864" stopOpacity={0.2} />
+                  stopColor="#228B22" stopOpacity={0.2} />
                 <stop offset="95%"
-                  stopColor="#1F3864" stopOpacity={0} />
+                  stopColor="#228B22" stopOpacity={0} />
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="#F0F0F0" />
             <XAxis {...axisProps.xAxis} />
             <YAxis {...axisProps.yAxis} />
             <Tooltip content={<CustomTooltip />} />
-            <ReferenceLine y={0.05} stroke="#C9A84C"
+            <ReferenceLine y={0.05} stroke="#4CBB17"
               strokeDasharray="5 5" strokeWidth={1.5} />
             <ReferenceLine y={0.08} stroke="#C00000"
               strokeDasharray="5 5" strokeWidth={1.5} />
@@ -165,7 +165,7 @@ const VFAChart = ({
             <Area
               type="monotone"
               dataKey={dataKey}
-              stroke="#1F3864"
+              stroke="#228B22"
               strokeWidth={2.5}
               fill="url(#vfaGradient)"
               dot={showDots
@@ -174,7 +174,7 @@ const VFAChart = ({
               }
               activeDot={{
                 r:           6,
-                fill:        '#C9A84C',
+                fill:        '#4CBB17',
                 stroke:      'white',
                 strokeWidth: 2,
               }}
@@ -190,7 +190,7 @@ const VFAChart = ({
             <XAxis {...axisProps.xAxis} />
             <YAxis {...axisProps.yAxis} />
             <Tooltip content={<CustomTooltip />} />
-            <ReferenceLine y={0.05} stroke="#C9A84C"
+            <ReferenceLine y={0.05} stroke="#4CBB17"
               strokeDasharray="5 5" strokeWidth={1.5} />
             <ReferenceLine y={0.08} stroke="#C00000"
               strokeDasharray="5 5" strokeWidth={1.5} />
@@ -198,7 +198,7 @@ const VFAChart = ({
             <Line
               type="monotone"
               dataKey={dataKey}
-              stroke="#1F3864"
+              stroke="#228B22"
               strokeWidth={2.5}
               dot={showDots
                 ? <CustomDot />
@@ -206,7 +206,7 @@ const VFAChart = ({
               }
               activeDot={{
                 r:           6,
-                fill:        '#C9A84C',
+                fill:        '#4CBB17',
                 stroke:      'white',
                 strokeWidth: 2,
               }}

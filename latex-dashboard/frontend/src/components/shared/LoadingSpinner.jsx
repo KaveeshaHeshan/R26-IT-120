@@ -20,7 +20,7 @@ const LoadingSpinner = ({
   const Spinner = () => (
     <div className="flex flex-col items-center gap-3">
       <div
-        className={`${sz.spinner} border-[#1F3864]
+        className={`${sz.spinner} border-[#228B22]
                     border-t-transparent rounded-full animate-spin`}
       />
       {message && (
@@ -40,11 +40,11 @@ const LoadingSpinner = ({
         <div className="bg-white rounded-2xl shadow-xl p-8
                         flex flex-col items-center gap-4">
           <div className="text-3xl">🌿</div>
-          <div className={`${sizes.lg.spinner} border-[#1F3864]
+          <div className={`${sizes.lg.spinner} border-[#228B22]
                            border-t-transparent rounded-full
                            animate-spin`} />
           <div className="text-center">
-            <p className="text-[#1F3864] font-bold text-sm">
+            <p className="text-[#228B22] font-bold text-sm">
               Latex VFA Dashboard
             </p>
             <p className="text-gray-400 text-xs mt-1">

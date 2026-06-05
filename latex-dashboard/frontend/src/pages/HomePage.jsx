@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import videoBg from '../assets/rubber.mp4';
+import logoImg from '../assets/logo.png';
 
 const HomePage = () => {
   return (
@@ -23,6 +24,16 @@ const HomePage = () => {
 
         {/* Content */}
         <div className="relative z-10 flex flex-col items-center justify-center h-full px-4 text-center mt-12">
+          
+          {/* Logo */}
+          <div className="animate-fade-in-up mb-8">
+            <img 
+              src={logoImg} 
+              alt="LatexGuard Logo" 
+              className="w-32 md:w-48 lg:w-56 h-auto drop-shadow-[0_0_20px_rgba(255,255,255,0.2)]" 
+            />
+          </div>
+
           {/* Title */}
           <div className="animate-fade-in-up">
             <h1 className="text-6xl md:text-8xl lg:text-[8rem] font-black tracking-[0.15em] text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-500 mb-6 drop-shadow-[0_0_30px_rgba(52,211,153,0.25)]">

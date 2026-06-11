@@ -1,6 +1,6 @@
 // src/components/dashboard/DailySummary.jsx
 
-import { useState, useEffect }              from 'react'
+import { useState, useEffect, useMemo }     from 'react'
 import { db }                               from '../../firebase/config'
 import { ref, onValue, query,
          orderByChild }                     from 'firebase/database'
@@ -11,9 +11,39 @@ import { BarChart, Bar, XAxis, YAxis,
          LineChart, Line,
          ReferenceLine, AreaChart, Area }                    from 'recharts'
 import { getGradeColor, getGradeBadgeColor,
-         getGradeIcon }                     from '../../utils/gradeHelper'
+         getGradeIcon, getGradeLabel }      from '../../utils/gradeHelper'
 import { getToday, getLastNDays,
          formatChartDate }                  from '../../utils/dateHelper'
+
+// ── Mock Data Generator ───────────────────────────────────────────────────────
+const generateMockData = () => {
+  const mockData = []
+  const farmers = ['FM-8821', 'FM-4390', 'FM-1102', 'FM-5572', 'FM-2291', 'FM-9003']
+  const dates = getLastNDays(14)
+  
+  dates.forEach(date => {
+    const samplesPerDay = Math.floor(Math.random() * 8) + 12
+    for(let i=0; i<samplesPerDay; i++) {
+      const vfa = Math.random() * 0.08 + 0.02
+      let grade = 'A'
+      if (vfa > 0.075) grade = 'C'
+      else if (vfa > 0.05) grade = 'B'
+      
+      mockData.push({
+        id: `mock-${date}-${i}`,
+        vfa: vfa,
+        grade: grade,
+        pH: 6.5 + Math.random(),
+        turbidity: 10 + Math.random() * 40,
+        temperature: 25 + Math.random() * 5,
+        farmer_id: farmers[Math.floor(Math.random() * farmers.length)],
+        timestamp: `${date}T${10 + Math.floor(Math.random() * 8)}:${Math.floor(Math.random()*60)}:00`,
+        date: date
+      })
+    }
+  })
+  return mockData
+}
 
 const DailySummary = () => {
 
@@ -21,39 +51,10 @@ const DailySummary = () => {
   const [loading,     setLoading]     = useState(true)
   const [error,       setError]       = useState(null)
   const [selectedDate, setSelectedDate] = useState(getToday())
+  const [lastUpdated, setLastUpdated]   = useState(new Date())
 
   // ── Fetch all predictions ───────────────────────────────────────────────────
   useEffect(() => {
-    // Generate Mock Data for impressive visual if Firebase empty
-    const generateMockData = () => {
-      const mockData = []
-      const farmers = ['FM-8821', 'FM-4390', 'FM-1102', 'FM-5572', 'FM-2291', 'FM-9003']
-      const dates = getLastNDays(14)
-      
-      dates.forEach(date => {
-        const samplesPerDay = Math.floor(Math.random() * 8) + 12
-        for(let i=0; i<samplesPerDay; i++) {
-          const vfa = Math.random() * 0.08 + 0.02
-          let grade = 'A'
-          if (vfa > 0.075) grade = 'C'
-          else if (vfa > 0.05) grade = 'B'
-          
-          mockData.push({
-            id: `mock-${date}-${i}`,
-            vfa: vfa,
-            grade: grade,
-            pH: 6.5 + Math.random(),
-            turbidity: 10 + Math.random() * 40,
-            temperature: 25 + Math.random() * 5,
-            farmer_id: farmers[Math.floor(Math.random() * farmers.length)],
-            timestamp: `${date}T${10 + Math.floor(Math.random() * 8)}:${Math.floor(Math.random()*60)}:00`,
-            date: date
-          })
-        }
-      })
-      return mockData
-    }
-
     const q = query(
       ref(db, 'predictions'),
       orderByChild('timestamp')
@@ -62,6 +63,7 @@ const DailySummary = () => {
     setLoading(true)
     const unsub = onValue(q, (snapshot) => {
       try {
+        setLastUpdated(new Date())
         const data = snapshot.val()
         if (!data) {
           console.log("DailySummary: Using high-fidelity mock data fallback")
@@ -100,68 +102,86 @@ const DailySummary = () => {
     return () => unsub()
   }, [])
 
-  // Filter by selected date 
-  const todayData = predictions.filter(p => p.date === selectedDate)
+  // ── Processed Data ──────────────────────────────────────────────────────────
+  
+  const todayData = useMemo(() => 
+    predictions.filter(p => p.date === selectedDate),
+    [predictions, selectedDate]
+  )
 
-  // Daily stats 
-  const dailyStats = {
-    total:   todayData.length,
-    gradeA:  todayData.filter(p => p.grade === 'A').length,
-    gradeB:  todayData.filter(p => p.grade === 'B').length,
-    gradeC:  todayData.filter(p => p.grade === 'C').length,
-    avgVFA:  todayData.length > 0
-      ? (todayData.reduce((s,p) => s + p.vfa, 0) / todayData.length).toFixed(4)
-      : '0.0000',
-    minVFA:  todayData.length > 0
-      ? Math.min(...todayData.map(p => p.vfa)).toFixed(4)
-      : '0.0000',
-    maxVFA:  todayData.length > 0
-      ? Math.max(...todayData.map(p => p.vfa)).toFixed(4)
-      : '0.0000',
-    rejectionRate: todayData.length > 0
-      ? ((todayData.filter(p => p.grade === 'C').length /
-          todayData.length) * 100).toFixed(1)
-      : '0.0',
-  }
+  const dailyStats = useMemo(() => {
+    const total = todayData.length
+    const gradeA = todayData.filter(p => p.grade === 'A').length
+    const gradeB = todayData.filter(p => p.grade === 'B').length
+    const gradeC = todayData.filter(p => p.grade === 'C').length
+    
+    return {
+      total,
+      gradeA,
+      gradeB,
+      gradeC,
+      avgVFA:  total > 0
+        ? (todayData.reduce((s,p) => s + p.vfa, 0) / total).toFixed(4)
+        : '0.0000',
+      minVFA:  total > 0
+        ? Math.min(...todayData.map(p => p.vfa)).toFixed(4)
+        : '0.0000',
+      maxVFA:  total > 0
+        ? Math.max(...todayData.map(p => p.vfa)).toFixed(4)
+        : '0.0000',
+      rejectionRate: total > 0
+        ? ((gradeC / total) * 100).toFixed(1)
+        : '0.0',
+      stabilityScore: total > 0
+        ? (100 - (gradeC / total * 100) - (gradeB / total * 50)).toFixed(0)
+        : '0'
+    }
+  }, [todayData])
 
-  // ── Pie chart data ──────────────────────────────────────────────────────────
-  const pieData = [
+  const pieData = useMemo(() => [
     { name: 'Grade A', value: dailyStats.gradeA, color: getGradeColor('A') },
     { name: 'Grade B', value: dailyStats.gradeB, color: getGradeColor('B') },
     { name: 'Grade C', value: dailyStats.gradeC, color: getGradeColor('C') },
-  ].filter(d => d.value > 0)
+  ].filter(d => d.value > 0), [dailyStats])
 
-  // ── Last 7 days trend ───────────────────────────────────────────────────────
-  const last7Days = getLastNDays(7).map(date => {
-    const dayData = predictions.filter(p => p.date === date)
-    return {
-      date:    date.slice(5),
-      total:   dayData.length,
-      gradeA:  dayData.filter(p => p.grade === 'A').length,
-      gradeB:  dayData.filter(p => p.grade === 'B').length,
-      gradeC:  dayData.filter(p => p.grade === 'C').length,
-      avgVFA:  dayData.length > 0
-        ? parseFloat(
-            (dayData.reduce((s,p) => s + p.vfa, 0) /
-             dayData.length).toFixed(4)
-          )
-        : 0,
-    }
-  })
+  const last7Days = useMemo(() => 
+    getLastNDays(7).map(date => {
+      const dayData = predictions.filter(p => p.date === date)
+      return {
+        date:    date.slice(5),
+        total:   dayData.length,
+        gradeA:  dayData.filter(p => p.grade === 'A').length,
+        gradeB:  dayData.filter(p => p.grade === 'B').length,
+        gradeC:  dayData.filter(p => p.grade === 'C').length,
+        avgVFA:  dayData.length > 0
+          ? parseFloat(
+              (dayData.reduce((s,p) => s + p.vfa, 0) /
+               dayData.length).toFixed(4)
+            )
+          : 0,
+      }
+    }), [predictions]
+  )
 
-  // ── Top farmers ─────────────────────────────────────────────────────────────
-  const farmerMap = {}
-  todayData.forEach(p => {
-    if (!farmerMap[p.farmer_id]) {
-      farmerMap[p.farmer_id] = { total:0, gradeA:0, gradeB:0, gradeC:0 }
-    }
-    farmerMap[p.farmer_id].total++
-    farmerMap[p.farmer_id][`grade${p.grade}`]++
-  })
-  const topFarmers = Object.entries(farmerMap)
-    .map(([id, stats]) => ({ id, ...stats }))
-    .sort((a,b) => b.total - a.total)
-    .slice(0, 5)
+  const topFarmers = useMemo(() => {
+    const farmerMap = {}
+    todayData.forEach(p => {
+      if (!farmerMap[p.farmer_id]) {
+        farmerMap[p.farmer_id] = { total:0, gradeA:0, gradeB:0, gradeC:0, sumVFA: 0 }
+      }
+      farmerMap[p.farmer_id].total++
+      farmerMap[p.farmer_id][`grade${p.grade}`]++
+      farmerMap[p.farmer_id].sumVFA += p.vfa
+    })
+    return Object.entries(farmerMap)
+      .map(([id, stats]) => ({ 
+        id, 
+        ...stats, 
+        avgVFA: (stats.sumVFA / stats.total).toFixed(4) 
+      }))
+      .sort((a,b) => b.total - a.total)
+      .slice(0, 5)
+  }, [todayData])
 
   // ── Loading ─────────────────────────────────────────────────────────────────
   if (loading) {
@@ -188,7 +208,7 @@ const DailySummary = () => {
     <div className="space-y-8 pb-10">
 
       {/* ── Date Selector ─────────────────────────────────────────────────── */}
-      <div className="bg-white/80 backdrop-blur-xl rounded-[2rem] p-8 border border-emerald-100 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 overflow-hidden relative group">
+      <div className="bg-white/80 backdrop-blur-xl rounded-4xl p-8 border border-emerald-100 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 overflow-hidden relative group">
          <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl -mr-32 -mt-32 group-hover:bg-emerald-500/10 transition-all duration-700"></div>
          <div className="relative z-10">
             <h3 className="text-[11px] font-black text-emerald-600 uppercase tracking-[0.4em] mb-2">
@@ -198,7 +218,12 @@ const DailySummary = () => {
                <span className="text-4xl font-black text-[#052c14] tracking-tighter italic">
                  {selectedDate === getToday() ? 'CURRENT' : selectedDate}
                </span>
-               <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+               <div className="flex flex-col">
+                  <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                  <span className="text-[7px] font-black text-emerald-600/40 uppercase tracking-tighter mt-1">
+                    Updated: {lastUpdated.toLocaleTimeString()}
+                  </span>
+               </div>
             </div>
          </div>
          
@@ -222,19 +247,20 @@ const DailySummary = () => {
       {/* ── Stats Cards ───────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
         {[
-          { label: 'Ingested Units', value: dailyStats.total,
+          { label: 'Total Inflow', value: dailyStats.total,
             icon: '📋', color: '#10b981', secondary: 'Batch Collections' },
-          { label: 'System Average', value: dailyStats.avgVFA,
-            icon: '📊', color: '#10b981', secondary: 'VFA Composite' },
+          { label: 'VFA Average', value: dailyStats.avgVFA,
+            icon: '📊', color: '#10b981', secondary: 'System Composite' },
+          { label: 'Stability Score',
+            value: `${dailyStats.stabilityScore}%`,
+            icon: '🛡️', color: '#3b82f6', secondary: 'System Resilience'   },
           { label: 'Reject Flux',
             value: `${dailyStats.rejectionRate}%`,
             icon: '📉', color: '#ef4444', secondary: 'Grade C Variance'   },
-          { label: 'Active Alerts',    value: dailyStats.gradeC,
-            icon: '⚠️', color: '#f59e0b', secondary: 'Critical Events'},
         ].map((s,i) => (
           <div key={i}
-            className="bg-white/90 rounded-[1.5rem] p-6 border border-emerald-100 shadow-lg relative overflow-hidden group">
-            <div className="absolute bottom-0 right-0 text-emerald-500/[0.05] text-6xl group-hover:scale-110 transition-transform">{s.icon}</div>
+            className="bg-white/90 rounded-3xl p-6 border border-emerald-100 shadow-lg relative overflow-hidden group hover:scale-[1.02] transition-all duration-300">
+            <div className="absolute bottom-0 right-0 text-emerald-500/5 text-6xl group-hover:scale-110 transition-transform">{s.icon}</div>
             <div className="flex flex-col h-full relative z-10">
               <span className="text-[9px] font-black text-[#052c14]/30 uppercase tracking-[0.2em] mb-4">
                 {s.label}
@@ -256,7 +282,7 @@ const DailySummary = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* Grade bars */}
-        <div className="bg-white/90 rounded-[2rem] p-8 border border-emerald-100 shadow-xl overflow-hidden relative group">
+        <div className="bg-white/90 rounded-4xl p-8 border border-emerald-100 shadow-xl overflow-hidden relative group">
           <div className="flex items-center justify-between mb-8">
             <h4 className="text-[11px] font-black text-[#052c14] uppercase tracking-[0.3em]">
               Quality Classification
@@ -321,7 +347,7 @@ const DailySummary = () => {
         </div>
 
         {/* Pie chart */}
-        <div className="bg-white/90 rounded-[2rem] p-8 border border-emerald-100 shadow-xl relative overflow-hidden flex flex-col items-center justify-center">
+        <div className="bg-white/90 rounded-4xl p-8 border border-emerald-100 shadow-xl relative overflow-hidden flex flex-col items-center justify-center">
           <div className="absolute top-8 left-8">
             <h4 className="text-[11px] font-black text-[#052c14] uppercase tracking-[0.3em]">
               Spectral Split
@@ -329,7 +355,7 @@ const DailySummary = () => {
           </div>
           
           {pieData.length > 0 ? (
-            <div className="w-full h-[300px] flex items-center justify-center">
+            <div className="w-full h-75 flex items-center justify-center">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <defs>
@@ -395,7 +421,7 @@ const DailySummary = () => {
       </div>
 
       {/*  7-Day VFA Trend  */}
-      <div className="bg-white/90 rounded-[2rem] p-8 border border-emerald-100 shadow-xl relative overflow-hidden group">
+      <div className="bg-white/90 rounded-4xl p-8 border border-emerald-100 shadow-xl relative overflow-hidden group">
         <div className="flex items-center justify-between mb-10">
           <div>
             <h4 className="text-[11px] font-black text-[#052c14] uppercase tracking-[0.3em]">
@@ -408,7 +434,7 @@ const DailySummary = () => {
           <div className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.4)]"></div>
         </div>
         
-        <div className="h-[300px] w-full">
+        <div className="h-75 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={last7Days} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
               <defs>
@@ -466,11 +492,11 @@ const DailySummary = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/*  7-Day Grade Bar Chart  */}
-          <div className="bg-white/90 rounded-[2rem] p-8 border border-emerald-100 shadow-xl">
+          <div className="bg-white/90 rounded-4xl p-8 border border-emerald-100 shadow-xl">
             <h4 className="text-[11px] font-black text-[#052c14] uppercase tracking-[0.3em] mb-10">
               Grade Distribution Flux
             </h4>
-            <div className="h-[240px]">
+            <div className="h-60">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={last7Days} margin={{ top: 0, right: 10, left: -20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.03)" vertical={false} />
@@ -512,16 +538,17 @@ const DailySummary = () => {
           </div>
 
           {/* Top Farmers */}
-          <div className="bg-white/90 rounded-[2rem] p-8 border border-emerald-100 shadow-xl">
+          <div className="bg-white/90 rounded-4xl p-8 border border-emerald-100 shadow-xl">
             <h4 className="text-[11px] font-black text-[#052c14] uppercase tracking-[0.3em] mb-10">
               Peak Performance Nodes
             </h4>
             <div className="space-y-4">
               {topFarmers.length > 0 ? topFarmers.map((f, i) => (
-                <div key={f.id} className="bg-emerald-50 p-4 rounded-2xl border border-emerald-50 flex items-center justify-between group hover:border-emerald-500/40 transition-colors">
+                <div key={f.id} className="bg-emerald-50/50 p-4 rounded-2xl border border-emerald-50 flex items-center justify-between group hover:border-emerald-500/40 hover:bg-emerald-50 transition-all duration-300">
                   <div className="flex items-center gap-4">
-                     <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-600 text-[10px] font-black italic">
-                        #{i+1}
+                     <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex flex-col items-center justify-center text-emerald-600 font-black">
+                        <span className="text-[10px] leading-none opacity-50">NODE</span>
+                        <span className="text-sm italic leading-none">#{i+1}</span>
                      </div>
                      <div>
                         <p className="text-[10px] font-black text-[#052c14] uppercase tracking-wider">{f.id}</p>
@@ -531,12 +558,18 @@ const DailySummary = () => {
                         </div>
                      </div>
                   </div>
-                  <div className="flex gap-2">
-                     <div className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-[10px] font-black text-emerald-600">
-                        {f.gradeA} A
+                  <div className="flex items-center gap-6">
+                     <div className="text-right hidden sm:block">
+                        <p className="text-[8px] font-black text-[#052c14]/20 uppercase tracking-widest mb-1">Node Average</p>
+                        <p className="text-xs font-black text-emerald-600 tracking-tighter tabular-nums">{f.avgVFA}</p>
                      </div>
-                     <div className="px-3 py-1 bg-red-500/10 border border-red-500/20 rounded-lg text-[10px] font-black text-red-600">
-                        {f.gradeC} C
+                     <div className="flex gap-2">
+                        <div className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-[10px] font-black text-emerald-600">
+                           {f.gradeA} A
+                        </div>
+                        <div className="px-3 py-1 bg-red-500/10 border border-red-500/20 rounded-lg text-[10px] font-black text-red-600">
+                           {f.gradeC} C
+                        </div>
                      </div>
                   </div>
                 </div>

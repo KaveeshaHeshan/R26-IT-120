@@ -64,7 +64,7 @@ const HomePage = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
-              className="text-gray-800 lg:text-gray-600 text-base sm:text-lg mb-10 max-w-md leading-relaxed font-medium lg:font-light drop-shadow-sm lg:drop-shadow-none"
+              className="text-gray-800 text-base sm:text-lg mb-10 max-w-md leading-relaxed font-bold drop-shadow-sm lg:drop-shadow-none"
             >
               Sustaining industrial excellence with premium, high-durability natural rubber solutions, powered by intelligent, real-time monitoring.
             </motion.p>

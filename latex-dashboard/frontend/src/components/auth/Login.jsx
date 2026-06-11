@@ -1,7 +1,8 @@
-﻿// src/components/auth/Login.jsx
+// src/components/auth/Login.jsx
 
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { motion } from 'framer-motion'
 import { auth, db } from '../../firebase/config'
 import { signInWithEmailAndPassword } from 'firebase/auth'
 import { ref, get } from 'firebase/database'
@@ -15,33 +16,27 @@ const Login = () => {
 
   const handleLogin = async () => {
     if (!email || !password) {
-      setError('Required: Email and Cipher.')
+      setError('Please enter your email and password.')
       return
     }
-
     setLoading(true)
     setError('')
-
     try {
       const cred = await signInWithEmailAndPassword(auth, email, password)
       const uid = cred.user.uid
-
       const snap = await get(ref(db, `roles/${uid}`))
       const roleData = snap.val()
-
       if (!roleData) {
         setError('Identity not registered. Contact Hub.')
         setLoading(false)
         return
       }
-
       const token = await cred.user.getIdToken()
       localStorage.setItem('token', token)
       localStorage.setItem('uid', uid)
       localStorage.setItem('role', roleData.role)
       localStorage.setItem('user_id', roleData.user_id)
       localStorage.setItem('name', roleData.name)
-
       if (['manager', 'admin'].includes(roleData.role)) {
         navigate('/')
       } else if (roleData.role === 'qa_officer') {
@@ -54,16 +49,15 @@ const Login = () => {
         case 'auth/invalid-credential':
         case 'auth/wrong-password':
         case 'auth/user-not-found':
-          setError('Verification failed. Invalid ID.')
+          setError('Invalid email or password.')
           break
         case 'auth/too-many-requests':
-          setError('Rate limit reached. Session throttled.')
+          setError('Too many attempts. Please try again later.')
           break
         default:
-          setError('Terminal error. Sync failed.')
+          setError('Login failed. Please try again.')
       }
     }
-
     setLoading(false)
   }
 
@@ -72,89 +66,92 @@ const Login = () => {
   }
 
   return (
-    <div className="w-full max-w-sm mx-auto">
-      <div className="overflow-hidden rounded-[3rem] border border-emerald-100 bg-white/90 shadow-[0_40px_100px_-20px_rgba(5,44,20,0.1)] backdrop-blur-2xl">
-        <div className="border-b border-emerald-50 px-8 py-8">
-          <div className="flex items-center gap-5">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-lg shadow-emerald-600/20">
-              <span className="text-xl">🌿</span>
-            </div>
-            <div>
-              <p className="text-xl font-black tracking-tighter text-[#052c14] uppercase">LatexGuard</p>
-              <p className="text-[9px] font-black uppercase tracking-[0.3em] text-emerald-600/60 mt-0.5">
-                Secure Lattice Portal
-              </p>
-            </div>
-          </div>
+    <div className="w-full max-w-md mx-auto">
+      <div className="bg-white rounded-2xl shadow-[0_8px_40px_rgba(0,0,0,0.12)] overflow-hidden border border-gray-100">
+
+        {/* Card Header */}
+        <div className="bg-[#0a3622] px-8 py-5 flex items-center gap-3">
+          <span className="text-[#c9a84c] text-lg font-black uppercase tracking-widest">LATEX GUARD</span>
+          <span className="text-white text-lg font-black uppercase tracking-widest">PORTAL LOGIN</span>
         </div>
+        {/* Gold accent divider */}
+        <div className="h-0.5 bg-[#c9a84c] w-full" />
 
-        <div className="px-8 py-10">
-          <div className="mb-8 space-y-3">
-            <h2 className="text-2xl font-black tracking-[0.05em] text-[#052c14] uppercase">
-              Identity Sync
-            </h2>
-            <p className="text-[11px] leading-relaxed font-bold uppercase tracking-widest text-[#052c14]/40">
-              Inject credentials into the terminal to begin secure monitoring of VFA vectors.
-            </p>
-          </div>
+        {/* Card Body */}
+        <div className="px-8 py-8 space-y-5">
 
-          <div className="space-y-6">
-            <div className="space-y-2">
-              <label className="text-[9px] font-black uppercase tracking-[0.2em] text-[#052c14]/20 ml-2">Registry Email</label>
-              <input
-                type="email"
-                placeholder="OPERATOR@SYSTEM.CORE"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                onKeyDown={handleKeyDown}
-                className="block w-full px-5 py-4 text-[10px] font-black tracking-widest uppercase placeholder:text-[#052c14]/10 bg-emerald-50/50 border border-emerald-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-emerald-500/5 focus:border-emerald-500/50 transition-all shadow-inner"
-              />
+          {/* Email */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: 'easeOut', delay: 0.1 }}
+          >
+            <input
+              id="login-email"
+              type="email"
+              placeholder="EMAIL / USERNAME"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              onKeyDown={handleKeyDown}
+              className="block w-full px-5 py-3.5 text-sm font-semibold tracking-wide placeholder:text-gray-400 placeholder:uppercase placeholder:tracking-wider bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:border-[#0a3622] transition-all"
+            />
+          </motion.div>
+
+          {/* Password */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: 'easeOut', delay: 0.2 }}
+          >
+            <input
+              id="login-password"
+              type="password"
+              placeholder="PASSWORD"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              onKeyDown={handleKeyDown}
+              className="block w-full px-5 py-3.5 text-sm font-semibold tracking-wide placeholder:text-gray-400 placeholder:uppercase placeholder:tracking-wider bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:border-[#0a3622] transition-all"
+            />
+          </motion.div>
+
+          {/* Error */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 flex items-center gap-2">
+              <span className="text-red-500 text-sm">⚠️</span>
+              <p className="text-xs font-semibold text-red-600">{error}</p>
             </div>
+          )}
 
-            <div className="space-y-2">
-              <label className="text-[9px] font-black uppercase tracking-[0.2em] text-[#052c14]/20 ml-2">Access Cipher</label>
-              <input
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                onKeyDown={handleKeyDown}
-                className="block w-full px-5 py-4 text-[10px] font-black tracking-[0.4em] bg-emerald-50/50 border border-emerald-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-emerald-500/5 focus:border-emerald-500/50 transition-all shadow-inner"
-              />
-            </div>
-
-            {error && (
-              <div className="bg-red-50 border border-red-100 rounded-xl p-3 flex items-center gap-3 animate-shake">
-                <span className="text-red-500">⚠️</span>
-                <p className="text-[9px] font-black uppercase tracking-widest text-red-600">
-                  {error}
-                </p>
-              </div>
-            )}
-
+          {/* Login Button */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: 'easeOut', delay: 0.3 }}
+          >
             <button
+              id="login-submit"
               onClick={handleLogin}
               disabled={loading}
-              className="w-full relative group"
+              className="w-full bg-[#0a3622] hover:bg-[#072618] text-white py-3.5 rounded-xl text-sm font-black uppercase tracking-widest transition-all shadow-md hover:shadow-lg disabled:opacity-60 active:scale-[0.98]"
             >
-              <div className="absolute -inset-1 bg-emerald-600 rounded-2xl blur opacity-20 group-hover:opacity-40 transition-opacity"></div>
-              <div className="relative flex h-14 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-xl transition-all active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100">
-                {loading ? (
-                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/20 border-t-white" />
-                ) : (
-                  <span className="text-[10px] font-black uppercase tracking-[0.3em]">
-                    Initialize Session
-                  </span>
-                )}
-              </div>
+              {loading ? (
+                <div className="flex items-center justify-center gap-2">
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                  <span>Logging in...</span>
+                </div>
+              ) : 'LOGIN'}
             </button>
-          </div>
-        </div>
+          </motion.div>
 
-        <div className="border-t border-emerald-50 bg-emerald-50/20 px-8 py-5 text-center">
-          <p className="text-[8px] font-black uppercase tracking-[0.3em] text-[#052c14]/20">
-            Node-to-Hub Encryption Level: Level 7 Active
-          </p>
+          {/* Links */}
+          <div className="pt-2 border-t border-gray-100">
+            <div className="text-center space-y-2 pt-2">
+              <p className="text-sm text-gray-500 hover:text-gray-700 cursor-pointer transition-colors">Forgot Password?</p>
+              <p className="text-sm text-gray-500 hover:text-gray-700 cursor-pointer transition-colors">Request Access (Contact Us)</p>
+              <p className="text-sm font-black text-gray-800 hover:text-[#0a3622] cursor-pointer transition-colors tracking-wider uppercase pt-1">Learn More</p>
+            </div>
+          </div>
+
         </div>
       </div>
     </div>

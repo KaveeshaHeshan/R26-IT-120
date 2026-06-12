@@ -38,7 +38,7 @@ const Login = () => {
       localStorage.setItem('user_id', roleData.user_id)
       localStorage.setItem('name', roleData.name)
       if (['manager', 'admin'].includes(roleData.role)) {
-        navigate('/')
+        navigate('/dashboard')
       } else if (roleData.role === 'qa_officer') {
         navigate('/alerts')
       } else {

@@ -53,7 +53,7 @@ const Alerts = () => {
             className={`bg-white/90 rounded-[1.5rem] p-6 border shadow-xl relative overflow-hidden group hover:bg-emerald-50 transition-all`}>
             <div className="absolute top-0 right-0 w-16 h-16 bg-emerald-500/5 blur-2xl rounded-full group-hover:bg-emerald-500/10 transition-colors"></div>
             <div className="flex items-center justify-between mb-4 relative z-10">
-              <span className="text-[#052c14]/30 text-[9px] font-black uppercase tracking-[0.2em]">
+              <span className="text-[#052c14]/70 text-[9px] font-black uppercase tracking-[0.2em]">
                 {s.label}
               </span>
               <span className="text-xl filter grayscale group-hover:grayscale-0 transition-all">{s.icon}</span>
@@ -78,7 +78,7 @@ const Alerts = () => {
               <h4 className="text-[#052c14] font-black text-xs uppercase tracking-[0.2em] mb-1">
                 Immediate Action Required
               </h4>
-              <p className="text-[#052c14]/40 text-[10px] font-bold uppercase tracking-widest leading-relaxed">
+              <p className="text-[#052c14]/75 text-[10px] font-bold uppercase tracking-widest leading-relaxed">
                 ID: <span className="text-red-600 font-black">{latestAlert.farmer_id}</span> • 
                 VFA Peak: <span className="text-red-600 font-black">{latestAlert.vfa?.toFixed(4)}</span> • 
                 <span className="ml-2 bg-white px-2 py-0.5 rounded border border-red-50">{timeAgo(latestAlert.timestamp)}</span>
@@ -108,7 +108,7 @@ const Alerts = () => {
           {/* Filters */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full md:w-auto flex-1">
             <div className="space-y-2">
-               <label className="text-[9px] font-black text-[#052c14]/20 uppercase tracking-[0.2em] ml-2">Priority Tier</label>
+               <label className="text-[9px] font-black text-[#052c14]/60 uppercase tracking-[0.2em] ml-2">Priority Tier</label>
                <select
                   value={filterSeverity}
                   onChange={e => setFilterSeverity(e.target.value)}
@@ -123,7 +123,7 @@ const Alerts = () => {
             </div>
 
             <div className="space-y-2">
-               <label className="text-[9px] font-black text-[#052c14]/20 uppercase tracking-[0.2em] ml-2">Registry Search</label>
+               <label className="text-[9px] font-black text-[#052c14]/60 uppercase tracking-[0.2em] ml-2">Registry Search</label>
                <input
                 type="text"
                 placeholder="UID/LABEL..."
@@ -135,7 +135,7 @@ const Alerts = () => {
             </div>
 
             <div className="space-y-2">
-               <label className="text-[9px] font-black text-[#052c14]/20 uppercase tracking-[0.2em] ml-2">Log Date</label>
+               <label className="text-[9px] font-black text-[#052c14]/60 uppercase tracking-[0.2em] ml-2">Log Date</label>
                <input
                   type="date"
                   value={filterDate}
@@ -155,7 +155,7 @@ const Alerts = () => {
                     setFilterFarmer('')
                     setFilterDate('')
                   }}
-                  className="px-6 py-4 text-[#052c14]/30 hover:text-red-500 text-[10px] font-black uppercase tracking-widest transition-colors"
+                  className="px-6 py-4 text-[#052c14]/70 hover:text-red-500 text-[10px] font-black uppercase tracking-widest transition-colors"
                 >
                   Reset Terminal
                 </button>
@@ -175,7 +175,7 @@ const Alerts = () => {
       </div>
 
       <div className="flex items-center justify-between px-2">
-          <p className="text-[#052c14]/30 text-[9px] font-black uppercase tracking-[0.3em]">
+          <p className="text-[#052c14]/70 text-[9px] font-black uppercase tracking-[0.3em]">
               Showing {filtered.length} Indexed Anomalies
           </p>
           <div className="w-1/2 h-[1px] bg-gradient-to-r from-emerald-100 to-transparent"></div>
@@ -186,7 +186,7 @@ const Alerts = () => {
         <div className="flex flex-col items-center justify-center min-h-[30vh] gap-6">
           <div className="w-12 h-12 border-4 border-emerald-500
                           border-t-transparent rounded-full animate-spin shadow-[0_0_20px_rgba(16,185,129,0.1)]" />
-          <p className="text-[#052c14]/30 text-[10px] font-black uppercase tracking-[0.3em] animate-pulse">Synchronizing Intelligence...</p>
+          <p className="text-[#052c14]/70 text-[10px] font-black uppercase tracking-[0.3em] animate-pulse">Synchronizing Intelligence...</p>
         </div>
       )}
 
@@ -209,7 +209,7 @@ const Alerts = () => {
           <h3 className="text-xl font-black text-[#052c14] mb-4 tracking-[0.2em] uppercase">
             Nominal Status
           </h3>
-          <p className="text-[#052c14]/30 text-xs font-bold leading-relaxed max-w-sm uppercase tracking-widest">
+          <p className="text-[#052c14]/70 text-xs font-bold leading-relaxed max-w-sm uppercase tracking-widest">
             All systems calibrated. No critical Grade C deviations detected in the current registry subset.
           </p>
         </div>
@@ -244,32 +244,32 @@ const Alerts = () => {
                                       'bg-yellow-50 border-yellow-100 text-yellow-600'}`}>
                       {alert.severity} PRIORITY
                     </span>
-                    <span className="text-[#052c14]/20 text-[10px] font-black uppercase tracking-[0.2em] ml-auto">
+                    <span className="text-[#052c14]/60 text-[10px] font-black uppercase tracking-[0.2em] ml-auto">
                       {timeAgo(alert.timestamp)}
                     </span>
                   </div>
 
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                     <div className="bg-emerald-50/40 p-5 rounded-2xl border border-emerald-100 relative group/stat hover:bg-white transition-all">
-                      <p className="text-[#052c14]/20 text-[8px] font-black uppercase tracking-widest mb-1 pb-1 border-b border-emerald-100/30">VFA Dynamic</p>
+                      <p className="text-[#052c14]/60 text-[8px] font-black uppercase tracking-widest mb-1 pb-1 border-b border-emerald-100/30">VFA Dynamic</p>
                       <p className="text-2xl font-black mt-2" style={{ color: getGradeColor(alert.grade) }}>
                         {alert.vfa?.toFixed(4)}
                       </p>
                     </div>
                     <div className="bg-emerald-50/40 p-5 rounded-2xl border border-emerald-100 relative group/stat hover:bg-white transition-all">
-                      <p className="text-[#052c14]/20 text-[8px] font-black uppercase tracking-widest mb-1 pb-1 border-b border-emerald-100/30">Rank Assignment</p>
+                      <p className="text-[#052c14]/60 text-[8px] font-black uppercase tracking-widest mb-1 pb-1 border-b border-emerald-100/30">Rank Assignment</p>
                       <p className="text-2xl font-black text-[#052c14] mt-2">
                          {alert.grade}
                       </p>
                     </div>
                     <div className="bg-emerald-50/40 p-5 rounded-2xl border border-emerald-100 relative group/stat hover:bg-white transition-all">
-                      <p className="text-[#052c14]/20 text-[8px] font-black uppercase tracking-widest mb-1 pb-1 border-b border-emerald-100/30">pH Balance</p>
+                      <p className="text-[#052c14]/60 text-[8px] font-black uppercase tracking-widest mb-1 pb-1 border-b border-emerald-100/30">pH Balance</p>
                       <p className="text-2xl font-black text-[#052c14]/80 mt-2">
                         {alert.pH?.toFixed(2)}
                       </p>
                     </div>
                     <div className="bg-emerald-50/40 p-5 rounded-2xl border border-emerald-100 relative group/stat hover:bg-white transition-all">
-                      <p className="text-[#052c14]/20 text-[8px] font-black uppercase tracking-widest mb-1 pb-1 border-b border-emerald-100/30">Thermal Data</p>
+                      <p className="text-[#052c14]/60 text-[8px] font-black uppercase tracking-widest mb-1 pb-1 border-b border-emerald-100/30">Thermal Data</p>
                       <p className="text-2xl font-black text-[#052c14]/80 mt-2">
                         {alert.temperature?.toFixed(1)}°C
                       </p>
@@ -279,7 +279,7 @@ const Alerts = () => {
 
                 <div className="flex flex-row md:flex-col items-center justify-between md:justify-center gap-6 w-full md:w-48 self-stretch border-t md:border-t-0 md:border-l border-emerald-100 pt-6 md:pt-0 md:pl-6">
                    <div className="text-center">
-                      <p className="text-[#052c14]/20 text-[8px] font-black tracking-widest uppercase mb-1">Batch Key</p>
+                      <p className="text-[#052c14]/60 text-[8px] font-black tracking-widest uppercase mb-1">Batch Key</p>
                       <p className="text-[#052c14]/60 text-[10px] font-mono tracking-tighter">{alert.sample_id?.slice(-12)}</p>
                    </div>
                    {!alert.read && (

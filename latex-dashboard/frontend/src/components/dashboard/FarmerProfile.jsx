@@ -50,7 +50,7 @@ const FarmerProfile = () => {
               <h3 className="text-[11px] font-black text-[#052c14] tracking-[0.3em] uppercase mb-1">
                 Farmer Intelligence
               </h3>
-              <p className="text-[#052c14]/30 text-[9px] font-bold tracking-widest uppercase">Select a registry node to analyze historical data</p>
+              <p className="text-[#052c14]/70 text-[9px] font-bold tracking-widest uppercase">Select a registry node to analyze historical data</p>
            </div>
            {selectedFarmer && (
             <button
@@ -69,7 +69,7 @@ const FarmerProfile = () => {
         <div className="flex flex-col md:flex-row gap-6">
           {/* Farmer dropdown */}
           <div className="flex-1 space-y-2">
-            <label className="text-[9px] font-black text-[#052c14]/20 uppercase tracking-[0.2em] ml-2">Registry ID</label>
+            <label className="text-[9px] font-black text-[#052c14]/60 uppercase tracking-[0.2em] ml-2">Registry ID</label>
             <select
               value={selectedFarmer}
               onChange={e => setSelectedFarmer(e.target.value)}
@@ -89,7 +89,7 @@ const FarmerProfile = () => {
 
           {/* Grade filter */}
           <div className="w-full md:w-64 space-y-2">
-            <label className="text-[9px] font-black text-[#052c14]/20 uppercase tracking-[0.2em] ml-2">Quality Filter</label>
+            <label className="text-[9px] font-black text-[#052c14]/60 uppercase tracking-[0.2em] ml-2">Quality Filter</label>
             <select
               value={filterGrade}
               onChange={e => setFilterGrade(e.target.value)}
@@ -120,7 +120,7 @@ const FarmerProfile = () => {
             <h3 className="text-2xl font-black text-[#052c14] mb-4 tracking-[0.2em] uppercase">
               Terminal Idle
             </h3>
-            <p className="text-[#052c14]/30 text-xs font-bold max-w-sm mx-auto leading-relaxed uppercase tracking-widest">
+            <p className="text-[#052c14]/70 text-xs font-bold max-w-sm mx-auto leading-relaxed uppercase tracking-widest">
               Awaiting registry selection to initialize deep neural analysis and quality trending.
             </p>
           </div>
@@ -187,7 +187,7 @@ const FarmerProfile = () => {
                 className={`bg-white/90 rounded-2xl p-6
                              border ${s.border} shadow-xl relative overflow-hidden group hover:bg-emerald-50 transition-all`}>
                 <div className="flex items-center justify-between mb-4 relative z-10">
-                  <span className="text-[#052c14]/30 text-[9px] font-black uppercase tracking-[0.2em]">
+                  <span className="text-[#052c14]/70 text-[9px] font-black uppercase tracking-[0.2em]">
                     {s.label}
                   </span>
                   <span className="text-xl filter grayscale group-hover:grayscale-0 transition-all">{s.icon}</span>
@@ -195,7 +195,7 @@ const FarmerProfile = () => {
                 <p className={`text-4xl font-black ${s.color} tracking-tighter relative z-10 mb-1`}>
                   {s.value}
                 </p>
-                <p className="text-[#052c14]/20 text-[9px] font-bold uppercase tracking-widest relative z-10">
+                <p className="text-[#052c14]/60 text-[9px] font-bold uppercase tracking-widest relative z-10">
                   {s.sub}
                 </p>
               </div>
@@ -232,7 +232,7 @@ const FarmerProfile = () => {
                           }}>
                           GRADE {g.grade}
                         </span>
-                        <span className="text-[#052c14]/20 text-[10px] font-black uppercase tracking-widest">
+                        <span className="text-[#052c14]/60 text-[10px] font-black uppercase tracking-widest">
                            {g.count} Recorded Sessions
                         </span>
                       </div>
@@ -266,7 +266,7 @@ const FarmerProfile = () => {
               ></div>
               
               <div className="text-center relative z-10">
-                <p className="text-[#052c14]/20 text-[10px] font-black tracking-[0.3em] uppercase mb-8">Vector Momentum</p>
+                <p className="text-[#052c14]/60 text-[10px] font-black tracking-[0.3em] uppercase mb-8">Vector Momentum</p>
                 <div className="text-7xl mb-6 filter drop-shadow-[0_10px_10px_rgba(0,0,0,0.05)] animate-bounce-slow">
                   {trendIcon()}
                 </div>
@@ -279,15 +279,15 @@ const FarmerProfile = () => {
 
                 <div className="grid grid-cols-3 gap-8 w-full border-t border-emerald-100 pt-8">
                   <div>
-                    <p className="text-[#052c14]/20 text-[8px] font-black uppercase tracking-widest mb-1">Latest Rank</p>
+                    <p className="text-[#052c14]/60 text-[8px] font-black uppercase tracking-widest mb-1">Latest Rank</p>
                     <p className="text-lg font-black text-[#052c14]" style={{ color: getGradeColor(farmerStats.latestGrade) }}>{farmerStats.latestGrade}</p>
                   </div>
                   <div>
-                    <p className="text-[#052c14]/20 text-[8px] font-black uppercase tracking-widest mb-1">Last VFA</p>
+                    <p className="text-[#052c14]/60 text-[8px] font-black uppercase tracking-widest mb-1">Last VFA</p>
                     <p className="text-lg font-black text-[#052c14]">{farmerStats.latestVFA}</p>
                   </div>
                   <div>
-                    <p className="text-[#052c14]/20 text-[8px] font-black uppercase tracking-widest mb-1">Registry</p>
+                    <p className="text-[#052c14]/60 text-[8px] font-black uppercase tracking-widest mb-1">Registry</p>
                     <p className="text-[10px] font-black text-[#052c14]/60 pt-1 leading-none">{farmerStats.latestDate?.split(' ')[0]}</p>
                   </div>
                 </div>
@@ -304,7 +304,7 @@ const FarmerProfile = () => {
                   Quality Lifecycle
                 </h4>
               </div>
-              <p className="text-[#052c14]/30 text-[9px] font-black uppercase tracking-[0.2em] bg-emerald-50 px-3 py-1 rounded-lg border border-emerald-100">
+              <p className="text-[#052c14]/70 text-[9px] font-black uppercase tracking-[0.2em] bg-emerald-50 px-3 py-1 rounded-lg border border-emerald-100">
                 Node {selectedFarmer} — Analyze Segment: {filteredHistory.length} Cycles
               </p>
             </div>
@@ -339,7 +339,7 @@ const FarmerProfile = () => {
                       if (active && payload && payload.length) {
                         return (
                           <div className="bg-white/95 backdrop-blur-xl p-4 border border-emerald-100 rounded-xl shadow-2xl">
-                            <p className="text-[9px] font-black text-[#052c14]/30 uppercase tracking-[0.2em] mb-2">{formatDateReadable(payload[0].payload.timestamp)}</p>
+                            <p className="text-[9px] font-black text-[#052c14]/70 uppercase tracking-[0.2em] mb-2">{formatDateReadable(payload[0].payload.timestamp)}</p>
                             <div className="flex items-center gap-3">
                               <div className="text-2xl font-black" style={{ color: getGradeColor(payload[0].payload.grade) }}>
                                 {payload[0].value.toFixed(4)}
@@ -348,7 +348,7 @@ const FarmerProfile = () => {
                                 Grade {payload[0].payload.grade}
                               </div>
                             </div>
-                             <div className="mt-2 text-[8px] font-bold text-[#052c14]/20 uppercase tracking-widest">
+                             <div className="mt-2 text-[8px] font-bold text-[#052c14]/60 uppercase tracking-widest">
                                 Sample ID: {payload[0].payload.sample_id}
                              </div>
                           </div>
@@ -376,7 +376,7 @@ const FarmerProfile = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
              {/* Grade bar chart */}
              <div className="bg-white/90 rounded-2xl shadow-xl p-6 border border-emerald-100">
-                <h4 className="text-[10px] font-black text-[#052c14]/40 uppercase tracking-[0.2em] mb-8 ml-2">
+                <h4 className="text-[10px] font-black text-[#052c14]/75 uppercase tracking-[0.2em] mb-8 ml-2">
                   Session Variance Analysis
                 </h4>
                 <div className="h-[200px]">
@@ -403,15 +403,15 @@ const FarmerProfile = () => {
               <div className="bg-white/90 rounded-2xl shadow-xl p-6 border border-emerald-100 flex flex-col justify-center">
                  <div className="space-y-4">
                     <div className="flex items-center justify-between p-4 rounded-xl bg-emerald-50 border border-emerald-100">
-                       <span className="text-[10px] font-black text-[#052c14]/20 uppercase tracking-widest">Anomaly Detection</span>
+                       <span className="text-[10px] font-black text-[#052c14]/60 uppercase tracking-widest">Anomaly Detection</span>
                        <span className="text-xs font-black text-emerald-600">NOMINAL</span>
                     </div>
                     <div className="flex items-center justify-between p-4 rounded-xl bg-emerald-50 border border-emerald-100">
-                       <span className="text-[10px] font-black text-[#052c14]/20 uppercase tracking-widest">Data Integrity</span>
+                       <span className="text-[10px] font-black text-[#052c14]/60 uppercase tracking-widest">Data Integrity</span>
                        <span className="text-xs font-black text-[#052c14]">99.98%</span>
                     </div>
                     <div className="flex items-center justify-between p-4 rounded-xl bg-emerald-50 border border-emerald-100">
-                       <span className="text-[10px] font-black text-[#052c14]/20 uppercase tracking-widest">Sync Latency</span>
+                       <span className="text-[10px] font-black text-[#052c14]/60 uppercase tracking-widest">Sync Latency</span>
                        <span className="text-xs font-black text-emerald-500">14ms</span>
                     </div>
                  </div>
@@ -424,7 +424,7 @@ const FarmerProfile = () => {
               <h4 className="text-[11px] font-black text-[#052c14] tracking-[0.2em] uppercase">
                 Historical Registry Logs
               </h4>
-              <span className="text-[9px] font-black text-[#052c14]/40 uppercase tracking-widest">
+              <span className="text-[9px] font-black text-[#052c14]/75 uppercase tracking-widest">
                 {filteredHistory.length} Cycles Logged
               </span>
             </div>
@@ -434,7 +434,7 @@ const FarmerProfile = () => {
                   <tr className="bg-emerald-50/50">
                     {['Registry','Batch','VFA','pH','Turbidity','Temp','Status'].map(h => (
                       <th key={h}
-                        className="px-6 py-4 text-left text-[9px] font-black text-[#052c14]/30 uppercase tracking-[0.2em]">
+                        className="px-6 py-4 text-left text-[9px] font-black text-[#052c14]/70 uppercase tracking-[0.2em]">
                         {h}
                       </th>
                     ))}
@@ -444,7 +444,7 @@ const FarmerProfile = () => {
                   {[...filteredHistory].reverse().map((item, i) => (
                     <tr key={item.id}
                       className="hover:bg-emerald-50/50 transition-colors">
-                      <td className="px-6 py-4 text-[#052c14]/40 text-[10px] font-bold font-mono">
+                      <td className="px-6 py-4 text-[#052c14]/75 text-[10px] font-bold font-mono">
                         {item.date}
                       </td>
                       <td className="px-6 py-4 text-[#052c14]/80 font-black text-[10px] tracking-wider">
@@ -489,7 +489,7 @@ const FarmerProfile = () => {
           <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center mb-6 border border-emerald-100 shadow-xl">
             <span className="text-4xl">📭</span>
           </div>
-          <p className="text-[#052c14]/40 text-[11px] tracking-widest font-black uppercase">
+          <p className="text-[#052c14]/75 text-[11px] tracking-widest font-black uppercase">
             No history found for <span className="text-emerald-600 underline">#{selectedFarmer}</span>
           </p>
         </div>

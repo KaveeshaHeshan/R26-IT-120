@@ -84,7 +84,7 @@ const LiveMonitor = () => {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
         <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
-        <p className="text-[#052c14]/40 text-sm tracking-wide font-black uppercase tracking-[0.2em]">
+        <p className="text-[#052c14]/75 text-sm tracking-wide font-black uppercase tracking-[0.2em]">
           Connecting to IoT stream...
         </p>
       </div>
@@ -97,7 +97,7 @@ const LiveMonitor = () => {
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-center px-4">
         <div className="text-5xl mb-2">⚠️</div>
         <h3 className="text-lg font-black text-[#052c14] uppercase tracking-widest">Connection Error</h3>
-        <p className="text-[#052c14]/40 text-xs font-bold uppercase tracking-widest max-w-xs">{error}</p>
+        <p className="text-[#052c14]/75 text-xs font-bold uppercase tracking-widest max-w-xs">{error}</p>
       </div>
     )
   }
@@ -113,7 +113,7 @@ const LiveMonitor = () => {
           <h3 className="text-xl font-black text-[#052c14] uppercase tracking-widest mb-3">
             Awaiting IoT Data
           </h3>
-          <p className="text-[#052c14]/40 text-xs font-bold uppercase tracking-widest max-w-sm leading-relaxed">
+          <p className="text-[#052c14]/75 text-xs font-bold uppercase tracking-widest max-w-sm leading-relaxed">
             No sensor readings received yet. Once your IoT device starts transmitting, live data will appear here automatically.
           </p>
         </div>
@@ -156,13 +156,13 @@ const LiveMonitor = () => {
             <div className="inline-flex items-center px-8 py-3 rounded-2xl bg-white border border-emerald-100 shadow-lg">
               <span className="text-3xl mr-3">{getGradeIcon(latest.grade)}</span>
               <div className="text-left">
-                <div className="text-[10px] font-black text-[#052c14]/30 uppercase tracking-widest mb-0.5">Classification</div>
+                <div className="text-[10px] font-black text-[#052c14]/70 uppercase tracking-widest mb-0.5">Classification</div>
                 <div className="text-2xl font-black text-[#052c14] leading-none">Grade {latest.grade}</div>
               </div>
             </div>
             <div className="flex gap-4">
               <div className="px-5 py-2 rounded-xl bg-emerald-50 border border-emerald-50">
-                <p className="text-[9px] font-black text-[#052c14]/20 uppercase tracking-widest mb-1 text-center">Safety Rating</p>
+                <p className="text-[9px] font-black text-[#052c14]/60 uppercase tracking-widest mb-1 text-center">Safety Rating</p>
                 <p className="text-xs font-black uppercase tracking-wide text-center" style={{ color: getVFAStatusColor(latest.vfa) }}>
                   {getVFAStatus(latest.vfa)}
                 </p>
@@ -170,7 +170,7 @@ const LiveMonitor = () => {
             </div>
           </div>
 
-          <p className="text-[#052c14]/40 text-[10px] font-bold uppercase tracking-[0.3em] mt-10">
+          <p className="text-[#052c14]/75 text-[10px] font-bold uppercase tracking-[0.3em] mt-10">
             Detected: {latest.timestamp?.split('T')[1]?.slice(0, 8)} • ID: {latest.sample_id}
           </p>
         </div>
@@ -182,7 +182,7 @@ const LiveMonitor = () => {
         <div className="bg-white/90 rounded-2xl p-6 border border-emerald-100 shadow-xl relative overflow-hidden group hover:bg-emerald-50 transition-all">
           <div className="flex items-center justify-between mb-6 relative z-10">
             <div>
-              <p className="text-[#052c14]/30 text-[9px] font-black uppercase tracking-widest mb-1">Stability Index</p>
+              <p className="text-[#052c14]/70 text-[9px] font-black uppercase tracking-widest mb-1">Stability Index</p>
               <h4 className="text-[#052c14] text-xs font-black uppercase tracking-widest">pH Spectrum</h4>
             </div>
             <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20 group-hover:scale-110 transition-transform">
@@ -191,14 +191,14 @@ const LiveMonitor = () => {
           </div>
           <p className="text-4xl font-black text-[#052c14] tracking-tighter relative z-10">{latest.pH.toFixed(2)}</p>
           <div className="mt-6 space-y-2 relative z-10">
-            <div className="flex justify-between text-[9px] font-black uppercase tracking-widest text-[#052c14]/20">
+            <div className="flex justify-between text-[9px] font-black uppercase tracking-widest text-[#052c14]/60">
               <span>Basic</span><span>Acidic</span>
             </div>
             <div className="bg-emerald-50 rounded-full h-2 border border-emerald-100 overflow-hidden">
               <div className="bg-gradient-to-r from-blue-600 to-blue-300 h-full rounded-full transition-all duration-1000"
                 style={{ width: `${(latest.pH / 14) * 100}%` }} />
             </div>
-            <p className="text-[10px] font-bold text-[#052c14]/40 text-center tracking-wide pt-1 italic">Optimal range: 6.8 — 7.2</p>
+            <p className="text-[10px] font-bold text-[#052c14]/75 text-center tracking-wide pt-1 italic">Optimal range: 6.8 — 7.2</p>
           </div>
         </div>
 
@@ -206,7 +206,7 @@ const LiveMonitor = () => {
         <div className="bg-white/90 rounded-2xl p-6 border border-emerald-100 shadow-xl relative overflow-hidden group hover:bg-emerald-50 transition-all">
           <div className="flex items-center justify-between mb-6 relative z-10">
             <div>
-              <p className="text-[#052c14]/30 text-[9px] font-black uppercase tracking-widest mb-1">Clarity Metric</p>
+              <p className="text-[#052c14]/70 text-[9px] font-black uppercase tracking-widest mb-1">Clarity Metric</p>
               <h4 className="text-[#052c14] text-xs font-black uppercase tracking-widest">Turbidity</h4>
             </div>
             <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20 group-hover:scale-110 transition-transform">
@@ -214,10 +214,10 @@ const LiveMonitor = () => {
             </div>
           </div>
           <p className="text-4xl font-black text-[#052c14] tracking-tighter relative z-10">
-            {latest.turbidity.toFixed(1)} <span className="text-base text-[#052c14]/30 font-bold ml-1">NTU</span>
+            {latest.turbidity.toFixed(1)} <span className="text-base text-[#052c14]/70 font-bold ml-1">NTU</span>
           </p>
           <div className="mt-6 space-y-2 relative z-10">
-            <div className="flex justify-between text-[9px] font-black uppercase tracking-widest text-[#052c14]/20">
+            <div className="flex justify-between text-[9px] font-black uppercase tracking-widest text-[#052c14]/60">
               <span>Pure</span><span>Dense</span>
             </div>
             <div className="bg-emerald-50 rounded-full h-2 border border-emerald-100 overflow-hidden">
@@ -231,7 +231,7 @@ const LiveMonitor = () => {
         <div className="bg-white/90 rounded-2xl p-6 border border-emerald-100 shadow-xl relative overflow-hidden group hover:bg-emerald-50 transition-all">
           <div className="flex items-center justify-between mb-6 relative z-10">
             <div>
-              <p className="text-[#052c14]/30 text-[9px] font-black uppercase tracking-widest mb-1">Thermal State</p>
+              <p className="text-[#052c14]/70 text-[9px] font-black uppercase tracking-widest mb-1">Thermal State</p>
               <h4 className="text-[#052c14] text-xs font-black uppercase tracking-widest">Ambient Temp</h4>
             </div>
             <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center border border-orange-500/20 group-hover:scale-110 transition-transform">
@@ -239,17 +239,17 @@ const LiveMonitor = () => {
             </div>
           </div>
           <p className="text-4xl font-black text-[#052c14] tracking-tighter relative z-10">
-            {latest.temperature.toFixed(1)}<span className="text-base text-[#052c14]/30 font-bold ml-1">°C</span>
+            {latest.temperature.toFixed(1)}<span className="text-base text-[#052c14]/70 font-bold ml-1">°C</span>
           </p>
           <div className="mt-6 space-y-2 relative z-10">
-            <div className="flex justify-between text-[9px] font-black uppercase tracking-widest text-[#052c14]/20">
+            <div className="flex justify-between text-[9px] font-black uppercase tracking-widest text-[#052c14]/60">
               <span>Cool</span><span>Hot</span>
             </div>
             <div className="bg-emerald-50 rounded-full h-2 border border-emerald-100 overflow-hidden">
               <div className="bg-gradient-to-r from-orange-600 to-red-400 h-full rounded-full transition-all duration-1000"
                 style={{ width: `${Math.max(0, Math.min(((latest.temperature - 15) / 25) * 100, 100))}%` }} />
             </div>
-            <p className="text-[10px] font-bold text-[#052c14]/40 text-center tracking-wide pt-1 italic">Sensor variation: ±0.1°C</p>
+            <p className="text-[10px] font-bold text-[#052c14]/75 text-center tracking-wide pt-1 italic">Sensor variation: ±0.1°C</p>
           </div>
         </div>
       </div>
@@ -263,7 +263,7 @@ const LiveMonitor = () => {
           { label: 'Capture Time', value: formatShortTime(latest.timestamp) },
         ].map((item, i) => (
           <div key={i} className="flex flex-col items-center justify-center border-r last:border-0 border-emerald-100">
-            <p className="text-[#052c14]/20 text-[9px] font-black uppercase tracking-[0.2em] mb-2">{item.label}</p>
+            <p className="text-[#052c14]/60 text-[9px] font-black uppercase tracking-[0.2em] mb-2">{item.label}</p>
             <p className="text-[#052c14] text-[11px] font-mono font-black tracking-widest bg-white px-3 py-1.5 rounded-lg border border-emerald-100 shadow-sm">
               {item.value}
             </p>
@@ -279,18 +279,18 @@ const LiveMonitor = () => {
               <div className="w-1.5 h-4 bg-emerald-500 rounded-full"></div>
               <h3 className="text-sm font-black text-[#052c14] tracking-[0.2em] uppercase">VFA Dynamic Trend</h3>
             </div>
-            <p className="text-[#052c14]/30 text-[10px] font-bold tracking-widest uppercase ml-3">
+            <p className="text-[#052c14]/70 text-[10px] font-bold tracking-widest uppercase ml-3">
               Real-time variance analysis ({history.length} samples)
             </p>
           </div>
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-[#4CBB17]" />
-              <span className="text-[9px] font-black text-[#052c14]/40 uppercase tracking-widest">Safe Level</span>
+              <span className="text-[9px] font-black text-[#052c14]/75 uppercase tracking-widest">Safe Level</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-red-500" />
-              <span className="text-[9px] font-black text-[#052c14]/40 uppercase tracking-widest">Critical</span>
+              <span className="text-[9px] font-black text-[#052c14]/75 uppercase tracking-widest">Critical</span>
             </div>
           </div>
         </div>
@@ -305,7 +305,7 @@ const LiveMonitor = () => {
                 if (active && payload && payload.length) {
                   return (
                     <div className="bg-white/95 backdrop-blur-xl p-4 border border-emerald-100 rounded-xl shadow-xl">
-                      <p className="text-[9px] font-black text-[#052c14]/30 uppercase tracking-[0.2em] mb-2">{payload[0].payload.timestamp?.split('T')[1]?.slice(0, 8)}</p>
+                      <p className="text-[9px] font-black text-[#052c14]/70 uppercase tracking-[0.2em] mb-2">{payload[0].payload.timestamp?.split('T')[1]?.slice(0, 8)}</p>
                       <div className="flex items-center gap-3">
                         <div className="text-2xl font-black" style={{ color: getGradeColor(payload[0].payload.grade) }}>{payload[0].value.toFixed(4)}</div>
                         <div className="px-2 py-0.5 rounded-md bg-emerald-50 border border-emerald-100 text-[10px] font-black text-emerald-600 uppercase">Grade {payload[0].payload.grade}</div>
@@ -327,21 +327,21 @@ const LiveMonitor = () => {
       <div className="bg-white/90 rounded-2xl shadow-xl border border-emerald-100 overflow-hidden">
         <div className="px-8 py-5 border-b border-emerald-50 bg-emerald-50/50 flex items-center justify-between">
           <h3 className="text-[11px] font-black text-[#052c14]/80 tracking-[0.2em] uppercase">System Telemetry Logs</h3>
-          <span className="text-[9px] font-black text-[#052c14]/20 uppercase tracking-widest italic">Auto-refreshing every 60s</span>
+          <span className="text-[9px] font-black text-[#052c14]/60 uppercase tracking-widest italic">Auto-refreshing every 60s</span>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-emerald-50">
                 {['Registry Time','Node','VFA Metric','pH','Turbidity','Thermal','Grade'].map(h => (
-                  <th key={h} className="px-6 py-4 text-left text-[9px] font-black text-[#052c14]/30 uppercase tracking-[0.2em]">{h}</th>
+                  <th key={h} className="px-6 py-4 text-left text-[9px] font-black text-[#052c14]/70 uppercase tracking-[0.2em]">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-emerald-50">
               {[...history].reverse().slice(0, 10).map((item) => (
                 <tr key={item.id} className="hover:bg-emerald-50/30 transition-colors">
-                  <td className="px-6 py-4 text-[#052c14]/40 text-[10px] font-bold font-mono">{item.time}</td>
+                  <td className="px-6 py-4 text-[#052c14]/75 text-[10px] font-bold font-mono">{item.time}</td>
                   <td className="px-6 py-4 text-[#052c14]/80 font-black text-[10px] tracking-wider uppercase">{item.farmer_id}</td>
                   <td className="px-6 py-4 font-black text-xs" style={{ color: getGradeColor(item.grade) }}>{item.vfa.toFixed(4)}</td>
                   <td className="px-6 py-4 text-[#052c14]/60 text-[10px] font-bold">{item.pH.toFixed(2)}</td>

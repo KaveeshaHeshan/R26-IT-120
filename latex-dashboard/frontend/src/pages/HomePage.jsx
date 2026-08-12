@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import heroImg from '../assets/ttt.png';
 import logoImg from '../assets/logo_transparent.png';
@@ -25,6 +25,7 @@ const HomePage = () => {
   };
 
   const { vfa, grade } = calculateMetrics();
+  const navigate = useNavigate();
 
   return (
     <div className="w-full min-h-screen bg-white font-sans overflow-x-hidden selection:bg-teal-500/30 text-gray-800">
@@ -97,10 +98,14 @@ const HomePage = () => {
               transition={{ duration: 0.8, ease: "easeOut", delay: 0.4 }}
               className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto"
             >
-              <button className="w-full sm:w-auto bg-[#0a3622] hover:bg-[#072618] text-white px-8 py-3.5 rounded-full text-sm font-bold tracking-wide transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5">
+              <button
+                onClick={() => navigate('/login')}
+                className="w-full sm:w-auto bg-[#0a3622] hover:bg-[#072618] text-white px-8 py-3.5 rounded-full text-sm font-bold tracking-wide transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5">
                 EXPLORE SOLUTIONS
               </button>
-              <button className="w-full sm:w-auto bg-white/50 lg:bg-transparent border border-gray-400 hover:border-gray-600 text-gray-800 px-8 py-3.5 rounded-full text-sm font-bold tracking-wide transition-all backdrop-blur-sm lg:backdrop-blur-none">
+              <button
+                onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
+                className="w-full sm:w-auto bg-white/50 lg:bg-transparent border border-gray-400 hover:border-gray-600 text-gray-800 px-8 py-3.5 rounded-full text-sm font-bold tracking-wide transition-all backdrop-blur-sm lg:backdrop-blur-none">
                 LEARN MORE
               </button>
             </motion.div>
@@ -147,7 +152,7 @@ const HomePage = () => {
       </div>
 
       {/* ── FEATURES SECTION ────────────────────────────────────────────────────── */}
-      <section className="w-full py-20 bg-white">
+      <section id="features" className="w-full py-20 bg-white">
         <div className="max-w-7xl mx-auto px-8">
           <h2 className="text-center text-3xl font-bold text-gray-900 mb-14 tracking-wide">
             OUR INTELLIGENT MONITORING

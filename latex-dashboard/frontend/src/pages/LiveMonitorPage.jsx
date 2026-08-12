@@ -27,10 +27,10 @@ const LiveMonitorPage = () => {
         <h2 className="text-2xl font-black text-[#052c14] mb-4 tracking-[0.2em] uppercase">
           Access Denied
         </h2>
-        <p className="text-[#052c14]/30 text-xs font-bold uppercase tracking-widest max-w-xs leading-relaxed">
+        <p className="text-[#052c14]/70 text-xs font-bold uppercase tracking-widest max-w-xs leading-relaxed">
           The real-time telemetry stream is restricted to secure terminal operators only.
         </p>
-        <p className="text-[#052c14]/20 text-[10px] font-black mt-6 px-4 py-2 border border-emerald-100 rounded-lg uppercase tracking-widest">
+        <p className="text-[#052c14]/60 text-[10px] font-black mt-6 px-4 py-2 border border-emerald-100 rounded-lg uppercase tracking-widest">
           Permission Token Required: Admin/Manager
         </p>
       </div>
@@ -53,7 +53,7 @@ const LiveMonitorPage = () => {
             <h1 className="text-2xl font-black text-[#052c14] tracking-tighter uppercase leading-none">
               Live Telemetry
             </h1>
-            <p className="text-[#052c14]/30 text-[9px] mt-2 uppercase tracking-[0.3em] font-black flex items-center gap-2">
+            <p className="text-[#052c14]/70 text-[9px] mt-2 uppercase tracking-[0.3em] font-black flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.8)]"></span>
               Synchronized Local Sockets • Active Stream
             </p>
@@ -61,7 +61,7 @@ const LiveMonitorPage = () => {
         </div>
         <div className="flex items-center gap-6">
           <div className="bg-white px-5 py-2.5 rounded-2xl border border-emerald-100 shadow-sm flex items-center gap-3">
-             <span className="text-[10px] font-black text-[#052c14]/30 uppercase tracking-widest">Signal Strength</span>
+             <span className="text-[10px] font-black text-[#052c14]/80 uppercase tracking-widest">Signal Strength</span>
              <div className="flex gap-[2px]">
                 <div className="w-1 h-3 bg-emerald-500 rounded-[1px]"></div>
                 <div className="w-1 h-3 bg-emerald-500 rounded-[1px]"></div>
@@ -70,7 +70,7 @@ const LiveMonitorPage = () => {
              </div>
           </div>
           <div className="hidden md:flex flex-col items-end border-l border-emerald-100 pl-6 ml-2">
-            <span className="text-[#052c14]/20 text-[8px] font-black uppercase tracking-widest mb-1">Authenticated Node</span>
+            <span className="text-[#052c14]/60 text-[8px] font-black uppercase tracking-widest mb-1">Authenticated Node</span>
             <span className="text-[#052c14]/60 text-[10px] font-mono font-bold">{userId?.slice(0, 12)}</span>
           </div>
         </div>
@@ -86,15 +86,15 @@ const LiveMonitorPage = () => {
                       px-10 py-8 flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-4">
            <div className="w-2 h-2 rounded-full bg-emerald-500/20"></div>
-           <p className="text-[#052c14]/20 text-[9px] font-black uppercase tracking-[0.2em]">
+           <p className="text-[#052c14]/60 text-[9px] font-black uppercase tracking-[0.2em]">
              WebSocket Engine • Sub-1s Latency • Secure Lattice
            </p>
         </div>
         <div className="flex items-center gap-4">
-           <span className="text-[#052c14]/30 text-[9px] font-bold tracking-widest bg-white border border-emerald-100 px-4 py-1.5 rounded-full shadow-sm">
+           <span className="text-[#052c14]/70 text-[9px] font-bold tracking-widest bg-white border border-emerald-100 px-4 py-1.5 rounded-full shadow-sm">
              STATUS: TRANSMITTING
            </span>
-           <p className="text-[#052c14]/40 text-[9px] font-black tracking-widest">
+           <p className="text-[#052c14]/75 text-[9px] font-black tracking-widest">
              © 2026 LATEXGUARD CORE
            </p>
         </div>

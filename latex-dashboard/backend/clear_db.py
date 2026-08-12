@@ -20,15 +20,15 @@ firebase_admin.initialize_app(cred, {'databaseURL': FIREBASE_DB_URL})
 print("Clearing all dummy data from Firebase...")
 
 db.reference('predictions').delete()
-print("  ✅ predictions — cleared")
+print("  [OK] predictions cleared")
 
 db.reference('alerts').delete()
-print("  ✅ alerts — cleared")
+print("  [OK] alerts cleared")
 
 db.reference('farmers').delete()
-print("  ✅ farmers — cleared")
+print("  [OK] farmers cleared")
 
 db.reference('daily_summary').delete()
-print("  ✅ daily_summary — cleared")
+print("  [OK] daily_summary cleared")
 
 print("\nDatabase is now empty. Dashboard will show the empty state.")

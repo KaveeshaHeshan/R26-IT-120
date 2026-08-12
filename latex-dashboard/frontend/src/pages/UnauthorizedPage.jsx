@@ -58,16 +58,16 @@ const UnauthorizedPage = () => {
         </h1>
 
         {/* ── Message ──────────────────────────────────────────────────────── */}
-        <p className="text-[#052c14]/30 text-xs font-bold uppercase tracking-[0.2em] mb-10 max-w-xs mx-auto leading-relaxed">
+        <p className="text-[#052c14]/70 text-xs font-bold uppercase tracking-[0.2em] mb-10 max-w-xs mx-auto leading-relaxed">
           The security layer has denied access to this terminal node based on your current authorization token.
         </p>
 
         {/* ── Current role ─────────────────────────────────────────────────── */}
         {role && (
           <div className="bg-emerald-50/50 border border-emerald-100/50 rounded-2xl p-6 mb-10 shadow-inner">
-            <p className="text-[#052c14]/20 text-[8px] font-black uppercase tracking-[0.3em] mb-3">Identity Node Information</p>
+            <p className="text-[#052c14]/60 text-[8px] font-black uppercase tracking-[0.3em] mb-3">Identity Node Information</p>
             <div className="flex items-center justify-center gap-4">
-              <span className="text-[10px] font-mono font-black text-[#052c14]/40">{userId?.slice(0, 16)}</span>
+              <span className="text-[10px] font-mono font-black text-[#052c14]/75">{userId?.slice(0, 16)}</span>
               <div className="w-1 h-3 bg-emerald-200"></div>
               <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">{getRoleLabel(role)}</span>
             </div>
@@ -94,7 +94,7 @@ const UnauthorizedPage = () => {
 
         <div className="mt-12 flex items-center justify-center gap-4">
           <div className="w-12 h-[1px] bg-emerald-100"></div>
-          <p className="text-[#052c14]/20 text-[9px] font-black uppercase tracking-[0.3em]">
+          <p className="text-[#052c14]/60 text-[9px] font-black uppercase tracking-[0.3em]">
              Lattice Secure Node 403
           </p>
           <div className="w-12 h-[1px] bg-emerald-100"></div>

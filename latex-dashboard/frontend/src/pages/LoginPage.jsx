@@ -4,7 +4,6 @@ import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import Login from '../components/auth/Login'
-import rubberBg from '../assets/rubberproject.png'
 import logoImg from '../assets/logo_transparent.png'
 
 const LoginPage = () => {
@@ -41,52 +40,16 @@ const LoginPage = () => {
         </Link>
       </nav>
 
-      {/* ── MAIN HERO LAYOUT (same as homepage) ───────────────────────────── */}
-      <div className="flex-1 relative flex items-center overflow-hidden bg-[#fcfdfc]">
-
-        {/* Full-width background image that fades to white on the right */}
-        <div className="absolute inset-0 flex">
-          <div className="w-full lg:w-[60%] h-full relative">
-            <img
-              src={rubberBg}
-              alt="Rubber plantation"
-              className="w-full h-full object-cover object-center"
-            />
-            {/* Left dark overlay for the text area */}
-            <div className="absolute inset-0 bg-gradient-to-r from-[#0a3622]/80 via-[#0a3622]/40 to-transparent" />
-            {/* Smooth fade to white on right edge — exactly like homepage */}
-            <div className="hidden lg:block absolute top-0 right-0 w-64 h-full bg-gradient-to-r from-transparent to-[#fcfdfc]" />
-          </div>
-          <div className="hidden lg:block flex-1 bg-[#fcfdfc]" />
-        </div>
-
-        {/* Overlay text on image (bottom-left) */}
-        <div className="absolute bottom-12 left-10 z-10 pr-8">
-          <p className="text-[#c9a84c] text-xs font-bold uppercase tracking-[0.3em] mb-3 drop-shadow-md">
-            Smart Quality Protection
-          </p>
-          <h2 className="text-4xl lg:text-5xl font-black text-[#c9a84c] leading-tight uppercase tracking-wide drop-shadow-lg">
-            SECURE <br /> PORTAL
-          </h2>
-          <h2 className="text-4xl lg:text-5xl font-black text-white leading-tight uppercase tracking-wide drop-shadow-lg">
-            ACCESS
-          </h2>
-        </div>
-
-        {/* Login card — right side, centered in white space */}
-        <div className="relative z-10 w-full flex justify-center lg:justify-end">
-          <div className="w-full lg:w-[40%] px-6 lg:px-16 py-12 flex items-center justify-center">
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, ease: 'easeOut' }}
-              className="w-full max-w-sm"
-            >
-              <Login />
-            </motion.div>
-          </div>
-        </div>
-
+      {/* ── MAIN HERO LAYOUT (centered login layout) ───────────────────────────── */}
+      <div className="flex-1 flex items-center justify-center bg-[#fcfdfc] p-6">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease: 'easeOut' }}
+          className="w-full max-w-md"
+        >
+          <Login />
+        </motion.div>
       </div>
     </div>
   )

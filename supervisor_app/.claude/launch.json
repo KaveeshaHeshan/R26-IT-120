@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "supervisor_app-web",
+      "runtimeExecutable": "flutter",
+      "runtimeArgs": ["run", "-d", "web-server", "--web-port", "8765", "--web-hostname", "127.0.0.1"],
+      "port": 8765
+    },
+    {
+      "name": "supervisor_app-web-static",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "8766", "--directory", "build/web"],
+      "port": 8766
+    }
+  ]
+}

@@ -2,7 +2,6 @@
 
 import { Routes, Route, Navigate } from 'react-router-dom'
 
-import HomePage from './pages/HomePage'
 import LoginPage from './pages/LoginPage'
 import LiveMonitorPage from './pages/LiveMonitorPage'
 import FarmerProfilePage from './pages/FarmerProfilePage'
@@ -75,10 +74,10 @@ const App = () => {
         element={<UnauthorizedPage />}
       />
 
-      {/* Home Page */}
+      {/* Redirect to login */}
       <Route
         path="/"
-        element={<HomePage />}
+        element={<Navigate to="/login" replace />}
       />
 
       {/* Live Monitor / Dashboard */}

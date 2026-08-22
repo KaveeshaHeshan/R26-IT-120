@@ -1,7 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'dashboard_home_screen.dart';
-import 'history_screen.dart';
+import 'task_manager_screen.dart';
 import 'profile_screen.dart';
 import 'tapping_records_screen.dart';
 import '../theme/app_theme.dart';
@@ -33,7 +33,7 @@ class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
         });
       },
     ),
-    HistoryScreen(userId: widget.userId),
+    TaskManagerScreen(userId: widget.userId),
     TappingRecordsScreen(userId: widget.userId),
     ProfileScreen(userId: widget.userId),
   ];
@@ -72,12 +72,18 @@ class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
         },
         destinations: const <NavigationDestination>[
           NavigationDestination(icon: Icon(Icons.home_outlined), label: 'Home'),
-          NavigationDestination(icon: Icon(Icons.history), label: 'History'),
+          NavigationDestination(
+            icon: Icon(Icons.checklist_rounded),
+            label: 'Tasks',
+          ),
           NavigationDestination(
             icon: Icon(Icons.agriculture_outlined),
             label: 'Tapping Records',
           ),
-          NavigationDestination(icon: Icon(Icons.person_outline), label: 'Profile'),
+          NavigationDestination(
+            icon: Icon(Icons.person_outline),
+            label: 'Profile',
+          ),
         ],
       ),
     );
@@ -85,7 +91,7 @@ class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
 
   String _titleForIndex(int index) {
     if (index == 1) {
-      return 'History';
+      return 'Tasks';
     }
     if (index == 2) {
       return 'Tapping Records';

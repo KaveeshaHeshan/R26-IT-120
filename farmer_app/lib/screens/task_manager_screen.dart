@@ -15,6 +15,7 @@ class _TaskManagerScreenState extends State<TaskManagerScreen> {
     String? docId,
     String? currentTitle,
     String? currentDetails,
+    DateTime? currentDueDate,
     bool completed = false,
   }) async {
     final TextEditingController titleController = TextEditingController(
@@ -23,81 +24,121 @@ class _TaskManagerScreenState extends State<TaskManagerScreen> {
     final TextEditingController detailsController = TextEditingController(
       text: currentDetails ?? '',
     );
+    DateTime? dueDate = currentDueDate;
 
     await showDialog<void>(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(docId == null ? 'Create Task' : 'Edit Task'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                TextField(
-                  controller: titleController,
-                  decoration: const InputDecoration(
-                    labelText: 'Task title',
-                    prefixIcon: Icon(Icons.task_alt_outlined),
-                  ),
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setDialogState) {
+            return AlertDialog(
+              title: Text(docId == null ? 'Create Task' : 'Edit Task'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    TextField(
+                      controller: titleController,
+                      decoration: const InputDecoration(
+                        labelText: 'Task title',
+                        prefixIcon: Icon(Icons.task_alt_outlined),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: detailsController,
+                      minLines: 2,
+                      maxLines: 4,
+                      decoration: const InputDecoration(
+                        labelText: 'Details',
+                        prefixIcon: Icon(Icons.notes_outlined),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.event_outlined),
+                      title: Text(
+                        dueDate == null
+                            ? 'Due date required'
+                            : 'Due ${_formatDate(dueDate)}',
+                      ),
+                      trailing: IconButton(
+                        tooltip: 'Choose due date',
+                        onPressed: () async {
+                          final DateTime today = DateTime.now();
+                          final DateTime? picked = await showDatePicker(
+                            context: context,
+                            firstDate: DateTime(today.year - 1),
+                            lastDate: DateTime(today.year + 5),
+                            initialDate: dueDate ?? today,
+                          );
+                          if (picked != null) {
+                            setDialogState(() => dueDate = picked);
+                          }
+                        },
+                        icon: const Icon(Icons.calendar_month_outlined),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: detailsController,
-                  minLines: 2,
-                  maxLines: 4,
-                  decoration: const InputDecoration(
-                    labelText: 'Details',
-                    prefixIcon: Icon(Icons.notes_outlined),
-                  ),
+              ),
+              actions: <Widget>[
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    final NavigatorState navigator = Navigator.of(
+                      context,
+                      rootNavigator: true,
+                    );
+                    final String title = titleController.text.trim();
+                    final String details = detailsController.text.trim();
+
+                    if (title.isEmpty || dueDate == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Enter a task title and choose a due date.',
+                          ),
+                        ),
+                      );
+                      return;
+                    }
+
+                    final CollectionReference<Map<String, dynamic>> tasksRef =
+                        FirebaseFirestore.instance
+                            .collection('users')
+                            .doc(widget.userId)
+                            .collection('tasks');
+
+                    if (docId == null) {
+                      await tasksRef.add(<String, dynamic>{
+                        'title': title,
+                        'details': details,
+                        'dueDate': Timestamp.fromDate(dueDate!),
+                        'completed': false,
+                        'createdAt': FieldValue.serverTimestamp(),
+                        'updatedAt': FieldValue.serverTimestamp(),
+                      });
+                    } else {
+                      await tasksRef.doc(docId).update(<String, dynamic>{
+                        'title': title,
+                        'details': details,
+                        'dueDate': Timestamp.fromDate(dueDate!),
+                        'updatedAt': FieldValue.serverTimestamp(),
+                      });
+                    }
+
+                    navigator.pop();
+                  },
+                  child: const Text('Save'),
                 ),
               ],
-            ),
-          ),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                final NavigatorState navigator = Navigator.of(
-                  context,
-                  rootNavigator: true,
-                );
-                final String title = titleController.text.trim();
-                final String details = detailsController.text.trim();
-
-                if (title.isEmpty) {
-                  return;
-                }
-
-                final CollectionReference<Map<String, dynamic>> tasksRef =
-                    FirebaseFirestore.instance
-                        .collection('users')
-                        .doc(widget.userId)
-                        .collection('tasks');
-
-                if (docId == null) {
-                  await tasksRef.add(<String, dynamic>{
-                    'title': title,
-                    'details': details,
-                    'completed': false,
-                    'createdAt': FieldValue.serverTimestamp(),
-                    'updatedAt': FieldValue.serverTimestamp(),
-                  });
-                } else {
-                  await tasksRef.doc(docId).update(<String, dynamic>{
-                    'title': title,
-                    'details': details,
-                    'updatedAt': FieldValue.serverTimestamp(),
-                  });
-                }
-
-                navigator.pop();
-              },
-              child: const Text('Save'),
-            ),
-          ],
+            );
+          },
         );
       },
     );
@@ -221,6 +262,7 @@ class _TaskManagerScreenState extends State<TaskManagerScreen> {
                                 currentDetails: _stringOrDefault(
                                   item['details'],
                                 ),
+                                currentDueDate: _dateValue(item['dueDate']),
                                 completed: completed,
                               );
                             } else {
@@ -264,6 +306,13 @@ class _TaskManagerScreenState extends State<TaskManagerScreen> {
       return '${dt.year}-${_two(dt.month)}-${_two(dt.day)} ${_two(dt.hour)}:${_two(dt.minute)}';
     }
     return _stringOrDefault(value);
+  }
+
+  DateTime? _dateValue(dynamic value) {
+    if (value is Timestamp) {
+      return value.toDate();
+    }
+    return null;
   }
 
   String _two(int value) => value.toString().padLeft(2, '0');

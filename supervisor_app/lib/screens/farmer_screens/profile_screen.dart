@@ -42,19 +42,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final FarmerPalette p = settings.palette;
 
     final TextEditingController nameController =
-        TextEditingController(text: _stringValue(currentData['name']));
+        TextEditingController(text: _editableString(currentData['name']));
+    final TextEditingController emailController =
+        TextEditingController(text: _editableString(currentData['email']));
+    final TextEditingController nicController =
+        TextEditingController(text: _editableString(currentData['nic']));
     final TextEditingController phoneController =
-        TextEditingController(text: _stringValue(currentData['phone']));
+        TextEditingController(text: _editableString(currentData['phone']));
     final TextEditingController addressController =
-        TextEditingController(text: _stringValue(currentData['address']));
+        TextEditingController(text: _editableString(currentData['address']));
     final TextEditingController districtController =
-        TextEditingController(text: _stringValue(currentData['district']));
+        TextEditingController(text: _editableString(currentData['district']));
     final TextEditingController landSizeController =
-        TextEditingController(text: _stringValue(currentData['landSize']));
+        TextEditingController(text: _editableString(currentData['landSize']));
     final TextEditingController rubberTreesController =
-        TextEditingController(text: _stringValue(currentData['rubberTrees']));
+        TextEditingController(text: _editableString(currentData['rubberTrees']));
     final TextEditingController experienceController =
-        TextEditingController(text: _stringValue(currentData['experience']));
+        TextEditingController(text: _editableString(currentData['experience']));
+    final TextEditingController roleController =
+        TextEditingController(text: _editableString(currentData['role']));
 
     await showDialog<void>(
       context: context,
@@ -66,11 +72,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
             settings.t('Edit Farmer Details', 'ගොවි විස්තර සංස්කරණය'),
             style: TextStyle(color: p.textPrimary, fontWeight: FontWeight.w900),
           ),
-          content: SizedBox(
-            width: 500,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+          content: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: 500,
+              maxHeight: MediaQuery.sizeOf(dialogContext).height * 0.62,
+            ),
             child: SingleChildScrollView(
               child: Column(
                 children: <Widget>[
+                  _editField(p: p, controller: emailController, label: 'Email', icon: Icons.email_outlined, keyboardType: TextInputType.emailAddress),
+                  _editField(p: p, controller: nicController, label: 'NIC', icon: Icons.badge_outlined),
+                  _editField(p: p, controller: roleController, label: 'Farmer Role', icon: Icons.verified_user_outlined),
                   _editField(p: p, controller: nameController, label: settings.t('Name', 'නම'), icon: Icons.person_outline),
                   _editField(p: p, controller: phoneController, label: settings.t('Phone', 'දුරකථන අංකය'), icon: Icons.phone_outlined),
                   _editField(p: p, controller: addressController, label: settings.t('Address', 'ලිපිනය'), icon: Icons.location_on_outlined),
@@ -95,17 +108,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               onPressed: () async {
                 try {
-                  await FirebaseFirestore.instance.collection('users').doc(widget.userId).update(
+                  await FirebaseFirestore.instance.collection('users').doc(widget.userId).set(
                     <String, dynamic>{
                       'name': nameController.text.trim(),
+                      'email': emailController.text.trim(),
+                      'nic': nicController.text.trim(),
                       'phone': phoneController.text.trim(),
                       'address': addressController.text.trim(),
                       'district': districtController.text.trim(),
                       'landSize': landSizeController.text.trim(),
                       'rubberTrees': rubberTreesController.text.trim(),
                       'experience': experienceController.text.trim(),
+                      'role': roleController.text.trim(),
                       'updatedAt': Timestamp.now(),
                     },
+                    SetOptions(merge: true),
                   );
 
                   if (!mounted) return;
@@ -136,12 +153,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
 
     nameController.dispose();
+    emailController.dispose();
+    nicController.dispose();
     phoneController.dispose();
     addressController.dispose();
     districtController.dispose();
     landSizeController.dispose();
     rubberTreesController.dispose();
     experienceController.dispose();
+    roleController.dispose();
   }
 
   Widget _editField({
@@ -149,11 +169,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     required TextEditingController controller,
     required String label,
     required IconData icon,
+    TextInputType? keyboardType,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: TextField(
         controller: controller,
+        keyboardType: keyboardType,
         style: TextStyle(color: p.textPrimary),
         decoration: InputDecoration(
           labelText: label,
@@ -390,6 +412,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _detailRow(p, Icons.phone_outlined, settings.t('Phone', 'දුරකථන අංකය'), _stringValue(data['phone'])),
         _detailRow(p, Icons.location_on_outlined, settings.t('Address', 'ලිපිනය'), _stringValue(data['address'])),
         _detailRow(p, Icons.map_outlined, settings.t('District', 'දිස්ත්‍රික්කය'), _stringValue(data['district'])),
+        const SizedBox(height: 4),
+        _detailRow(p, Icons.landscape_outlined, settings.t('Land Size', 'Land Size'), _stringValue(data['landSize'])),
+        _detailRow(p, Icons.park_outlined, settings.t('Rubber Trees', 'Rubber Trees'), _stringValue(data['rubberTrees'])),
+        _detailRow(p, Icons.work_history_outlined, settings.t('Experience', 'Experience'), _stringValue(data['experience'])),
+        _detailRow(p, Icons.verified_user_outlined, settings.t('Farmer Role', 'Farmer Role'), _stringValue(data['role'])),
       ],
     );
   }
@@ -660,7 +687,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             children: <Widget>[
               _profileHeader(p, settings, data),
               _farmerDetails(p, settings, data),
-              _farmDetails(p, settings, data),
               _settingsSection(p, settings),
               const SizedBox(height: 8),
               Center(
@@ -691,5 +717,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (result.isEmpty) return '-';
 
     return result;
+  }
+
+  String _editableString(dynamic value) {
+    if (value == null) return '';
+
+    return value.toString().trim();
   }
 }

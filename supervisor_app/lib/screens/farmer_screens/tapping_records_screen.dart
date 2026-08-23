@@ -999,17 +999,7 @@ class _EmptyView extends StatelessWidget {
 
             const SizedBox(height: 20),
 
-            ElevatedButton.icon(
-              onPressed: onAdd,
-              icon: const Icon(Icons.add_rounded),
-              label: Text(settings.t('Add First Record', 'පළමු වාර්තාව එකතු කරන්න')),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: p.primary,
-                foregroundColor: p.onPrimary,
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(13)),
-              ),
-            ),
+            
           ],
         ),
       ),

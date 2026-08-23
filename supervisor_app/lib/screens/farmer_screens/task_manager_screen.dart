@@ -76,8 +76,12 @@ class _TaskManagerScreenState extends State<TaskManagerScreen> {
                 docId == null ? settings.t('Create Task', 'කාර්යයක් සාදන්න') : settings.t('Edit Task', 'කාර්යය සංස්කරණය'),
                 style: TextStyle(color: p.textPrimary, fontWeight: FontWeight.w900),
               ),
-              content: SizedBox(
-                width: 460,
+              insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+              content: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: 460,
+                  maxHeight: MediaQuery.sizeOf(context).height * 0.62,
+                ),
                 child: SingleChildScrollView(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -218,8 +222,9 @@ class _TaskManagerScreenState extends State<TaskManagerScreen> {
                         .doc(widget.userId)
                         .collection('tasks');
 
-                    if (docId == null) {
-                      await tasksRef.add(<String, dynamic>{
+                    try {
+                      if (docId == null) {
+                        await tasksRef.add(<String, dynamic>{
                         'title': title,
                         'details': details,
                         'priority': priority,
@@ -227,18 +232,42 @@ class _TaskManagerScreenState extends State<TaskManagerScreen> {
                         'completed': false,
                         'createdAt': FieldValue.serverTimestamp(),
                         'updatedAt': FieldValue.serverTimestamp(),
-                      });
-                    } else {
-                      await tasksRef.doc(docId).update(<String, dynamic>{
+                        });
+                      } else {
+                        await tasksRef.doc(docId).update(<String, dynamic>{
                         'title': title,
                         'details': details,
                         'priority': priority,
                         'dueDate': Timestamp.fromDate(dueDate!),
                         'updatedAt': FieldValue.serverTimestamp(),
-                      });
-                    }
+                        });
+                      }
 
-                    navigator.pop();
+                      if (!mounted) return;
+                      navigator.pop();
+                      ScaffoldMessenger.of(this.context).showSnackBar(
+                        SnackBar(
+                          content: Text(settings.t('Task saved successfully.', 'කාර්යය සුරකින ලදී.')),
+                          backgroundColor: p.primary,
+                        ),
+                      );
+                    } on FirebaseException catch (error) {
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(this.context).showSnackBar(
+                        SnackBar(
+                          content: Text(error.message ?? settings.t('Could not save the task.', 'කාර්යය සුරැකිය නොහැකි විය.')),
+                          backgroundColor: p.danger,
+                        ),
+                      );
+                    } catch (_) {
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(this.context).showSnackBar(
+                        SnackBar(
+                          content: Text(settings.t('Could not save the task. Please try again.', 'කාර්යය සුරැකිය නොහැකි විය. නැවත උත්සාහ කරන්න.')),
+                          backgroundColor: p.danger,
+                        ),
+                      );
+                    }
                   },
                   child: Text(settings.t('Save', 'සුරකින්න')),
                 ),

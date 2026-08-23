@@ -119,3 +119,30 @@ extension FarmerPaletteShadow on FarmerPalette {
         ),
       ];
 }
+
+/// Displays the farmer app's shared image background behind a screen.
+class FarmerScreenBackground extends StatelessWidget {
+  const FarmerScreenBackground({
+    required this.child,
+    super.key,
+  });
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: <Widget>[
+        Opacity(
+          opacity: 0.05,
+          child: Image.asset(
+            'assets/rubber_tree.jpg',
+            fit: BoxFit.cover,
+          ),
+        ),
+        child,
+      ],
+    );
+  }
+}

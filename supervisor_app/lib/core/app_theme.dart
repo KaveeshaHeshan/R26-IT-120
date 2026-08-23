@@ -1,75 +1,133 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+/// Shared visual system for every standard Material control in the app.
 class AppTheme {
-  // Brand Colors
-  static const Color background   = Color(0xFFF5F5F5); // Light Grey
-  static const Color surface      = Color(0xFFFFFFFF); // White cards
-  static const Color surfaceLight = Color(0xFFE8F5E9); // Light Green accent
-  static const Color primary      = Color(0xFF2E7D32); // Dark Green
-  static const Color primaryGlow  = Color(0xFF4CAF50); // Success Green
-  static const Color accent       = Color(0xFFE8F5E9); // Light Green
+  static const Color background = Color(0xFFF4F8F4);
+  static const Color surface = Color(0xFFFFFFFF);
+  static const Color surfaceLight = Color(0xFFE5F2E8);
+  static const Color primary = Color(0xFF12613A);
+  static const Color primaryGlow = Color(0xFF31A568);
+  static const Color accent = Color(0xFFD8F0E0);
 
-  // VFA Risk Colors
-  static const Color riskHigh   = Color(0xFFF44336); // Red — urgent
-  static const Color riskMedium = Color(0xFFFF9800); // Orange — watch
-  static const Color riskSafe   = Color(0xFF4CAF50); // Green — safe
+  static const Color riskHigh = Color(0xFFC83C42);
+  static const Color riskMedium = Color(0xFFD98218);
+  static const Color riskSafe = Color(0xFF258957);
 
-  // Text Colors
-  static const Color textPrimary   = Color(0xFF1B1B1B); // Dark text
-  static const Color textSecondary = Color(0xFF616161); // Grey text
-  static const Color textMuted     = Color(0xFF9E9E9E); // Light grey text
+  static const Color textPrimary = Color(0xFF15231A);
+  static const Color textSecondary = Color(0xFF5C6F63);
+  static const Color textMuted = Color(0xFF8A9B90);
 
-  // Extra
-  static const Color error        = Color(0xFFF44336); // Red
-  static const Color success      = Color(0xFF4CAF50); // Green
-  static const Color divider      = Color(0xFFE0E0E0); // Divider line
+  static const Color error = riskHigh;
+  static const Color success = riskSafe;
+  static const Color divider = Color(0xFFDDE8DF);
 
-  static ThemeData get theme {
-    return ThemeData(
-      brightness: Brightness.light,
-      scaffoldBackgroundColor: background,
-      colorScheme: const ColorScheme.light(
-        surface: surface,
-        primary: primary,
-        error: error,
-      ),
-      textTheme: GoogleFonts.interTextTheme(
-        const TextTheme(
-          displayLarge: TextStyle(color: textPrimary),
-          bodyLarge:    TextStyle(color: textPrimary),
-          bodyMedium:   TextStyle(color: textSecondary),
+  static ThemeData get theme => ThemeData(
+        useMaterial3: true,
+        brightness: Brightness.light,
+        scaffoldBackgroundColor: background,
+        colorScheme: const ColorScheme.light(
+          surface: surface,
+          primary: primary,
+          onPrimary: Colors.white,
+          secondary: primaryGlow,
+          error: error,
         ),
-      ),
-      appBarTheme: AppBarTheme(
-        backgroundColor: primary,
-        elevation: 0,
-        centerTitle: false,
-        titleTextStyle: GoogleFonts.inter(
-          color: Colors.white,
-          fontSize: 18,
-          fontWeight: FontWeight.w600,
+        textTheme: GoogleFonts.interTextTheme().apply(
+          bodyColor: textPrimary,
+          displayColor: textPrimary,
         ),
-        iconTheme: const IconThemeData(color: Colors.white),
-      ),
-    );
-  }
+        appBarTheme: AppBarTheme(
+          backgroundColor: background,
+          foregroundColor: textPrimary,
+          surfaceTintColor: Colors.transparent,
+          elevation: 0,
+          centerTitle: false,
+          titleTextStyle: GoogleFonts.inter(
+            color: textPrimary,
+            fontSize: 20,
+            fontWeight: FontWeight.w800,
+          ),
+          iconTheme: const IconThemeData(color: textPrimary),
+        ),
+        cardTheme: CardThemeData(
+          color: surface,
+          surfaceTintColor: Colors.transparent,
+          elevation: 0,
+          margin: EdgeInsets.zero,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: const BorderSide(color: divider),
+          ),
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: surface,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 17),
+          labelStyle: const TextStyle(color: textSecondary),
+          hintStyle: const TextStyle(color: textMuted),
+          border: _inputBorder(divider),
+          enabledBorder: _inputBorder(divider),
+          focusedBorder: _inputBorder(primary, width: 1.8),
+          errorBorder: _inputBorder(error),
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: primary,
+            foregroundColor: Colors.white,
+            elevation: 0,
+            minimumSize: const Size(0, 52),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            textStyle: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w800),
+          ),
+        ),
+        outlinedButtonTheme: OutlinedButtonThemeData(
+          style: OutlinedButton.styleFrom(
+            foregroundColor: primary,
+            minimumSize: const Size(0, 52),
+            side: const BorderSide(color: primary),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            textStyle: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w800),
+          ),
+        ),
+        snackBarTheme: SnackBarThemeData(
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: const Color(0xFF20352A),
+          contentTextStyle: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        ),
+        dialogTheme: DialogThemeData(
+          backgroundColor: surface,
+          surfaceTintColor: Colors.transparent,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        ),
+        dividerTheme: const DividerThemeData(color: divider, space: 1),
+      );
 
-  // Get color based on risk level
+  static OutlineInputBorder _inputBorder(Color color, {double width = 1}) => OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: color, width: width),
+      );
+
   static Color riskColor(String riskLevel) {
     switch (riskLevel.toLowerCase()) {
-      case 'high':   return riskHigh;
-      case 'medium': return riskMedium;
-      default:       return riskSafe;
+      case 'high':
+        return riskHigh;
+      case 'medium':
+        return riskMedium;
+      default:
+        return riskSafe;
     }
   }
 
-  // Get label based on risk level
   static String riskLabel(String riskLevel) {
     switch (riskLevel.toLowerCase()) {
-      case 'high':   return 'URGENT';
-      case 'medium': return 'WATCH';
-      default:       return 'SAFE';
+      case 'high':
+        return 'URGENT';
+      case 'medium':
+        return 'WATCH';
+      default:
+        return 'SAFE';
     }
   }
 }

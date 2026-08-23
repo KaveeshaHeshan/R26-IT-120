@@ -66,31 +66,36 @@ class MobileFrame extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFE0E0E0),
-      body: Center(
-        child: Container(
-          width: 390,
-          height: 844,
-          decoration: BoxDecoration(
-            color: AppTheme.background,
-            borderRadius: BorderRadius.circular(44),
-            border: Border.all(
-              color: const Color(0xFF30363D),
-              width: 2,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: AppTheme.primary.withOpacity(0.08),
-                blurRadius: 60,
-                spreadRadius: 10,
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        // A real phone should use all available space. The decorative frame is
+        // reserved for browser and desktop previews.
+        if (constraints.maxWidth < 600) return child ?? const SizedBox.shrink();
+
+        return Scaffold(
+          backgroundColor: const Color(0xFFE6EEE8),
+          body: Center(
+            child: Container(
+              width: 412,
+              height: 860,
+              decoration: BoxDecoration(
+                color: AppTheme.background,
+                borderRadius: BorderRadius.circular(38),
+                border: Border.all(color: const Color(0xFFCBD9CF), width: 8),
+                boxShadow: <BoxShadow>[
+                  BoxShadow(
+                    color: AppTheme.primary.withOpacity(0.18),
+                    blurRadius: 52,
+                    offset: const Offset(0, 22),
+                  ),
+                ],
               ),
-            ],
+              clipBehavior: Clip.hardEdge,
+              child: child,
+            ),
           ),
-          clipBehavior: Clip.hardEdge,
-          child: child,
-        ),
-      ),
+        );
+      },
     );
   }
 }

@@ -42,11 +42,13 @@ class _VerifyScreenState extends State<VerifyScreen> {
   }
 
   Future<void> _submitCollection() async {
-    if (_volumeController.text.isEmpty) {
+    final double? volume = double.tryParse(_volumeController.text.trim());
+
+    if (volume == null || volume <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Please enter the collected volume',
+            'Please enter a valid collected volume',
             style: GoogleFonts.inter(),
           ),
           backgroundColor: AppTheme.riskHigh,
@@ -70,18 +72,28 @@ class _VerifyScreenState extends State<VerifyScreen> {
 
     setState(() => _isSubmitting = true);
 
-    // Save to Firestore
-    await FirestoreService().saveCollection(
-      farmId:    widget.farm.farmId,
-      farmerName: widget.farm.farmerName,
-      vfaResult: widget.farm.vfaResult,
-      grade:     widget.farm.grade,
-      riskLevel: widget.farm.riskLevel,
-      volume:    double.tryParse(_volumeController.text) ?? 0,
-      notes:     _notesController.text,
-    );
-
-    setState(() => _isSubmitting = false);
+    try {
+      await FirestoreService().saveCollection(
+        farmId: widget.farm.farmId,
+        farmerName: widget.farm.farmerName,
+        vfaResult: widget.farm.vfaResult,
+        grade: widget.farm.grade,
+        riskLevel: widget.farm.riskLevel,
+        volume: volume,
+        notes: _notesController.text.trim(),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Could not save the collection: $error', style: GoogleFonts.inter()),
+          backgroundColor: AppTheme.riskHigh,
+        ),
+      );
+      return;
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
 
     if (!mounted) return;
 

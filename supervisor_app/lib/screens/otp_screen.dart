@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
 
-import 'login_screen.dart';
+import 'farmer_screens/farmer_dashboard_screen.dart';
 import 'sync_screen.dart';
 
 class OTPScreen extends StatefulWidget {
   final String email;
   final String role;
-  const OTPScreen({super.key, required this.email, required this.role});
+  final String userId;
+  const OTPScreen({
+    super.key,
+    required this.email,
+    required this.role,
+    required this.userId,
+  });
 
   @override
   State<OTPScreen> createState() => _OTPScreenState();
@@ -36,12 +42,20 @@ class _OTPScreenState extends State<OTPScreen> {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('✅ OTP verified! Welcome Farmer! Redirecting to login...'),
+            content: Text('✅ OTP verified! Welcome Farmer! Redirecting to your dashboard...'),
             backgroundColor: Colors.green,
           ),
         );
-        Navigator.pushAndRemoveUntil(context,
-          MaterialPageRoute(builder: (context) => const LoginScreen()), (route) => false);
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(
+            builder: (context) => FarmerDashboardScreen(
+              userId: widget.userId,
+              welcomeMessage: 'Welcome farmer!',
+            ),
+          ),
+          (route) => false,
+        );
       }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(

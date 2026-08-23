@@ -25,7 +25,10 @@ dependencies:
   # Google Maps
   google_maps_flutter: ^2.9.0
   google_maps_flutter_web: ^0.5.10
-  http: ^1.2.2   
+  http: ^1.2.2
+
+  # Local persistence (farmer app settings)
+  shared_preferences: ^2.3.3
 
 dev_dependencies:
   flutter_test:

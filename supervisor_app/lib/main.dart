@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'core/app_theme.dart';
+import 'screens/farmer_screens/core/farmer_settings.dart';
 import 'screens/login_screen.dart';
 
 void main() async {
@@ -12,8 +13,34 @@ void main() async {
   runApp(const LatexGuardApp());
 }
 
-class LatexGuardApp extends StatelessWidget {
+class LatexGuardApp extends StatefulWidget {
   const LatexGuardApp({super.key});
+
+  @override
+  State<LatexGuardApp> createState() => _LatexGuardAppState();
+}
+
+class _LatexGuardAppState extends State<LatexGuardApp> {
+  // Owned here (above the app's Navigator) so that every route — including
+  // ones pushed deep inside the farmer app, e.g. the tapping record form —
+  // stays a descendant of FarmerSettingsScope and can read dark mode /
+  // language. Placing this scope any lower (e.g. inside FarmerDashboardScreen
+  // around just its own Scaffold) leaves routes pushed from within it outside
+  // the scope, since Navigator.push targets the app's root Navigator, which
+  // sits above that point in the tree.
+  final FarmerSettings _farmerSettings = FarmerSettings();
+
+  @override
+  void initState() {
+    super.initState();
+    _farmerSettings.load();
+  }
+
+  @override
+  void dispose() {
+    _farmerSettings.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -21,8 +48,12 @@ class LatexGuardApp extends StatelessWidget {
       title: 'LatexGuard — Supervisor',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.theme,
-      // Wrap every route, so the frame survives login/logout navigation
-      builder: (context, child) => MobileFrame(child: child),
+      // Wrap every route, so the frame (and farmer settings) survive
+      // login/logout navigation and any route pushed from within.
+      builder: (context, child) => FarmerSettingsScope(
+        settings: _farmerSettings,
+        child: MobileFrame(child: child),
+      ),
       home: const LoginScreen(),
     );
   }

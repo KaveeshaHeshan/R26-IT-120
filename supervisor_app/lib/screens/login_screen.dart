@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'signup_screen.dart';
 import 'otp_screen.dart';
 import 'sync_screen.dart';
+import 'farmer_screens/farmer_dashboard_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -63,6 +64,7 @@ class _LoginScreenState extends State<LoginScreen> {
               builder: (context) => OTPScreen(
                 email: emailController.text.trim(),
                 role: role,
+                userId: uid,
               ),
             ),
           );
@@ -74,11 +76,22 @@ class _LoginScreenState extends State<LoginScreen> {
             (route) => false,
           );
         } else {
+          if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('✅ Welcome back farmer! Redirecting to your dashboard...'),
               backgroundColor: Color.fromARGB(255, 10, 24, 11),
             ),
+          );
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(
+              builder: (context) => FarmerDashboardScreen(
+                userId: uid,
+                welcomeMessage: 'Welcome back farmer!',
+              ),
+            ),
+            (route) => false,
           );
         }
       } else {

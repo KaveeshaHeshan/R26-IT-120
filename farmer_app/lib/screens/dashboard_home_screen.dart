@@ -358,7 +358,8 @@ class DashboardHomeScreen extends StatelessWidget {
                               return !(task.data()['completed'] as bool? ??
                                       false) &&
                                   dueDate != null &&
-                                  !_isBeforeToday(dueDate, today);
+                                  !_isBeforeToday(dueDate, today) &&
+                                  (_isToday(dueDate) || _isTomorrow(dueDate));
                             }).toList() ??
                             <QueryDocumentSnapshot<Map<String, dynamic>>>[];
                         final int tomorrowCount = tasks
@@ -485,6 +486,13 @@ class DashboardHomeScreen extends StatelessWidget {
     final DateTime taskDay = DateTime(date.year, date.month, date.day);
     final DateTime currentDay = DateTime(today.year, today.month, today.day);
     return taskDay.isBefore(currentDay);
+  }
+
+  bool _isToday(DateTime date) {
+    final DateTime today = DateTime.now();
+    return date.year == today.year &&
+        date.month == today.month &&
+        date.day == today.day;
   }
 
   String _formatTaskDate(DateTime date) {

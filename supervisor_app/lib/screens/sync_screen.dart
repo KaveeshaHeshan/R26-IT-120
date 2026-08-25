@@ -140,12 +140,15 @@ class _SyncScreenState extends State<SyncScreen>
               ),
             ),
             const SizedBox(width: 10),
-            Text(
-              'LatexGuard',
-              style: GoogleFonts.jetBrainsMono(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
+            Flexible(
+              child: Text(
+                'LatexGuard',
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.jetBrainsMono(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
           ],

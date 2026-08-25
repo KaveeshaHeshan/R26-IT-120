@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'login_screen.dart';
-import 'sync_screen.dart';
+import 'dashboard_screen.dart';
 
 class OTPScreen extends StatefulWidget {
   final String email;
@@ -32,7 +32,7 @@ class _OTPScreenState extends State<OTPScreen> {
           ),
         );
         Navigator.pushAndRemoveUntil(context,
-          MaterialPageRoute(builder: (context) => const SyncScreen()), (route) => false);
+          MaterialPageRoute(builder: (context) => const DashboardScreen()), (route) => false);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

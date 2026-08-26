@@ -206,7 +206,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   _buildField(rubberTreesController, 'Number of Rubber Trees', Icons.park, type: TextInputType.number),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
-                    value: selectedExperience,
+                    initialValue: selectedExperience,
                     decoration: InputDecoration(
                       labelText: 'Tapping Experience',
                       prefixIcon: const Icon(Icons.work, color: Colors.green),

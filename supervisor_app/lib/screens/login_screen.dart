@@ -51,11 +51,9 @@ class _LoginScreenState extends State<LoginScreen> {
         bool isNew = userDoc['isNew'] ?? false;
 
         if (isNew) {
-          await FirebaseFirestore.instance
-              .collection('users')
-              .doc(uid)
-              .update({'isNew': false});
-
+          // Don't clear isNew here — the OTP screen only clears it once the
+          // user actually enters the correct code, so an abandoned OTP flow
+          // will correctly prompt again on the next login attempt.
           if (!mounted) return;
           Navigator.push(
             context,

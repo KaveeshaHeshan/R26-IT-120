@@ -21,13 +21,16 @@ class VerifyScreen extends StatefulWidget {
 
 class _VerifyScreenState extends State<VerifyScreen> {
   final TextEditingController _volumeController = TextEditingController();
+  final TextEditingController _actualAmmoniaController = TextEditingController();
   final TextEditingController _notesController  = TextEditingController();
+  bool? _followedStandardAmmoniaRatio;
   bool _isSigned    = false;
   bool _isSubmitting = false;
 
   @override
   void dispose() {
     _volumeController.dispose();
+    _actualAmmoniaController.dispose();
     _notesController.dispose();
     super.dispose();
   }
@@ -41,16 +44,46 @@ class _VerifyScreenState extends State<VerifyScreen> {
     return parts[0][0].toUpperCase();
   }
 
+  double? get _recommendedAmmonia {
+    final double? volume = double.tryParse(_volumeController.text.trim());
+    if (volume == null || !volume.isFinite || volume <= 0) return null;
+    return volume * 0.03;
+  }
+
   Future<void> _submitCollection() async {
     final double? volume = double.tryParse(_volumeController.text.trim());
 
-    if (volume == null || volume <= 0) {
+    if (volume == null || !volume.isFinite || volume <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             'Please enter a valid collected volume',
             style: GoogleFonts.inter(),
           ),
+          backgroundColor: AppTheme.riskHigh,
+        ),
+      );
+      return;
+    }
+
+    if (_followedStandardAmmoniaRatio == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Please confirm whether the recommended ammonia amount was added', style: GoogleFonts.inter()),
+          backgroundColor: AppTheme.riskMedium,
+        ),
+      );
+      return;
+    }
+
+    final double recommendedAmmonia = volume * 0.03;
+    final double? actualAmmonia = _followedStandardAmmoniaRatio!
+        ? recommendedAmmonia
+        : double.tryParse(_actualAmmoniaController.text.trim());
+    if (actualAmmonia == null || !actualAmmonia.isFinite || actualAmmonia < 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Please enter the actual ammonia amount used', style: GoogleFonts.inter()),
           backgroundColor: AppTheme.riskHigh,
         ),
       );
@@ -80,6 +113,9 @@ class _VerifyScreenState extends State<VerifyScreen> {
         grade: widget.farm.grade,
         riskLevel: widget.farm.riskLevel,
         volume: volume,
+        recommendedAmmoniaL: recommendedAmmonia,
+        actualAmmoniaL: actualAmmonia,
+        followedStandardAmmoniaRatio: _followedStandardAmmoniaRatio!,
         notes: _notesController.text.trim(),
       );
     } catch (error) {
@@ -485,6 +521,7 @@ class _VerifyScreenState extends State<VerifyScreen> {
                   TextField(
                     controller: _volumeController,
                     keyboardType: TextInputType.number,
+                    onChanged: (_) => setState(() {}),
                     decoration: InputDecoration(
                       hintText: 'Collected volume (litres)',
                       hintStyle: GoogleFonts.inter(
@@ -525,6 +562,51 @@ class _VerifyScreenState extends State<VerifyScreen> {
                   ),
 
                   const SizedBox(height: 10),
+
+                  if (_recommendedAmmonia != null) ...[
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primary.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: AppTheme.primary.withOpacity(0.25)),
+                      ),
+                      child: Text(
+                        'Recommended ammonia: ${_recommendedAmmonia!.toStringAsFixed(2)} L (3 L per 100 L latex)',
+                        style: GoogleFonts.inter(color: AppTheme.textPrimary, fontSize: 13, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text('Did you add the recommended ammonia amount?', style: GoogleFonts.inter(color: AppTheme.textPrimary, fontSize: 13, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(child: ChoiceChip(label: const Text('Yes'), selected: _followedStandardAmmoniaRatio == true, onSelected: (_) => setState(() => _followedStandardAmmoniaRatio = true))),
+                        const SizedBox(width: 10),
+                        Expanded(child: ChoiceChip(label: const Text('No'), selected: _followedStandardAmmoniaRatio == false, onSelected: (_) => setState(() => _followedStandardAmmoniaRatio = false))),
+                      ],
+                    ),
+                    if (_followedStandardAmmoniaRatio == false) ...[
+                      const SizedBox(height: 10),
+                      TextField(
+                        controller: _actualAmmoniaController,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        decoration: InputDecoration(
+                          hintText: 'Actual ammonia added (litres)',
+                          hintStyle: GoogleFonts.inter(color: AppTheme.textMuted, fontSize: 13),
+                          prefixIcon: const Icon(Icons.science_outlined, color: AppTheme.primary, size: 18),
+                          filled: true,
+                          fillColor: AppTheme.background,
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: AppTheme.divider)),
+                          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: AppTheme.divider)),
+                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: AppTheme.primary, width: 1.5)),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 10),
+                  ],
 
                   // Notes input
                   TextField(

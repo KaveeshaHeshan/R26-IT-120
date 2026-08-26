@@ -16,10 +16,24 @@ service cloud.firestore {
       return signedIn() && request.auth.token.role == 'supervisor';
     }
 
+    function farmerKeepsModelIdentity() {
+      return !request.resource.data.diff(resource.data).affectedKeys()
+        .hasAny(['modelFarmerId']);
+    }
+
+    function farmerCreatesWithoutModelIdentity() {
+      return !request.resource.data.keys().hasAny(['modelFarmerId']);
+    }
+
     // A farmer can create and maintain only their own profile document.
     match /users/{userId} {
-      allow create: if ownsUser(userId);
-      allow read, update: if ownsUser(userId) || isSupervisor();
+      allow create: if (ownsUser(userId) && farmerCreatesWithoutModelIdentity())
+        || isSupervisor();
+      allow read: if ownsUser(userId) || isSupervisor();
+      // The training identity must be set by a supervisor / trusted backend,
+      // never by a farmer editing their own profile.
+      allow update: if (ownsUser(userId) && farmerKeepsModelIdentity())
+        || isSupervisor();
       allow delete: if false;
 
       match /tasks/{taskId} {
@@ -47,6 +61,13 @@ service cloud.firestore {
     match /latex_sessions/{sessionId} {
       allow read: if signedIn();
       allow write: if isSupervisor();
+    }
+
+    // The Admin SDK writes forecast results; each farmer may read only their
+    // own farmer-facing forecast.
+    match /quality_forecasts/{userId} {
+      allow read: if ownsUser(userId);
+      allow write: if false;
     }
   }
 }

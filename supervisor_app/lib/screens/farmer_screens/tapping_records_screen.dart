@@ -1129,10 +1129,12 @@ class _TappingRecordFormScreenState extends State<TappingRecordFormScreen> {
 
   late TextEditingController _trees;
   late TextEditingController _volume;
+  late TextEditingController _actualAmmonia;
   late TextEditingController _notes;
 
   String? _weather;
   String? _treeCondition;
+  bool? _followedStandardAmmoniaRatio;
 
   LatLng? _location;
 
@@ -1158,17 +1160,22 @@ class _TappingRecordFormScreenState extends State<TappingRecordFormScreen> {
     }
 
     final dynamic treesValue = data?['treesCount'];
-    final dynamic volumeValue = data?['latexVolumeL'];
+    final dynamic volumeValue = data?['latex_volume_l'] ?? data?['latexVolumeL'];
+    final dynamic actualAmmoniaValue = data?['actual_ammonia_l'];
+    final dynamic followedStandardValue = data?['followed_standard_ammonia_ratio'];
 
     _trees = TextEditingController(text: treesValue is num ? treesValue.toInt().toString() : '');
     _volume = TextEditingController(text: volumeValue is num ? volumeValue.toString() : '');
+    _actualAmmonia = TextEditingController(text: actualAmmoniaValue is num ? actualAmmoniaValue.toString() : '');
     _notes = TextEditingController(text: data?['notes']?.toString() ?? '');
+    _followedStandardAmmoniaRatio = followedStandardValue is bool ? followedStandardValue : null;
   }
 
   @override
   void dispose() {
     _trees.dispose();
     _volume.dispose();
+    _actualAmmonia.dispose();
     _notes.dispose();
     super.dispose();
   }
@@ -1190,6 +1197,12 @@ class _TappingRecordFormScreenState extends State<TappingRecordFormScreen> {
 
     if (trees == null || trees <= 0 || volume == null || volume <= 0) return null;
     return volume / trees;
+  }
+
+  double? get _recommendedAmmonia {
+    final double? volume = double.tryParse(_volume.text.trim());
+    if (volume == null || !volume.isFinite || volume <= 0) return null;
+    return volume * 0.03;
   }
 
   void _error(FarmerPalette p, String message) {
@@ -1277,8 +1290,21 @@ class _TappingRecordFormScreenState extends State<TappingRecordFormScreen> {
 
     final double? volume = double.tryParse(_volume.text.trim());
 
-    if (volume == null || volume <= 0) {
+    if (volume == null || !volume.isFinite || volume <= 0) {
       _error(p, settings.t('Enter a valid latex volume.', 'වලංගු ලැටෙක්ස් ප්‍රමාණයක් ඇතුළත් කරන්න.'));
+      return;
+    }
+
+    if (_followedStandardAmmoniaRatio == null) {
+      _error(p, settings.t('Please confirm whether you added the recommended ammonia amount.', 'නිර්දේශිත ඇමෝනියා ප්‍රමාණය එකතු කළේදැයි තහවුරු කරන්න.'));
+      return;
+    }
+
+    final double? actualAmmonia = _followedStandardAmmoniaRatio!
+        ? _recommendedAmmonia
+        : double.tryParse(_actualAmmonia.text.trim());
+    if (actualAmmonia == null || !actualAmmonia.isFinite || actualAmmonia < 0) {
+      _error(p, settings.t('Enter the actual ammonia amount used.', 'භාවිත කළ සත්‍ය ඇමෝනියා ප්‍රමාණය ඇතුළත් කරන්න.'));
       return;
     }
 
@@ -1307,6 +1333,15 @@ class _TappingRecordFormScreenState extends State<TappingRecordFormScreen> {
       'durationMinutes': _duration,
       'treesCount': trees,
       'latexVolumeL': volume,
+      // Canonical real-world collection fields for future retraining. These
+      // litres must not be substituted for the legacy model's kg feature.
+      'latex_volume_l': volume,
+      'recommended_ammonia_l': volume * 0.03,
+      'recommended_ammonia_ratio': 0.03,
+      'actual_ammonia_l': actualAmmonia,
+      // volume has already been validated as greater than zero above.
+      'actual_ammonia_ratio': actualAmmonia / volume,
+      'followed_standard_ammonia_ratio': _followedStandardAmmoniaRatio,
       'yieldPerTreeL': double.parse((volume / trees).toStringAsFixed(3)),
       'weatherCondition': _weather,
       'treeCondition': _treeCondition,
@@ -1497,6 +1532,52 @@ class _TappingRecordFormScreenState extends State<TappingRecordFormScreen> {
                   _Section(
                     p: p,
                     number: '03',
+                    title: settings.t('Ammonia Addition', 'ඇමෝනියා එකතු කිරීම'),
+                    subtitle: settings.t('Use the standard 3 L per 100 L latex ratio.', 'ලැටෙක්ස් ලීටර් 100කට ඇමෝනියා ලීටර් 3ක සම්මත අනුපාතය භාවිත කරන්න.'),
+                    icon: Icons.science_outlined,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        if (_recommendedAmmonia == null)
+                          _Info(p: p, text: settings.t('Enter latex volume first to calculate the recommended ammonia amount.', 'නිර්දේශිත ඇමෝනියා ප්‍රමාණය ගණනය කිරීමට පළමුව ලැටෙක්ස් පරිමාව ඇතුළත් කරන්න.'))
+                        else ...<Widget>[
+                          _Info(
+                            p: p,
+                            text: settings.t(
+                              'Recommended ammonia: ${_recommendedAmmonia!.toStringAsFixed(2)} L (3 L per 100 L latex).',
+                              'නිර්දේශිත ඇමෝනියා: ${_recommendedAmmonia!.toStringAsFixed(2)} L (ලැටෙක්ස් ලීටර් 100කට ලීටර් 3).',
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          Text(settings.t('Did you add the recommended ammonia amount?', 'නිර්දේශිත ඇමෝනියා ප්‍රමාණය එකතු කළාද?'), style: TextStyle(color: p.textPrimary, fontWeight: FontWeight.w800)),
+                          const SizedBox(height: 9),
+                          Row(
+                            children: <Widget>[
+                              Expanded(child: ChoiceChip(label: const Text('Yes'), selected: _followedStandardAmmoniaRatio == true, onSelected: (_) => setState(() => _followedStandardAmmoniaRatio = true))),
+                              const SizedBox(width: 10),
+                              Expanded(child: ChoiceChip(label: const Text('No'), selected: _followedStandardAmmoniaRatio == false, onSelected: (_) => setState(() => _followedStandardAmmoniaRatio = false))),
+                            ],
+                          ),
+                          if (_followedStandardAmmoniaRatio == false) ...<Widget>[
+                            const SizedBox(height: 13),
+                            TextField(
+                              controller: _actualAmmonia,
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              onChanged: (_) => setState(() {}),
+                              style: TextStyle(color: p.textPrimary),
+                              decoration: _input(p: p, label: settings.t('Actual ammonia added', 'එකතු කළ සත්‍ය ඇමෝනියා'), hint: 'e.g. 0.06', icon: Icons.science_outlined, suffix: 'L'),
+                            ),
+                          ],
+                        ],
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  _Section(
+                    p: p,
+                    number: '04',
                     title: settings.t('Field Conditions', 'ක්ෂේත්‍ර තත්ත්ව'),
                     subtitle: settings.t('Record conditions during tapping.', 'ටැපිං අතරතුර තත්ත්ව සටහන් කරන්න.'),
                     icon: Icons.terrain_rounded,
@@ -1536,7 +1617,7 @@ class _TappingRecordFormScreenState extends State<TappingRecordFormScreen> {
 
                   _Section(
                     p: p,
-                    number: '04',
+                    number: '05',
                     title: settings.t('Tapping Location', 'ටැපිං ස්ථානය'),
                     subtitle: settings.t('Mark where this tapping session took place.', 'මෙම ටැපිං සැසිය සිදු වූ ස්ථානය සලකුණු කරන්න.'),
                     icon: Icons.location_on_rounded,
@@ -1555,7 +1636,7 @@ class _TappingRecordFormScreenState extends State<TappingRecordFormScreen> {
 
                   _Section(
                     p: p,
-                    number: '05',
+                    number: '06',
                     title: settings.t('Observations', 'නිරීක්ෂණ'),
                     subtitle: settings.t('Add important field notes.', 'වැදගත් ක්ෂේත්‍ර සටහන් එකතු කරන්න.'),
                     icon: Icons.notes_rounded,

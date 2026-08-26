@@ -217,6 +217,13 @@ class DashboardHomeScreen extends StatelessWidget {
             const SizedBox(height: 20),
 
             // =====================================================
+            // QUICK ACTIONS
+            // =====================================================
+            _QuickActions(p: p, settings: settings, userId: userId, onNavigateToTab: onNavigateToTab),
+
+            const SizedBox(height: 22),
+
+            // =====================================================
             // ALERTS
             // =====================================================
             _sectionHeader(

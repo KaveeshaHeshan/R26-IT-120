@@ -108,6 +108,11 @@ class FarmerMetrics {
   static const double gap16 = 16;
   static const double gap20 = 20;
   static const double gap24 = 24;
+
+  /// Height for full-width primary action buttons (e.g. "Save", "Confirm").
+  /// Kept close to the 48dp minimum touch target so buttons stay easy to
+  /// tap without looming over the rest of the screen.
+  static const double buttonHeight = 48;
 }
 
 extension FarmerPaletteShadow on FarmerPalette {

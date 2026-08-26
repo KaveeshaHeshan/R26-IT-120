@@ -60,10 +60,11 @@ class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
               onPressed: () => Navigator.pop(context, false),
               child: Text(settings.t('Cancel', 'අවලංගු කරන්න')),
             ),
-            FilledButton(
+            FilledButton.icon(
               style: FilledButton.styleFrom(backgroundColor: p.danger),
               onPressed: () => Navigator.pop(context, true),
-              child: Text(settings.t('Log Out', 'ඉවත් වන්න')),
+              icon: const Icon(Icons.logout_rounded, size: 18),
+              label: Text(settings.t('Log Out', 'ඉවත් වන්න')),
             ),
           ],
         );

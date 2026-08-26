@@ -52,7 +52,14 @@ class _LatexGuardAppState extends State<LatexGuardApp> {
       // login/logout navigation and any route pushed from within.
       builder: (context, child) => FarmerSettingsScope(
         settings: _farmerSettings,
-        child: MobileFrame(child: child),
+        // Farmers who bump up their phone's system font size for
+        // readability shouldn't end up with broken, overflowing layouts —
+        // clamp how far text can scale instead of ignoring the setting.
+        child: MediaQuery.withClampedTextScaling(
+          minScaleFactor: 0.9,
+          maxScaleFactor: 1.25,
+          child: MobileFrame(child: child),
+        ),
       ),
       home: const LoginScreen(),
     );

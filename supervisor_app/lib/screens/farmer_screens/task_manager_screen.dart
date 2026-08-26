@@ -196,7 +196,7 @@ class _TaskManagerScreenState extends State<TaskManagerScreen> {
                   onPressed: () => Navigator.of(dialogContext).pop(),
                   child: Text(settings.t('Cancel', 'අවලංගු කරන්න')),
                 ),
-                ElevatedButton(
+                ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: p.primary,
                     foregroundColor: p.onPrimary,
@@ -269,7 +269,8 @@ class _TaskManagerScreenState extends State<TaskManagerScreen> {
                       );
                     }
                   },
-                  child: Text(settings.t('Save', 'සුරකින්න')),
+                  icon: const Icon(Icons.check_circle_outline_rounded, size: 18),
+                  label: Text(settings.t('Save', 'සුරකින්න')),
                 ),
               ],
             );
@@ -317,10 +318,11 @@ class _TaskManagerScreenState extends State<TaskManagerScreen> {
         ),
         actions: <Widget>[
           TextButton(onPressed: () => Navigator.pop(context, false), child: Text(settings.t('Cancel', 'අවලංගු කරන්න'))),
-          FilledButton(
+          FilledButton.icon(
             style: FilledButton.styleFrom(backgroundColor: p.danger),
             onPressed: () => Navigator.pop(context, true),
-            child: Text(settings.t('Delete', 'මකන්න')),
+            icon: const Icon(Icons.delete_outline_rounded, size: 18),
+            label: Text(settings.t('Delete', 'මකන්න')),
           ),
         ],
       ),

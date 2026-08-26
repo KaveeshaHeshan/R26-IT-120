@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import '../login_screen.dart';
 import 'core/farmer_settings.dart';
 import 'core/farmer_theme.dart';
 
@@ -395,48 +397,160 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // SECTIONS
   // ============================================================
 
-  Widget _farmerDetails(FarmerPalette p, FarmerSettings settings, Map<String, dynamic> data) {
-    return _sectionCard(
+  // Rather than dumping every field on screen at once, each category is a
+  // single tappable summary card — a farmer taps it to see (and, from
+  // there, edit) just that group of details.
+  Widget _personalInfoCard(FarmerPalette p, FarmerSettings settings, Map<String, dynamic> data) {
+    return _categoryCard(
       p: p,
       title: settings.t('Personal Information', 'පුද්ගලික තොරතුරු'),
+      subtitle: settings.t('Tap to view and update', 'බැලීමට හා යාවත්කාලීන කිරීමට තට්ටු කරන්න'),
       icon: Icons.person_outline_rounded,
-      trailing: IconButton(
-        onPressed: () => _openEditProfileForm(settings, data),
-        icon: Icon(Icons.edit_outlined, color: p.primary),
-        tooltip: settings.t('Edit', 'සංස්කරණය'),
+      onTap: () => _openDetailsSheet(
+        settings: settings,
+        data: data,
+        title: settings.t('Personal Information', 'පුද්ගලික තොරතුරු'),
+        icon: Icons.person_outline_rounded,
+        rows: <Widget>[
+          _detailRow(p, Icons.person_outline, settings.t('Name', 'නම'), _stringValue(data['name'])),
+          _detailRow(p, Icons.email_outlined, settings.t('Email', 'විද්‍යුත් තැපෑල'), _stringValue(data['email'])),
+          _detailRow(p, Icons.badge_outlined, settings.t('NIC', 'ජාතික හැඳුනුම්පත් අංකය'), _stringValue(data['nic'])),
+          _detailRow(p, Icons.phone_outlined, settings.t('Phone', 'දුරකථන අංකය'), _stringValue(data['phone'])),
+          _detailRow(p, Icons.location_on_outlined, settings.t('Address', 'ලිපිනය'), _stringValue(data['address'])),
+          _detailRow(p, Icons.map_outlined, settings.t('District', 'දිස්ත්‍රික්කය'), _stringValue(data['district'])),
+        ],
       ),
-      children: <Widget>[
-        _detailRow(p, Icons.person_outline, settings.t('Name', 'නම'), _stringValue(data['name'])),
-        _detailRow(p, Icons.email_outlined, settings.t('Email', 'විද්‍යුත් තැපෑල'), _stringValue(data['email'])),
-        _detailRow(p, Icons.badge_outlined, settings.t('NIC', 'ජාතික හැඳුනුම්පත් අංකය'), _stringValue(data['nic'])),
-        _detailRow(p, Icons.phone_outlined, settings.t('Phone', 'දුරකථන අංකය'), _stringValue(data['phone'])),
-        _detailRow(p, Icons.location_on_outlined, settings.t('Address', 'ලිපිනය'), _stringValue(data['address'])),
-        _detailRow(p, Icons.map_outlined, settings.t('District', 'දිස්ත්‍රික්කය'), _stringValue(data['district'])),
-        const SizedBox(height: 4),
-        _detailRow(p, Icons.landscape_outlined, settings.t('Land Size', 'Land Size'), _stringValue(data['landSize'])),
-        _detailRow(p, Icons.park_outlined, settings.t('Rubber Trees', 'Rubber Trees'), _stringValue(data['rubberTrees'])),
-        _detailRow(p, Icons.work_history_outlined, settings.t('Experience', 'Experience'), _stringValue(data['experience'])),
-        _detailRow(p, Icons.verified_user_outlined, settings.t('Farmer Role', 'Farmer Role'), _stringValue(data['role'])),
-      ],
     );
   }
 
-  Widget _farmDetails(FarmerPalette p, FarmerSettings settings, Map<String, dynamic> data) {
-    return _sectionCard(
+  Widget _farmInfoCard(FarmerPalette p, FarmerSettings settings, Map<String, dynamic> data) {
+    return _categoryCard(
       p: p,
       title: settings.t('Farm Information', 'ගොවිපළ තොරතුරු'),
+      subtitle: settings.t('Tap to view and update', 'බැලීමට හා යාවත්කාලීන කිරීමට තට්ටු කරන්න'),
       icon: Icons.agriculture_outlined,
-      trailing: IconButton(
-        onPressed: () => _openEditProfileForm(settings, data),
-        icon: Icon(Icons.edit_outlined, color: p.primary),
-        tooltip: settings.t('Edit', 'සංස්කරණය'),
+      onTap: () => _openDetailsSheet(
+        settings: settings,
+        data: data,
+        title: settings.t('Farm Information', 'ගොවිපළ තොරතුරු'),
+        icon: Icons.agriculture_outlined,
+        rows: <Widget>[
+          _detailRow(p, Icons.landscape_outlined, settings.t('Land Size', 'ඉඩම් ප්‍රමාණය'), _stringValue(data['landSize'])),
+          _detailRow(p, Icons.park_outlined, settings.t('Rubber Trees', 'රබර් ගස් ගණන'), _stringValue(data['rubberTrees'])),
+          _detailRow(p, Icons.work_history_outlined, settings.t('Experience', 'අත්දැකීම්'), _stringValue(data['experience'])),
+          _detailRow(p, Icons.verified_user_outlined, settings.t('Farmer Role', 'ගොවි භූමිකාව'), _stringValue(data['role'])),
+        ],
       ),
-      children: <Widget>[
-        _detailRow(p, Icons.landscape_outlined, settings.t('Land Size', 'ඉඩම් ප්‍රමාණය'), _stringValue(data['landSize'])),
-        _detailRow(p, Icons.park_outlined, settings.t('Rubber Trees', 'රබර් ගස් ගණන'), _stringValue(data['rubberTrees'])),
-        _detailRow(p, Icons.work_history_outlined, settings.t('Experience', 'අත්දැකීම්'), _stringValue(data['experience'])),
-        _detailRow(p, Icons.verified_user_outlined, settings.t('Farmer Role', 'ගොවි භූමිකාව'), _stringValue(data['role'])),
-      ],
+    );
+  }
+
+  Widget _categoryCard({
+    required FarmerPalette p,
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: p.surface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: p.border),
+          boxShadow: p.cardShadow,
+        ),
+        child: Row(
+          children: <Widget>[
+            Container(
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(color: p.primary.withOpacity(0.10), borderRadius: BorderRadius.circular(14)),
+              child: Icon(icon, color: p.primary),
+            ),
+            const SizedBox(width: 13),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(title, style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w900, color: p.textPrimary)),
+                  const SizedBox(height: 2),
+                  Text(subtitle, style: TextStyle(fontSize: 11.5, color: p.textSecondary)),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right_rounded, color: p.textMuted),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _openDetailsSheet({
+    required FarmerSettings settings,
+    required Map<String, dynamic> data,
+    required String title,
+    required IconData icon,
+    required List<Widget> rows,
+  }) {
+    final FarmerPalette p = settings.palette;
+
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      backgroundColor: p.surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (BuildContext sheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Row(
+                  children: <Widget>[
+                    Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(color: p.primary.withOpacity(0.10), borderRadius: BorderRadius.circular(13)),
+                      child: Icon(icon, color: p.primary),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(title, style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: p.textPrimary)),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                ...rows,
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  height: FarmerMetrics.buttonHeight,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: p.primary,
+                      foregroundColor: p.onPrimary,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
+                    onPressed: () {
+                      Navigator.of(sheetContext).pop();
+                      _openEditProfileForm(settings, data);
+                    },
+                    icon: const Icon(Icons.edit_outlined),
+                    label: Text(settings.t('Edit Details', 'විස්තර සංස්කරණය')),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -549,6 +663,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
           onTap: () => _showAboutDialog(settings),
           trailing: Icon(Icons.chevron_right_rounded, color: p.textMuted),
         ),
+        Divider(height: 24, color: p.border),
+        _settingsTile(
+          p: p,
+          icon: Icons.logout_rounded,
+          title: settings.t('Log Out', 'ඉවත් වන්න'),
+          subtitle: settings.t('Sign out of your account', 'ගිණුමෙන් ඉවත් වන්න'),
+          onTap: () => _logout(settings),
+          trailing: Icon(Icons.chevron_right_rounded, color: p.danger),
+          danger: true,
+        ),
       ],
     );
   }
@@ -560,7 +684,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     required String subtitle,
     required VoidCallback onTap,
     required Widget trailing,
+    bool danger = false,
   }) {
+    final Color tint = danger ? p.danger : p.primary;
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(14),
@@ -571,15 +698,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Container(
               width: 40,
               height: 40,
-              decoration: BoxDecoration(color: p.background, borderRadius: BorderRadius.circular(12)),
-              child: Icon(icon, color: p.primary, size: 20),
+              decoration: BoxDecoration(
+                color: danger ? p.danger.withOpacity(0.10) : p.background,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: tint, size: 20),
             ),
             const SizedBox(width: 11),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Text(title, style: TextStyle(color: p.textPrimary, fontSize: 13, fontWeight: FontWeight.w800)),
+                  Text(title, style: TextStyle(color: tint, fontSize: 13, fontWeight: FontWeight.w800)),
                   const SizedBox(height: 2),
                   Text(subtitle, style: TextStyle(color: p.textSecondary, fontSize: 10.5)),
                 ],
@@ -589,6 +719,55 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  // ============================================================
+  // LOGOUT
+  // ============================================================
+
+  Future<void> _logout(FarmerSettings settings) async {
+    final FarmerPalette p = settings.palette;
+
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          backgroundColor: p.surface,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text(
+            settings.t('Log out?', 'ඉවත් වන්නද?'),
+            style: TextStyle(color: p.textPrimary, fontWeight: FontWeight.w900),
+          ),
+          content: Text(
+            settings.t("You'll need to sign in again to access the farmer app.", 'නැවත ඇතුළු වීමට අවශ්‍ය වේ.'),
+            style: TextStyle(color: p.textSecondary),
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: Text(settings.t('Cancel', 'අවලංගු කරන්න')),
+            ),
+            FilledButton.icon(
+              style: FilledButton.styleFrom(backgroundColor: p.danger),
+              onPressed: () => Navigator.pop(dialogContext, true),
+              icon: const Icon(Icons.logout_rounded, size: 18),
+              label: Text(settings.t('Log Out', 'ඉවත් වන්න')),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true) return;
+
+    await FirebaseAuth.instance.signOut();
+
+    if (!mounted) return;
+
+    Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      (route) => false,
     );
   }
 
@@ -660,8 +839,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final FarmerSettings settings = FarmerSettingsScope.of(context);
     final FarmerPalette p = settings.palette;
 
-    return Container(
-      color: p.background,
+    return FarmerScreenBackground(
       child: FutureBuilder<Map<String, dynamic>?>(
         future: _loadFarmerDetails(),
         builder: (BuildContext context, AsyncSnapshot<Map<String, dynamic>?> snapshot) {
@@ -686,7 +864,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             padding: const EdgeInsets.fromLTRB(16, 10, 16, 30),
             children: <Widget>[
               _profileHeader(p, settings, data),
-              _farmerDetails(p, settings, data),
+              _personalInfoCard(p, settings, data),
+              _farmInfoCard(p, settings, data),
+              const SizedBox(height: 2),
               _settingsSection(p, settings),
               const SizedBox(height: 8),
               Center(

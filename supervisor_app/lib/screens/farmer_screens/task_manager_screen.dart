@@ -343,7 +343,7 @@ class _TaskManagerScreenState extends State<TaskManagerScreen> {
 
     return Scaffold(
       backgroundColor: p.background,
-      body: Stack(
+      body: FarmerScreenBackground(child: Stack(
         children: <Widget>[
           StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
             stream: FirebaseFirestore.instance
@@ -474,7 +474,7 @@ class _TaskManagerScreenState extends State<TaskManagerScreen> {
             ),
           ),
         ],
-      ),
+      )),
     );
   }
 

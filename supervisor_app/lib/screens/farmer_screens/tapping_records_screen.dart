@@ -225,7 +225,7 @@ class _TappingRecordsScreenState extends State<TappingRecordsScreen> {
         ),
       ),
 
-      body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      body: FarmerScreenBackground(child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
         // IMPORTANT: no orderBy here to avoid a Firestore composite-index requirement.
         stream: _collection.where('userId', isEqualTo: widget.userId).snapshots(),
 
@@ -300,7 +300,7 @@ class _TappingRecordsScreenState extends State<TappingRecordsScreen> {
             ],
           );
         },
-      ),
+      )),
     );
   }
 }
@@ -1374,7 +1374,7 @@ class _TappingRecordFormScreenState extends State<TappingRecordFormScreen> {
         ),
       ),
 
-      body: SafeArea(
+      body: FarmerScreenBackground(child: SafeArea(
         child: Column(
           children: <Widget>[
             Expanded(
@@ -1626,7 +1626,7 @@ class _TappingRecordFormScreenState extends State<TappingRecordFormScreen> {
             ),
           ],
         ),
-      ),
+      )),
     );
   }
 }

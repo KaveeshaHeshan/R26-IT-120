@@ -4,9 +4,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
+import 'core/farmer_connectivity_chip.dart';
 import 'core/farmer_settings.dart';
 import 'core/farmer_theme.dart';
-import 'tapping_records_screen.dart';
 
 class DashboardHomeScreen extends StatelessWidget {
   const DashboardHomeScreen({
@@ -120,7 +120,7 @@ class DashboardHomeScreen extends StatelessWidget {
     final FarmerSettings settings = FarmerSettingsScope.of(context);
     final FarmerPalette p = settings.palette;
 
-    return FutureBuilder<Map<String, dynamic>?>(
+    return FarmerScreenBackground(child: FutureBuilder<Map<String, dynamic>?>(
       future: _loadFarmerDetails(),
       builder: (BuildContext context, AsyncSnapshot<Map<String, dynamic>?> snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -151,6 +151,13 @@ class DashboardHomeScreen extends StatelessWidget {
             // =====================================================
             // HEADER
             // =====================================================
+            Align(
+              alignment: Alignment.centerRight,
+              child: FarmerConnectivityChip(),
+            ),
+
+            const SizedBox(height: 10),
+
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
@@ -215,13 +222,6 @@ class DashboardHomeScreen extends StatelessWidget {
             ),
 
             const SizedBox(height: 20),
-
-            // =====================================================
-            // QUICK ACTIONS
-            // =====================================================
-            _QuickActions(p: p, settings: settings, userId: userId, onNavigateToTab: onNavigateToTab),
-
-            const SizedBox(height: 22),
 
             // =====================================================
             // ALERTS
@@ -336,7 +336,7 @@ class DashboardHomeScreen extends StatelessWidget {
           ],
         );
       },
-    );
+    ));
   }
 
   // ------------------------------------------------------------
@@ -722,94 +722,6 @@ class DashboardHomeScreen extends StatelessWidget {
 
     final String result = value.toString().trim();
     return result.isEmpty ? fallback : result;
-  }
-}
-
-// ============================================================
-// QUICK ACTIONS (unique feature)
-// ============================================================
-
-class _QuickActions extends StatelessWidget {
-  const _QuickActions({
-    required this.p,
-    required this.settings,
-    required this.userId,
-    required this.onNavigateToTab,
-  });
-
-  final FarmerPalette p;
-  final FarmerSettings settings;
-  final String userId;
-  final ValueChanged<int> onNavigateToTab;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: <Widget>[
-        Expanded(
-          child: _actionButton(
-            context,
-            icon: Icons.add_circle_outline_rounded,
-            label: settings.t('Add Record', 'වාර්තාව'),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => TappingRecordFormScreen(userId: userId)),
-              );
-            },
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _actionButton(
-            context,
-            icon: Icons.add_task_rounded,
-            label: settings.t('New Task', 'කාර්යය'),
-            onTap: () => onNavigateToTab(1),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _actionButton(
-            context,
-            icon: Icons.water_drop_outlined,
-            label: settings.t('Records', 'ලේඛන'),
-            onTap: () => onNavigateToTab(2),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _actionButton(
-    BuildContext context, {
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        decoration: BoxDecoration(
-          color: p.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: p.border),
-        ),
-        child: Column(
-          children: <Widget>[
-            Icon(icon, color: p.primary, size: 22),
-            const SizedBox(height: 6),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: p.textPrimary),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }
 

@@ -1,8 +1,5 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
-import '../login_screen.dart';
-import 'core/farmer_connectivity_chip.dart';
 import 'core/farmer_settings.dart';
 import 'core/farmer_theme.dart';
 import 'dashboard_home_screen.dart';
@@ -38,52 +35,6 @@ class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
     ProfileScreen(userId: widget.userId),
   ];
 
-  Future<void> _logout(FarmerSettings settings) async {
-    final FarmerPalette p = settings.palette;
-
-    final bool? confirmed = await showDialog<bool>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: p.surface,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: Text(
-            settings.t('Log out?', 'ඉවත් වන්නද?'),
-            style: TextStyle(color: p.textPrimary, fontWeight: FontWeight.w900),
-          ),
-          content: Text(
-            settings.t("You'll need to sign in again to access the farmer app.", 'නැවත ඇතුළු වීමට අවශ්‍ය වේ.'),
-            style: TextStyle(color: p.textSecondary),
-          ),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: Text(settings.t('Cancel', 'අවලංගු කරන්න')),
-            ),
-            FilledButton.icon(
-              style: FilledButton.styleFrom(backgroundColor: p.danger),
-              onPressed: () => Navigator.pop(context, true),
-              icon: const Icon(Icons.logout_rounded, size: 18),
-              label: Text(settings.t('Log Out', 'ඉවත් වන්න')),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (confirmed != true) return;
-
-    await FirebaseAuth.instance.signOut();
-
-    if (!mounted) return;
-
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
-      (route) => false,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     // FarmerSettings is provided once, above the app's root Navigator (see
@@ -92,29 +43,16 @@ class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
     final FarmerSettings settings = FarmerSettingsScope.of(context);
     final FarmerPalette p = settings.palette;
 
+    // Bottom navigation is the only way to move between sections — each tab
+    // already shows its own title in its header card, and account actions
+    // (including logout) live on the Profile tab, so there is no separate
+    // top app bar to duplicate that navigation.
     return Scaffold(
       backgroundColor: p.background,
-      appBar: AppBar(
-        backgroundColor: p.background,
-        foregroundColor: p.textPrimary,
-        elevation: 0,
-        titleSpacing: 20,
-        title: Text(
-          _titleForIndex(settings, _selectedIndex),
-          style: TextStyle(fontWeight: FontWeight.w900, color: p.textPrimary),
-        ),
-        actions: <Widget>[
-          const FarmerConnectivityChip(),
-          const SizedBox(width: 10),
-          IconButton(
-            tooltip: settings.t('Logout', 'ඉවත් වන්න'),
-            onPressed: () => _logout(settings),
-            icon: Icon(Icons.logout_rounded, color: p.textPrimary),
-          ),
-          const SizedBox(width: 4),
-        ],
+      body: SafeArea(
+        bottom: false,
+        child: IndexedStack(index: _selectedIndex, children: _pages),
       ),
-      body: IndexedStack(index: _selectedIndex, children: _pages),
       bottomNavigationBar: _FarmerNavBar(
         palette: p,
         settings: settings,
@@ -122,19 +60,6 @@ class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
         onSelected: (int index) => setState(() => _selectedIndex = index),
       ),
     );
-  }
-
-  String _titleForIndex(FarmerSettings settings, int index) {
-    switch (index) {
-      case 1:
-        return settings.t('Tasks', 'කාර්යයන්');
-      case 2:
-        return settings.t('Tapping Records', 'ටැපිං වාර්තා');
-      case 3:
-        return settings.t('Profile', 'පැතිකඩ');
-      default:
-        return settings.t('Farmer Dashboard', 'ගොවි උපකරණ පුවරුව');
-    }
   }
 }
 

@@ -8,9 +8,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:http/http.dart' as http;
 
 import 'login_screen.dart';
-import 'dashboard_screen.dart';
-<<<<<<< Updated upstream
-=======
+import 'sync_screen.dart';
 
 // ─────────────────────────────────────────────────────────────────────────
 // Brevo (formerly Sendinblue) transactional email configuration
@@ -27,7 +25,6 @@ const String brevoSenderName = 'research';
 
 // How long a generated OTP stays valid.
 const Duration otpValidity = Duration(minutes: 10);
->>>>>>> Stashed changes
 
 class OTPScreen extends StatefulWidget {
   final String email;
@@ -217,16 +214,8 @@ class _OTPScreenState extends State<OTPScreen> {
             backgroundColor: Colors.green,
           ),
         );
-<<<<<<< HEAD
         Navigator.pushAndRemoveUntil(
             context, MaterialPageRoute(builder: (context) => const SyncScreen()), (route) => false);
-=======
-        Navigator.pushAndRemoveUntil(context,
-          MaterialPageRoute(builder: (context) => const DashboardScreen()), (route) => false);
-<<<<<<< Updated upstream
-=======
->>>>>>> ca4937d0a273d33ca459b0d5b18f45c7d52cce83
->>>>>>> Stashed changes
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

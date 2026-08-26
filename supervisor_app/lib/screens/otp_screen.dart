@@ -11,17 +11,31 @@ import 'login_screen.dart';
 import 'sync_screen.dart';
 
 // ─────────────────────────────────────────────────────────────────────────
-// Brevo (formerly Sendinblue) transactional email configuration
-// 1. Create a free account at https://www.brevo.com
-// 2. Go to Settings -> SMTP & API -> API Keys -> Generate a new API key.
-// 3. Go to Senders, Domains & Dedicated IPs -> Senders -> add and verify
-//    the email address you want OTPs to be sent FROM (just click the
-//    confirmation link Brevo emails you — no DNS/domain setup needed).
-// 4. Paste the API key and the verified sender email below.
+// EmailJS transactional email configuration (free tier: 200 emails/month)
+// Unlike Brevo, EmailJS is designed to be called directly from client apps
+// with a public key baked into the code — that's not a security issue for
+// EmailJS, since the public key can only trigger the exact template you
+// configure (it can't be used to send arbitrary emails).
+//
+// Setup (~5 minutes):
+// 1. Create a free account at https://www.emailjs.com
+// 2. Email Services -> Add New Service -> connect the Gmail account you
+//    want OTPs sent FROM (e.g. sarasaleague@gmail.com) -> copy the
+//    "Service ID".
+// 3. Email Templates -> Create New Template. Set the "To email" field to
+//    {{to_email}}, subject to something like "Your OTP code", and the body
+//    to include {{otp_code}} and {{valid_minutes}} -> copy the
+//    "Template ID".
+// 4. Account -> General -> copy your "Public Key".
+// 5. Account -> Security -> turn ON "Allow EmailJS API for non-browser
+//    applications" (required since this is a mobile/desktop app, not a
+//    web page) -> copy your "Private Key" and paste it below too.
+// 6. Paste all four values below.
 // ─────────────────────────────────────────────────────────────────────────
-const String brevoApiKey = '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';
-const String brevoSenderEmail = 'sarasaleague@gmail.com';
-const String brevoSenderName = 'research';
+const String emailJsServiceId = 'service_505mba4';
+const String emailJsTemplateId = 'template_u8e6c8k';
+const String emailJsPublicKey = 'CVouTzk9ys2o3sbNf';
+const String emailJsPrivateKey = 'Yx-6PR_7KQaemC0ETfzsF';
 
 // How long a generated OTP stays valid.
 const Duration otpValidity = Duration(minutes: 10);
@@ -107,33 +121,30 @@ class _OTPScreenState extends State<OTPScreen> {
         'createdAt': FieldValue.serverTimestamp(),
       });
 
-      // 2. Send the email via Brevo's transactional email API.
+      // 2. Send the email via EmailJS's REST API.
       final response = await http.post(
-        Uri.parse('https://api.brevo.com/v3/smtp/email'),
+        Uri.parse('https://api.emailjs.com/api/v1.0/email/send'),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
-          'api-key': brevoApiKey,
         },
         body: jsonEncode({
-          'sender': {'name': brevoSenderName, 'email': brevoSenderEmail},
-          'to': [
-            {'email': widget.email},
-          ],
-          'subject': 'Your OTP code',
-          'htmlContent': '''
-            <p>To authenticate, please use the following One-Time Password (OTP):</p>
-            <h2>$code</h2>
-            <p>This OTP will be valid for ${otpValidity.inMinutes} minutes.</p>
-            <p>Do not share this OTP with anyone. If you didn't request this, you can safely ignore this email.</p>
-          ''',
+          'service_id': emailJsServiceId,
+          'template_id': emailJsTemplateId,
+          'user_id': emailJsPublicKey,
+          'accessToken': emailJsPrivateKey,
+          'template_params': {
+            'to_email': widget.email,
+            'otp_code': code,
+            'valid_minutes': otpValidity.inMinutes.toString(),
+          },
         }),
       );
 
       if (!mounted) return;
 
-      // Brevo returns 201 Created on success (not 200).
-      if (response.statusCode == 201) {
+      // EmailJS returns 200 OK on success.
+      if (response.statusCode == 200) {
         setState(() {
           isSending = false;
           statusMessage = 'OTP sent to ${widget.email}';
@@ -142,9 +153,9 @@ class _OTPScreenState extends State<OTPScreen> {
       } else {
         setState(() {
           isSending = false;
-          // response.body carries Brevo's actual reason (e.g. an invalid
-          // sender), which is far more useful than just the status code
-          // when something's misconfigured.
+          // response.body carries EmailJS's actual reason (e.g. an invalid
+          // template or service ID), which is far more useful than just
+          // the status code when something's misconfigured.
           statusMessage = 'Failed to send OTP: ${response.body}';
         });
       }

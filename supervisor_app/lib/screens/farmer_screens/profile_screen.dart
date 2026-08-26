@@ -61,8 +61,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         TextEditingController(text: _editableString(currentData['rubberTrees']));
     final TextEditingController experienceController =
         TextEditingController(text: _editableString(currentData['experience']));
-    final TextEditingController roleController =
-        TextEditingController(text: _editableString(currentData['role']));
 
     await showDialog<void>(
       context: context,
@@ -85,7 +83,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 children: <Widget>[
                   _editField(p: p, controller: emailController, label: 'Email', icon: Icons.email_outlined, keyboardType: TextInputType.emailAddress),
                   _editField(p: p, controller: nicController, label: 'NIC', icon: Icons.badge_outlined),
-                  _editField(p: p, controller: roleController, label: 'Farmer Role', icon: Icons.verified_user_outlined),
                   _editField(p: p, controller: nameController, label: settings.t('Name', 'නම'), icon: Icons.person_outline),
                   _editField(p: p, controller: phoneController, label: settings.t('Phone', 'දුරකථන අංකය'), icon: Icons.phone_outlined),
                   _editField(p: p, controller: addressController, label: settings.t('Address', 'ලිපිනය'), icon: Icons.location_on_outlined),
@@ -110,7 +107,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               onPressed: () async {
                 try {
-                  await FirebaseFirestore.instance.collection('users').doc(widget.userId).set(
+                  final User? currentUser = FirebaseAuth.instance.currentUser;
+                  if (currentUser == null) {
+                    throw FirebaseAuthException(
+                      code: 'signed-out',
+                      message: 'Please sign in again before updating your profile.',
+                    );
+                  }
+
+                  await FirebaseFirestore.instance.collection('users').doc(currentUser.uid).set(
                     <String, dynamic>{
                       'name': nameController.text.trim(),
                       'email': emailController.text.trim(),
@@ -121,7 +126,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       'landSize': landSizeController.text.trim(),
                       'rubberTrees': rubberTreesController.text.trim(),
                       'experience': experienceController.text.trim(),
-                      'role': roleController.text.trim(),
                       'updatedAt': Timestamp.now(),
                     },
                     SetOptions(merge: true),
@@ -138,11 +142,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       backgroundColor: p.primary,
                     ),
                   );
-                } catch (e) {
+                } on FirebaseException catch (e) {
                   if (!mounted) return;
+                  debugPrint('Profile update failed (${e.code}): ${e.message}');
 
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text(settings.t('Failed to update profile.', 'විස්තර යාවත්කාලීන කිරීමට නොහැකි විය.'))),
+                  );
+                } catch (_) {
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      backgroundColor: p.danger,
+                      content: Text('Could not update profile. Please try again.'),
+                    ),
                   );
                 }
               },
@@ -163,7 +176,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     landSizeController.dispose();
     rubberTreesController.dispose();
     experienceController.dispose();
-    roleController.dispose();
   }
 
   Widget _editField({

@@ -26,13 +26,16 @@ class DashboardHomeScreen extends StatelessWidget {
   // GOOGLE WEATHER API KEY
   // ------------------------------------------------------------
   //
-  // IMPORTANT:
-  // Replace this with your Google Weather API key.
-  //
-  // For a production app, do NOT leave a web-service key directly
-  // in the Flutter source code. Use a secure backend/proxy.
-  //
-  static const String _googleApiKey = 'YOUR_GOOGLE_API_KEY';
+  // Supplied at build time. Enable both Geocoding API and Weather API for
+  // this restricted key: --dart-define=GOOGLE_WEATHER_API_KEY=...
+  static const String _googleApiKey = String.fromEnvironment('GOOGLE_WEATHER_API_KEY');
+
+  // RRISL is the official source for Colombo auction prices. For Flutter web,
+  // configure a same-origin CORS proxy with RUBBER_MARKET_FEED_URL if needed.
+  static const String _rubberMarketFeedUrl = String.fromEnvironment(
+    'RUBBER_MARKET_FEED_URL',
+    defaultValue: 'https://www.anrpc.org/anrpc-daily-price',
+  );
 
   Future<Map<String, dynamic>?> _loadFarmerDetails() async {
     final DocumentSnapshot<Map<String, dynamic>> userDoc =
@@ -50,8 +53,8 @@ class DashboardHomeScreen extends StatelessWidget {
       return null;
     }
 
-    if (_googleApiKey == 'YOUR_GOOGLE_API_KEY') {
-      return null;
+    if (_googleApiKey.isEmpty) {
+      return _loadOpenMeteoWeather(address);
     }
 
     try {
@@ -63,7 +66,7 @@ class DashboardHomeScreen extends StatelessWidget {
 
       final http.Response geocodeResponse = await http.get(geocodeUrl).timeout(const Duration(seconds: 10));
 
-      if (geocodeResponse.statusCode != 200) return null;
+      if (geocodeResponse.statusCode != 200) return _loadOpenMeteoWeather(address);
 
       final Map<String, dynamic> geocodeData = jsonDecode(geocodeResponse.body) as Map<String, dynamic>;
 
@@ -71,7 +74,7 @@ class DashboardHomeScreen extends StatelessWidget {
           ? geocodeData['results'] as List<dynamic>
           : <dynamic>[];
 
-      if (results.isEmpty) return null;
+      if (results.isEmpty) return _loadOpenMeteoWeather(address);
 
       final Map<String, dynamic> firstResult = results.first as Map<String, dynamic>;
 
@@ -86,20 +89,89 @@ class DashboardHomeScreen extends StatelessWidget {
       final dynamic latitude = location['lat'];
       final dynamic longitude = location['lng'];
 
-      if (latitude == null || longitude == null) return null;
+      if (latitude == null || longitude == null) return _loadOpenMeteoWeather(address);
 
-      final Uri weatherUrl = Uri.parse(
-        'https://weather.googleapis.com/v1/currentConditions:lookup'
-        '?key=${Uri.encodeQueryComponent(_googleApiKey)}'
-        '&location.latitude=$latitude'
-        '&location.longitude=$longitude',
+      final Uri weatherUrl = Uri.https(
+        'weather.googleapis.com',
+        '/v1/currentConditions:lookup',
+        <String, String>{
+          'key': _googleApiKey,
+          'location.latitude': latitude.toString(),
+          'location.longitude': longitude.toString(),
+          'unitsSystem': 'METRIC',
+          'languageCode': 'en',
+        },
       );
 
       final http.Response weatherResponse = await http.get(weatherUrl).timeout(const Duration(seconds: 10));
 
-      if (weatherResponse.statusCode != 200) return null;
+      if (weatherResponse.statusCode != 200) return _loadOpenMeteoWeather(address);
 
       return jsonDecode(weatherResponse.body) as Map<String, dynamic>;
+    } catch (_) {
+      return _loadOpenMeteoWeather(address);
+    }
+  }
+
+  Future<Map<String, dynamic>?> _loadOpenMeteoWeather(String address) async {
+    try {
+      final Uri geocodeUrl = Uri.https('geocoding-api.open-meteo.com', '/v1/search', <String, String>{'name': address, 'count': '1'});
+      final http.Response geocodeResponse = await http.get(geocodeUrl).timeout(const Duration(seconds: 10));
+      if (geocodeResponse.statusCode != 200) return null;
+      final Map<String, dynamic> geocode = jsonDecode(geocodeResponse.body) as Map<String, dynamic>;
+      final List<dynamic> results = geocode['results'] is List<dynamic> ? geocode['results'] as List<dynamic> : <dynamic>[];
+      if (results.isEmpty) return null;
+      final Map<String, dynamic> location = results.first as Map<String, dynamic>;
+      final Uri weatherUrl = Uri.https('api.open-meteo.com', '/v1/forecast', <String, String>{
+        'latitude': location['latitude'].toString(),
+        'longitude': location['longitude'].toString(),
+        'current': 'temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code',
+        'wind_speed_unit': 'kmh',
+      });
+      final http.Response weatherResponse = await http.get(weatherUrl).timeout(const Duration(seconds: 10));
+      if (weatherResponse.statusCode != 200) return null;
+      final Map<String, dynamic> weather = jsonDecode(weatherResponse.body) as Map<String, dynamic>;
+      final Map<String, dynamic> current = weather['current'] is Map<String, dynamic> ? weather['current'] as Map<String, dynamic> : <String, dynamic>{};
+      final int code = current['weather_code'] is num ? (current['weather_code'] as num).toInt() : -1;
+      final String description = code == 0 ? 'Clear sky' : code <= 2 ? 'Partly cloudy' : code == 3 ? 'Overcast' : code >= 95 ? 'Thunderstorm' : code >= 80 ? 'Rain showers' : code >= 51 ? 'Rain' : 'Current weather';
+      return <String, dynamic>{
+        'weatherCondition': <String, dynamic>{'description': <String, dynamic>{'text': description}},
+        'temperature': <String, dynamic>{'degrees': current['temperature_2m']},
+        'relativeHumidity': current['relative_humidity_2m'],
+        'wind': <String, dynamic>{'speed': <String, dynamic>{'value': current['wind_speed_10m'], 'unit': 'km/h'}},
+      };
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>?> _loadRubberMarketPrice() async {
+    try {
+      final http.Response response = await http.get(Uri.parse(_rubberMarketFeedUrl)).timeout(const Duration(seconds: 12));
+      if (response.statusCode != 200) return null;
+
+      final String body = response.body.trim();
+      if (body.startsWith('{')) {
+        final Map<String, dynamic> market = jsonDecode(body) as Map<String, dynamic>;
+        final dynamic price = market['price'] ?? market['priceLkr'] ?? market['rss3Price'];
+        if (price == null) return null;
+        return <String, dynamic>{
+          'place': _stringOrDefault(market['place'] ?? market['market'], fallback: 'Colombo auction'),
+          'price': price is num ? 'LKR ${price.toStringAsFixed(2)} / kg' : price.toString(),
+          'updatedAt': _stringOrDefault(market['updatedAt'] ?? market['date'], fallback: 'latest auction'),
+        };
+      }
+
+      final String text = body.replaceAll(RegExp(r'<[^>]*>'), ' ').replaceAll('&nbsp;', ' ').replaceAll(RegExp(r'\s+'), ' ');
+      final RegExpMatch? date = RegExp(r'Date of Auction\s*:?\s*([0-9]{2}-[0-9]{2}-[0-9]{4})', caseSensitive: false).firstMatch(text);
+      final RegExpMatch? price = RegExp(r'(?:RSS\s*3|RSS\s*1|RSS\s*2|RSS\s*4|Latex Crepe)[^0-9]{0,80}([0-9]{2,3}(?:\.[0-9]{1,2})?)', caseSensitive: false).firstMatch(text);
+      if (price == null) return null;
+
+      return <String, dynamic>{
+        'place': 'ANRPC RSS3 market',
+        'price': 'USD ${price.group(1)} / kg',
+        'updatedAt': date?.group(1) ?? 'latest market update',
+      };
     } catch (_) {
       return null;
     }
@@ -141,11 +213,15 @@ class DashboardHomeScreen extends StatelessWidget {
         final String name = _stringOrDefault(data['name'], fallback: settings.t('Farmer', 'ගොවියා'));
         final String address = _stringOrDefault(data['address'], fallback: settings.t('Address not added', 'ලිපිනය එකතු කර නැත'));
 
-        final List<dynamic> alerts = data['alerts'] is List<dynamic> ? data['alerts'] as List<dynamic> : <dynamic>[];
+        final List<dynamic> savedAlerts = data['alerts'] is List<dynamic> ? data['alerts'] as List<dynamic> : <dynamic>[];
 
-        final int notificationCount = _notificationCount(data);
+        return StreamBuilder<List<Map<String, dynamic>>>(
+          stream: _watchLstmForecastAlerts(),
+          builder: (BuildContext context, AsyncSnapshot<List<Map<String, dynamic>>> modelSnapshot) {
+            final List<dynamic> alerts = <dynamic>[...savedAlerts, ...(modelSnapshot.data ?? <Map<String, dynamic>>[])];
+            final int notificationCount = _notificationCount(data, alerts);
 
-        return ListView(
+            return ListView(
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
           children: <Widget>[
             // =====================================================
@@ -259,7 +335,15 @@ class DashboardHomeScreen extends StatelessWidget {
             // =====================================================
             // RUBBER MARKET
             // =====================================================
-            _marketCard(p, settings, _mapValue(data['rubberMarket'])),
+            FutureBuilder<Map<String, dynamic>?>(
+              future: _loadRubberMarketPrice(),
+              builder: (BuildContext context, AsyncSnapshot<Map<String, dynamic>?> marketSnapshot) {
+                if (marketSnapshot.connectionState == ConnectionState.waiting) {
+                  return _marketLoadingCard(p, settings);
+                }
+                return _marketCard(p, settings, marketSnapshot.data ?? <String, dynamic>{});
+              },
+            ),
 
             const SizedBox(height: 22),
 
@@ -334,6 +418,8 @@ class DashboardHomeScreen extends StatelessWidget {
               },
             ),
           ],
+            );
+          },
         );
       },
     ));
@@ -560,6 +646,19 @@ class DashboardHomeScreen extends StatelessWidget {
   // RUBBER MARKET CARD
   // ------------------------------------------------------------
 
+  Widget _marketLoadingCard(FarmerPalette p, FarmerSettings settings) {
+    return _card(
+      p,
+      Row(
+        children: <Widget>[
+          SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2.4, color: p.primary)),
+          const SizedBox(width: 14),
+          Text(settings.t('Loading Colombo auction prices...', 'වෙළඳපොළ මිල පූරණය කරමින්...'), style: TextStyle(color: p.textSecondary, fontWeight: FontWeight.w600)),
+        ],
+      ),
+    );
+  }
+
   Widget _marketCard(FarmerPalette p, FarmerSettings settings, Map<String, dynamic> market) {
     final bool available = market.isNotEmpty;
 
@@ -631,9 +730,11 @@ class DashboardHomeScreen extends StatelessWidget {
   Widget _alertTile(FarmerPalette p, dynamic alert) {
     String text = 'New farm alert';
     String? subtitle;
+    String severity = '';
 
     if (alert is Map<String, dynamic>) {
       text = _stringOrDefault(alert['message'] ?? alert['title'], fallback: 'New farm alert');
+      severity = _stringOrDefault(alert['severity'], fallback: '').toLowerCase();
 
       final String date = _stringOrDefault(alert['date'] ?? alert['createdAt'], fallback: '');
 
@@ -642,11 +743,23 @@ class DashboardHomeScreen extends StatelessWidget {
       text = alert.toString();
     }
 
+    final bool isCritical = severity == 'critical' || severity == 'high';
+    final Color alertColor = isCritical ? p.danger : p.warning;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(color: p.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: p.border)),
+      decoration: BoxDecoration(
+        color: alertColor.withOpacity(p.isDark ? 0.12 : 0.06),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: alertColor.withOpacity(0.28)),
+      ),
       child: ListTile(
-        leading: Icon(Icons.warning_amber_rounded, color: p.warning),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(color: alertColor.withOpacity(0.14), shape: BoxShape.circle),
+          child: Icon(isCritical ? Icons.priority_high_rounded : Icons.info_outline_rounded, color: alertColor, size: 20),
+        ),
         title: Text(text, style: TextStyle(fontWeight: FontWeight.w600, color: p.textPrimary)),
         subtitle: subtitle == null ? null : Text(subtitle, style: TextStyle(color: p.textSecondary)),
         dense: true,
@@ -690,9 +803,68 @@ class DashboardHomeScreen extends StatelessWidget {
   // HELPERS
   // ------------------------------------------------------------
 
+  /// Reads only this component's LSTM forecast result. It deliberately does
+  /// not subscribe to the VFA, anomaly-detection, or route-model collections.
+  ///
+  /// Expected document: `quality_forecasts/{farmer Firebase UID}`
+  /// Required fields: `riskLevel` and/or `predictedVfa`.
+  /// Optional fields: `forecastDate`, `trend`, `updatedAt`.
+  Stream<List<Map<String, dynamic>>> _watchLstmForecastAlerts() {
+    return FirebaseFirestore.instance.collection('quality_forecasts').doc(userId).snapshots().map(
+      (DocumentSnapshot<Map<String, dynamic>> snapshot) {
+        final Map<String, dynamic>? forecast = snapshot.data();
+        if (forecast == null) return <Map<String, dynamic>>[];
+
+        final String risk = _stringOrDefault(forecast['riskLevel'] ?? forecast['risk_level'], fallback: '').toLowerCase();
+        final String trend = _stringOrDefault(forecast['trend'], fallback: '');
+        final num? predictedVfa = forecast['predictedVfa'] is num
+            ? forecast['predictedVfa'] as num
+            : forecast['predicted_vfa'] is num
+                ? forecast['predicted_vfa'] as num
+                : num.tryParse(_stringOrDefault(forecast['predictedVfa'] ?? forecast['predicted_vfa'], fallback: ''));
+        final num? riskProbability = forecast['riskProbability'] is num
+            ? forecast['riskProbability'] as num
+            : forecast['risk_probability'] is num
+                ? forecast['risk_probability'] as num
+                : num.tryParse(_stringOrDefault(forecast['riskProbability'] ?? forecast['risk_probability'], fallback: ''));
+        const double vfaAlertThreshold = 0.06;
+        const double riskProbabilityThreshold = 0.28;
+        final bool needsAlert = risk == 'medium' ||
+            risk == 'high' ||
+            risk == 'critical' ||
+            (predictedVfa != null && predictedVfa >= vfaAlertThreshold) ||
+            (riskProbability != null && riskProbability >= riskProbabilityThreshold);
+        if (!needsAlert) return <Map<String, dynamic>>[];
+
+        final bool isHighRisk = risk == 'critical' ||
+            risk == 'high' ||
+            (predictedVfa != null && predictedVfa >= vfaAlertThreshold);
+        final String label = isHighRisk ? 'LSTM quality forecast alert' : 'LSTM quality forecast notice';
+        final String date = _stringOrDefault(forecast['forecastDate'] ?? forecast['forecast_date'], fallback: 'the next collection');
+        final DateTime? updatedAt = forecast['updatedAt'] is Timestamp
+            ? (forecast['updatedAt'] as Timestamp).toDate()
+            : forecast['updated_at'] is Timestamp
+                ? (forecast['updated_at'] as Timestamp).toDate()
+                : null;
+
+        return <Map<String, dynamic>>[
+          <String, dynamic>{
+            'title': label,
+            'message': 'Forecast for $date: ${predictedVfa == null ? 'quality risk is $risk' : 'predicted VFA is ${predictedVfa.toStringAsFixed(3)}'}${riskProbability == null ? '' : ' (risk probability: ${(riskProbability * 100).toStringAsFixed(0)}%)'}${trend.isEmpty ? '' : ' ($trend trend)'}.',
+            'createdAt': updatedAt?.toIso8601String() ?? '',
+            'severity': risk,
+            'source': 'lstm_quality_forecast',
+          },
+        ];
+      },
+    );
+  }
+
   Map<String, dynamic> _mapValue(dynamic value) => value is Map<String, dynamic> ? value : <String, dynamic>{};
 
-  int _notificationCount(Map<String, dynamic> data) {
+  int _notificationCount(Map<String, dynamic> data, [List<dynamic>? activeAlerts]) {
+    if (activeAlerts != null) return activeAlerts.length;
+
     final dynamic count = data['notificationCount'];
     if (count is int) return count;
 

@@ -3,9 +3,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 
 import LoginPage from './pages/LoginPage'
-import LiveMonitorPage from './pages/LiveMonitorPage'
-import FarmerProfilePage from './pages/FarmerProfilePage'
-import AlertsPage from './pages/AlertsPage'
 import DailySummaryPage from './pages/DailySummaryPage'
 import UnauthorizedPage from './pages/UnauthorizedPage'
 import Navbar from './components/layout/Navbar'
@@ -63,7 +60,7 @@ const App = () => {
         path="/login"
         element={
           isAuth
-            ? <Navigate to="/dashboard" replace />
+            ? <Navigate to="/summary" replace />
             : <LoginPage />
         }
       />
@@ -78,44 +75,6 @@ const App = () => {
       <Route
         path="/"
         element={<Navigate to="/login" replace />}
-      />
-
-      {/* Live Monitor / Dashboard */}
-      <Route
-        path="/dashboard"
-        element={
-          <ProtectedRoute allowedRoles={[ROLES.MANAGER, ROLES.ADMIN]}>
-            <DashboardLayout>
-              <LiveMonitorPage />
-            </DashboardLayout>
-          </ProtectedRoute>
-        }
-      />
-
-      {/* Farmer Profile */}
-      <Route
-        path="/farmer"
-        element={
-          <ProtectedRoute allowedRoles={[ROLES.MANAGER, ROLES.ADMIN]}>
-            <DashboardLayout>
-              <FarmerProfilePage />
-            </DashboardLayout>
-          </ProtectedRoute>
-        }
-      />
-
-      {/* Alerts */}
-      <Route
-        path="/alerts"
-        element={
-          <ProtectedRoute allowedRoles={[
-            ROLES.MANAGER, ROLES.QA_OFFICER, ROLES.ADMIN
-          ]}>
-            <DashboardLayout>
-              <AlertsPage />
-            </DashboardLayout>
-          </ProtectedRoute>
-        }
       />
 
       {/* Daily Summary */}

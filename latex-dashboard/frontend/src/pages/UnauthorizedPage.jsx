@@ -18,10 +18,8 @@ const UnauthorizedPage = () => {
 
   // ── Go back to correct page ─────────────────────────────────────────────────
   const handleGoBack = () => {
-    if (role === 'manager' || role === 'admin') {
-      navigate('/')
-    } else if (role === 'qa_officer') {
-      navigate('/alerts')
+    if (['manager', 'qa_officer', 'admin'].includes(role)) {
+      navigate('/summary')
     } else {
       navigate('/login')
     }

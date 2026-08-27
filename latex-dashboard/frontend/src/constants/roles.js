@@ -17,19 +17,12 @@ export const ROLE_LABELS = {
 // ── Role Permissions ──────────────────────────────────────────────────────────
 export const ROLE_PERMISSIONS = {
   manager: [
-    'live_monitor',
-    'farmer_profile',
-    'alerts',
     'daily_summary',
   ],
   qa_officer: [
-    'alerts',
     'daily_summary',
   ],
   admin: [
-    'live_monitor',
-    'farmer_profile',
-    'alerts',
     'daily_summary',
     'user_management',
   ],
@@ -48,8 +41,6 @@ export const getRoleLabel = (role) => {
 // ── Allowed Roles per Route ───────────────────────────────────────────────────
 export const ROUTE_ROLES = {
   '/':              ['manager', 'admin'],
-  '/farmer':        ['manager', 'admin'],
-  '/alerts':        ['manager', 'qa_officer', 'admin'],
   '/summary':       ['manager', 'qa_officer', 'admin'],
   '/unauthorized':  ['manager', 'qa_officer', 'admin'],
 }

@@ -1,31 +1,14 @@
 // src/components/layout/Sidebar.jsx
 
-import { useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { db } from '../../firebase/config'
-import { ref, onValue } from 'firebase/database'
 import { getRoleLabel } from '../../constants/roles'
 
 const Sidebar = () => {
-  const [unreadCount, setUnreadCount] = useState(0)
   const location = useLocation()
   const navigate = useNavigate()
 
   const role = localStorage.getItem('role')
   const name = localStorage.getItem('name')
-
-  // Fetch unread alerts
-  useEffect(() => {
-    const unsub = onValue(ref(db, 'alerts'), (snapshot) => {
-      const data = snapshot.val()
-      if (data) {
-        setUnreadCount(
-          Object.values(data).filter(a => !a.read).length
-        )
-      }
-    })
-    return () => unsub()
-  }, [])
 
   const handleLogout = () => {
     localStorage.clear()
@@ -35,25 +18,6 @@ const Sidebar = () => {
   const isActive = (path) => location.pathname === path
 
   const navItems = [
-    {
-      path: '/dashboard',
-      icon: "🛰️",
-      label: 'Live Monitor',
-      roles: ['manager', 'admin'],
-    },
-    {
-      path: '/farmer',
-      icon: "👤",
-      label: 'Farmer Registry',
-      roles: ['manager', 'admin'],
-    },
-    {
-      path: '/alerts',
-      icon: "🔔",
-      label: 'Alert Logs',
-      roles: ['manager', 'qa_officer', 'admin'],
-      badge: true,
-    },
     {
       path: '/summary',
       icon: "📊",
@@ -104,15 +68,6 @@ const Sidebar = () => {
                   {item.label}
                 </span>
               </div>
-              
-              {item.badge && unreadCount > 0 && (
-                <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black transition-all
-                                ${isActive(item.path) 
-                                  ? 'bg-[#052c14] text-white' 
-                                  : 'bg-red-500 text-white'}`}>
-                  {unreadCount}
-                </span>
-              )}
             </Link>
           ))}
       </nav>

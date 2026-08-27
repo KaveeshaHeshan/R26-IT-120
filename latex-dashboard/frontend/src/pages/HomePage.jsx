@@ -353,75 +353,9 @@ const HomePage = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            
-            {/* Card 1: Live Monitor */}
-            <Link to="/dashboard" className="block group">
-              <motion.div
-                whileHover={{ y: -6, scale: 1.02 }}
-                transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                className="bg-white rounded-3xl p-8 border border-emerald-50 shadow-[0_10px_30px_rgba(0,0,0,0.02)] group-hover:shadow-[0_20px_45px_rgba(10,54,34,0.08)] transition-all h-full flex flex-col justify-between"
-              >
-                <div>
-                  <div className="w-14 h-14 bg-emerald-50 rounded-2xl flex items-center justify-center text-3xl mb-6 group-hover:bg-[#0a3622] group-hover:text-white transition-all">
-                    📡
-                  </div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">Live Monitor</h3>
-                  <p className="text-gray-500 text-sm leading-relaxed mb-6">
-                    Real-time sensor streams, device health status, and environment diagnostics.
-                  </p>
-                </div>
-                <div className="flex items-center text-[#0a3622] font-extrabold text-sm group-hover:translate-x-2 transition-transform">
-                  Access Portal <span className="ml-2 text-lg">→</span>
-                </div>
-              </motion.div>
-            </Link>
+          <div className="grid grid-cols-1 max-w-sm mx-auto gap-6">
 
-            {/* Card 2: Farmer Profile */}
-            <Link to="/farmer" className="block group">
-              <motion.div
-                whileHover={{ y: -6, scale: 1.02 }}
-                transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                className="bg-white rounded-3xl p-8 border border-emerald-50 shadow-[0_10px_30px_rgba(0,0,0,0.02)] group-hover:shadow-[0_20px_45px_rgba(10,54,34,0.08)] transition-all h-full flex flex-col justify-between"
-              >
-                <div>
-                  <div className="w-14 h-14 bg-emerald-50 rounded-2xl flex items-center justify-center text-3xl mb-6 group-hover:bg-[#0a3622] group-hover:text-white transition-all">
-                    👨‍🌾
-                  </div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">Farmer Profile</h3>
-                  <p className="text-gray-500 text-sm leading-relaxed mb-6">
-                    Manage farmer directory, yield records, payouts, and compliance logs.
-                  </p>
-                </div>
-                <div className="flex items-center text-[#0a3622] font-extrabold text-sm group-hover:translate-x-2 transition-transform">
-                  Access Profiles <span className="ml-2 text-lg">→</span>
-                </div>
-              </motion.div>
-            </Link>
-
-            {/* Card 3: Alerts */}
-            <Link to="/alerts" className="block group">
-              <motion.div
-                whileHover={{ y: -6, scale: 1.02 }}
-                transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                className="bg-white rounded-3xl p-8 border border-emerald-50 shadow-[0_10px_30px_rgba(0,0,0,0.02)] group-hover:shadow-[0_20px_45px_rgba(10,54,34,0.08)] transition-all h-full flex flex-col justify-between"
-              >
-                <div>
-                  <div className="w-14 h-14 bg-emerald-50 rounded-2xl flex items-center justify-center text-3xl mb-6 group-hover:bg-[#0a3622] group-hover:text-white transition-all">
-                    🔔
-                  </div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">Alerts</h3>
-                  <p className="text-gray-500 text-sm leading-relaxed mb-6">
-                    Critical warning logs, anomaly notifications, and thresholds triggers.
-                  </p>
-                </div>
-                <div className="flex items-center text-[#0a3622] font-extrabold text-sm group-hover:translate-x-2 transition-transform">
-                  View Alerts <span className="ml-2 text-lg">→</span>
-                </div>
-              </motion.div>
-            </Link>
-
-            {/* Card 4: Daily Summary */}
+            {/* Card: Daily Summary */}
             <Link to="/summary" className="block group">
               <motion.div
                 whileHover={{ y: -6, scale: 1.02 }}

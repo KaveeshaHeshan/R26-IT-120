@@ -4,6 +4,8 @@ import '../core/app_theme.dart';
 import '../models/farm.dart';
 import '../services/firestore_service.dart';
 import '../widgets/hotspot_indicator.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+import '../services/offline_queue_service.dart';
 
 class VerifyScreen extends StatefulWidget {
   final Farm farm;
@@ -40,121 +42,128 @@ class _VerifyScreenState extends State<VerifyScreen> {
     }
     return parts[0][0].toUpperCase();
   }
-
-  Future<void> _submitCollection() async {
-    if (_volumeController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Please enter the collected volume',
-            style: GoogleFonts.inter(),
-          ),
-          backgroundColor: AppTheme.riskHigh,
-        ),
-      );
-      return;
-    }
-
-    if (!_isSigned) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Please sign the collection record',
-            style: GoogleFonts.inter(),
-          ),
-          backgroundColor: AppTheme.riskMedium,
-        ),
-      );
-      return;
-    }
-
-    setState(() => _isSubmitting = true);
-
-    // Save to Firestore
-    await FirestoreService().saveCollection(
-      farmId:    widget.farm.farmId,
-      farmerName: widget.farm.farmerName,
-      vfaResult: widget.farm.vfaResult,
-      grade:     widget.farm.grade,
-      riskLevel: widget.farm.riskLevel,
-      volume:    double.tryParse(_volumeController.text) ?? 0,
-      notes:     _notesController.text,
+Future<void> _submitCollection() async {
+  if (_volumeController.text.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Please enter the collected volume', style: GoogleFonts.inter()),
+        backgroundColor: AppTheme.riskHigh,
+      ),
     );
+    return;
+  }
 
-    setState(() => _isSubmitting = false);
+  if (!_isSigned) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Please sign the collection record', style: GoogleFonts.inter()),
+        backgroundColor: AppTheme.riskMedium,
+      ),
+    );
+    return;
+  }
 
-    if (!mounted) return;
+  setState(() => _isSubmitting = true);
 
-    // Show success dialog
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                color: AppTheme.success.withOpacity(0.12),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.check_circle_outline,
-                color: AppTheme.success,
-                size: 36,
-              ),
+  final volume = double.tryParse(_volumeController.text) ?? 0;
+  bool savedOnline = false;
+
+  final connectivity = await Connectivity().checkConnectivity();
+  final isOnline = connectivity.any((r) =>
+      r == ConnectivityResult.mobile ||
+      r == ConnectivityResult.wifi ||
+      r == ConnectivityResult.ethernet);
+
+  if (isOnline) {
+    try {
+      await FirestoreService().saveCollection(
+        farmId:     widget.farm.farmId,
+        farmerName: widget.farm.farmerName,
+        vfaResult:  widget.farm.vfaResult,
+        grade:      widget.farm.grade,
+        riskLevel:  widget.farm.riskLevel,
+        volume:     volume,
+        notes:      _notesController.text,
+      );
+      savedOnline = true;
+    } catch (e) {
+      savedOnline = false;
+    }
+  }
+
+  if (!savedOnline) {
+    await OfflineQueueService().addPendingCollection(
+      farmId:     widget.farm.farmId,
+      farmerName: widget.farm.farmerName,
+      vfaResult:  widget.farm.vfaResult,
+      grade:      widget.farm.grade,
+      riskLevel:  widget.farm.riskLevel,
+      volume:     volume,
+      notes:      _notesController.text,
+    );
+  }
+
+  setState(() => _isSubmitting = false);
+
+  if (!mounted) return;
+
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              color: (savedOnline ? AppTheme.success : AppTheme.riskMedium).withOpacity(0.12),
+              shape: BoxShape.circle,
             ),
-            const SizedBox(height: 16),
-            Text(
-              'Collection Confirmed!',
-              style: GoogleFonts.inter(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: AppTheme.textPrimary,
-              ),
+            child: Icon(
+              savedOnline ? Icons.check_circle_outline : Icons.cloud_off_outlined,
+              color: savedOnline ? AppTheme.success : AppTheme.riskMedium,
+              size: 36,
             ),
-            const SizedBox(height: 8),
-            Text(
-              '${widget.farm.farmerName} — ${_volumeController.text}L recorded',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.inter(
-                fontSize: 13,
-                color: AppTheme.textSecondary,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context); // close dialog
-                Navigator.pop(context); // back to map
-                Navigator.pop(context); // back to stop list
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              child: Text(
-                'Back to Stop List',
-                style: GoogleFonts.inter(fontWeight: FontWeight.w600),
-              ),
-            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            savedOnline ? 'Collection Confirmed!' : 'Saved Offline',
+            style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: AppTheme.textPrimary),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            savedOnline
+                ? '${widget.farm.farmerName} — ${_volumeController.text}L recorded'
+                : '${widget.farm.farmerName} — ${_volumeController.text}L queued.\nWill sync when connection is back.',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textSecondary),
           ),
         ],
       ),
-    );
-  }
+      actions: [
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pop(context);
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            child: Text('Back to Stop List', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+          ),
+        ),
+      ],
+    ),
+  );
+}
 
   @override
   Widget build(BuildContext context) {

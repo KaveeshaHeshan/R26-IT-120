@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import '../core/app_theme.dart';
+import '../services/offline_queue_service.dart';
 
 class HotspotIndicator extends StatefulWidget {
   const HotspotIndicator({super.key});
@@ -26,16 +27,22 @@ class _HotspotIndicatorState extends State<HotspotIndicator> {
     _updateStatus(results);
   }
 
-  void _updateStatus(List<ConnectivityResult> results) {
-    if (!mounted) return;
-    setState(() {
-      _isConnected = results.any((r) =>
-        r == ConnectivityResult.mobile ||
-        r == ConnectivityResult.wifi   ||
-        r == ConnectivityResult.ethernet
-      );
-    });
+void _updateStatus(List<ConnectivityResult> results) {
+  if (!mounted) return;
+  final wasConnected = _isConnected;
+  final nowConnected = results.any((r) =>
+      r == ConnectivityResult.mobile ||
+      r == ConnectivityResult.wifi ||
+      r == ConnectivityResult.ethernet);
+
+  setState(() {
+    _isConnected = nowConnected;
+  });
+
+  if (!wasConnected && nowConnected) {
+    OfflineQueueService().syncPending();
   }
+}
 
   @override
   Widget build(BuildContext context) {

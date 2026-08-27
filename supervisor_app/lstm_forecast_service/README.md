@@ -58,3 +58,20 @@ evaluated then: recommended ammonia is deterministic from volume, the actual
 amount and ratio are mathematically related, and the followed-standard flag is
 derived from the ammonia decision. These fields remain stored for traceability,
 not as a commitment that every one will become a model feature.
+
+## Historical validation demo
+
+`demo_forecast.py` is a viva/demo utility, not a production data path. It
+reads the original `farmer_dataset_12_farmers.csv`, selects a complete 30-row
+historical window, and posts the real rows plus real target-event context to
+the running API with `saveToFirestore: true`. It logs `DEMO_MODE` on the
+backend only and does not change farmer-facing alert text.
+
+- `--case normal` uses F001's genuine test window ending at the target event
+  on 2025-12-25.
+- `--case high` uses F002's genuine critical test window ending at the target
+  event on 2026-01-06.
+
+Before each command, a supervisor/trusted backend must explicitly set the
+test Firebase user's `modelFarmerId` to the corresponding ID. The utility
+does not set or infer this mapping.

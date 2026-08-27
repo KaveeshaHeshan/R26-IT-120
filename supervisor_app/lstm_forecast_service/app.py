@@ -267,6 +267,16 @@ def forecast():
             "supportedFarmerIds": [column.removeprefix("farmer_") for column in FARMER_COLUMNS],
         }), 422
 
+    # Historical-validation calls are deliberately marked in server logs only.
+    # Nothing in this branch changes the farmer-facing forecast document/text.
+    if payload.get("demoMode") is True:
+        app.logger.warning(
+            "DEMO_MODE historical validation request: userId=%s modelFarmerId=%s case=%s",
+            user_id,
+            farmer_id,
+            payload.get("demoCase", "unspecified"),
+        )
+
     history, invalid_history_fields, valid_history_count = _prepare_history(records)
     if valid_history_count < LOOKBACK:
         return jsonify({
@@ -290,8 +300,16 @@ def forecast():
     scaled_sequence = SEQUENCE_SCALER.transform(sequence).reshape(1, LOOKBACK, len(SEQUENCE_FEATURES))
     scaled_context = CONTEXT_SCALER.transform(context_row)
     prediction = MODEL.predict({"sequence": scaled_sequence, "context": scaled_context}, verbose=0)
-    risk_probability = float(prediction[0][0][0])
-    predicted_vfa = float(VFA_SCALER.inverse_transform(prediction[1])[0][0])
+    # This saved multi-output Keras model returns named outputs. Use their
+    # names rather than positional indexes so the risk and VFA heads cannot be
+    # swapped or fail with KeyError when TensorFlow returns a dictionary.
+    if isinstance(prediction, dict):
+        risk_output = prediction["risk"]
+        vfa_output = prediction["vfa"]
+    else:
+        risk_output, vfa_output = prediction
+    risk_probability = float(np.asarray(risk_output).reshape(-1)[0])
+    predicted_vfa = float(VFA_SCALER.inverse_transform(np.asarray(vfa_output).reshape(-1, 1))[0][0])
     risk_level = _risk_level(predicted_vfa, risk_probability)
     title, message, reason, recommendations, trend = _farmer_guidance(
         predicted_vfa,
@@ -300,6 +318,16 @@ def forecast():
         history,
         context,
     )
+
+    if payload.get("demoMode") is True:
+        app.logger.warning(
+            "DEMO_MODE historical validation result: userId=%s modelFarmerId=%s predictedVfa=%.6f riskProbability=%.6f riskLevel=%s",
+            user_id,
+            farmer_id,
+            predicted_vfa,
+            risk_probability,
+            risk_level,
+        )
 
     result = {
         "predictedVfa": predicted_vfa,

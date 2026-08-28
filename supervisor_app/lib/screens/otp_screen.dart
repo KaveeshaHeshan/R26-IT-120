@@ -7,7 +7,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:http/http.dart' as http;
 
-import 'login_screen.dart';
+import 'farmer_screens/farmer_dashboard_screen.dart';
 import 'sync_screen.dart';
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -43,8 +43,13 @@ const Duration otpValidity = Duration(minutes: 10);
 class OTPScreen extends StatefulWidget {
   final String email;
   final String role;
-
-  const OTPScreen({super.key, required this.email, required this.role});
+  final String userId;
+  const OTPScreen({
+    super.key,
+    required this.email,
+    required this.role,
+    required this.userId,
+  });
 
   @override
   State<OTPScreen> createState() => _OTPScreenState();
@@ -114,12 +119,15 @@ class _OTPScreenState extends State<OTPScreen> {
 
     try {
       // 1. Save the code so we can verify it later.
-      await FirebaseFirestore.instance.collection('otp_codes').doc(user.uid).set({
-        'code': code,
-        'email': widget.email,
-        'expiresAt': Timestamp.fromDate(expiresAt),
-        'createdAt': FieldValue.serverTimestamp(),
-      });
+      await FirebaseFirestore.instance
+          .collection('otp_codes')
+          .doc(user.uid)
+          .set({
+            'code': code,
+            'email': widget.email,
+            'expiresAt': Timestamp.fromDate(expiresAt),
+            'createdAt': FieldValue.serverTimestamp(),
+          });
 
       // 2. Send the email via EmailJS's REST API.
       final response = await http.post(
@@ -163,7 +171,8 @@ class _OTPScreenState extends State<OTPScreen> {
       if (!mounted) return;
       setState(() {
         isSending = false;
-        statusMessage = 'Failed to send OTP. Check your connection and try again.';
+        statusMessage =
+            'Failed to send OTP. Check your connection and try again.';
       });
     }
   }
@@ -173,7 +182,9 @@ class _OTPScreenState extends State<OTPScreen> {
     if (enteredCode.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('⚠️ Please enter the 6-digit OTP code sent to your email!'),
+          content: Text(
+            '⚠️ Please enter the 6-digit OTP code sent to your email!',
+          ),
           backgroundColor: Colors.orange,
         ),
       );
@@ -183,7 +194,10 @@ class _OTPScreenState extends State<OTPScreen> {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('❌ Session expired. Please sign up again.'), backgroundColor: Colors.red),
+        const SnackBar(
+          content: Text('❌ Session expired. Please sign up again.'),
+          backgroundColor: Colors.red,
+        ),
       );
       return;
     }
@@ -191,7 +205,10 @@ class _OTPScreenState extends State<OTPScreen> {
     setState(() => isVerifying = true);
 
     try {
-      final doc = await FirebaseFirestore.instance.collection('otp_codes').doc(user.uid).get();
+      final doc = await FirebaseFirestore.instance
+          .collection('otp_codes')
+          .doc(user.uid)
+          .get();
 
       if (!doc.exists) {
         _showVerifyError('❌ No OTP found. Tap Resend to get a new one.');
@@ -213,34 +230,49 @@ class _OTPScreenState extends State<OTPScreen> {
       }
 
       // Success: mark account verified and clean up the OTP doc.
-      await FirebaseFirestore.instance.collection('users').doc(user.uid).update({'isNew': false});
-      await FirebaseFirestore.instance.collection('otp_codes').doc(user.uid).delete();
+      await FirebaseFirestore.instance.collection('users').doc(user.uid).update(
+        {'isNew': false},
+      );
+      await FirebaseFirestore.instance
+          .collection('otp_codes')
+          .doc(user.uid)
+          .delete();
 
       if (!mounted) return;
 
       if (widget.role == 'supervisor') {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('✅ OTP verified! Welcome Supervisor! Redirecting to dashboard...'),
+            content: Text(
+              '✅ OTP verified! Welcome Supervisor! Redirecting to dashboard...',
+            ),
             backgroundColor: Colors.green,
           ),
         );
         Navigator.pushAndRemoveUntil(
-            context, MaterialPageRoute(builder: (context) => const SyncScreen()), (route) => false);
+          context,
+          MaterialPageRoute(builder: (context) => const SyncScreen()),
+          (route) => false,
+        );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('✅ OTP verified! Welcome Farmer! Redirecting to login...'),
+            content: Text(
+              '✅ OTP verified! Welcome Farmer! Redirecting to your dashboard...',
+            ),
             backgroundColor: Colors.green,
           ),
         );
-
-        // Sign out so the farmer lands on the login screen and signs in fresh.
-        await FirebaseAuth.instance.signOut();
-
-        if (!mounted) return;
         Navigator.pushAndRemoveUntil(
-            context, MaterialPageRoute(builder: (context) => const LoginScreen()), (route) => false);
+          context,
+          MaterialPageRoute(
+            builder: (context) => FarmerDashboardScreen(
+              userId: widget.userId,
+              welcomeMessage: 'Welcome farmer!',
+            ),
+          ),
+          (route) => false,
+        );
       }
     } catch (e) {
       _showVerifyError('❌ Verification failed. Please try again.');
@@ -251,7 +283,9 @@ class _OTPScreenState extends State<OTPScreen> {
 
   void _showVerifyError(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message), backgroundColor: Colors.red));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
+    );
     setState(() => isVerifying = false);
   }
 
@@ -263,7 +297,10 @@ class _OTPScreenState extends State<OTPScreen> {
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.green,
-        title: const Text('OTP Verification', style: TextStyle(color: Colors.white)),
+        title: const Text(
+          'OTP Verification',
+          style: TextStyle(color: Colors.white),
+        ),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: SafeArea(
@@ -274,12 +311,23 @@ class _OTPScreenState extends State<OTPScreen> {
             children: [
               const Icon(Icons.mark_email_read, size: 80, color: Colors.green),
               const SizedBox(height: 16),
-              Text('OTP Verification',
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.green[800])),
+              Text(
+                'OTP Verification',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green[800],
+                ),
+              ),
               const SizedBox(height: 8),
-              Text(statusMessage, textAlign: TextAlign.center, style: const TextStyle(color: Colors.grey)),
+              Text(
+                statusMessage,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.grey),
+              ),
               const SizedBox(height: 24),
-              if (isSending) const CircularProgressIndicator(color: Colors.green),
+              if (isSending)
+                const CircularProgressIndicator(color: Colors.green),
               if (!isSending) ...[
                 TextField(
                   controller: otpController,
@@ -289,9 +337,13 @@ class _OTPScreenState extends State<OTPScreen> {
                   style: const TextStyle(fontSize: 24, letterSpacing: 8),
                   decoration: InputDecoration(
                     hintText: '------',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.green)),
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Colors.green),
+                    ),
                     counterText: '',
                   ),
                 ),
@@ -303,20 +355,32 @@ class _OTPScreenState extends State<OTPScreen> {
                     onPressed: isVerifying ? null : verifyOTP,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.green,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                     child: isVerifying
                         ? const CircularProgressIndicator(color: Colors.white)
-                        : const Text('Verify OTP',
-                            style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold)),
+                        : const Text(
+                            'Verify OTP',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                   ),
                 ),
                 const SizedBox(height: 16),
                 TextButton(
                   onPressed: canResend ? _sendOtp : null,
                   child: Text(
-                    canResend ? 'Resend OTP' : 'Resend OTP in ${secondsUntilResend}s',
-                    style: TextStyle(color: canResend ? Colors.green : Colors.grey),
+                    canResend
+                        ? 'Resend OTP'
+                        : 'Resend OTP in ${secondsUntilResend}s',
+                    style: TextStyle(
+                      color: canResend ? Colors.green : Colors.grey,
+                    ),
                   ),
                 ),
               ],

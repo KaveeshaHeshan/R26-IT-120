@@ -3,6 +3,8 @@
          template only declares this in the debug/profile manifests, so
          release builds would otherwise have no network access. -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
 
     <application
         android:label="supervisor_app"

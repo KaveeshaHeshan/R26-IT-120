@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'signup_screen.dart';
 import 'otp_screen.dart';
 import 'dashboard_screen.dart';
+import 'farmer_screens/farmer_dashboard_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -61,6 +62,7 @@ class _LoginScreenState extends State<LoginScreen> {
               builder: (context) => OTPScreen(
                 email: emailController.text.trim(),
                 role: role,
+                userId: uid,
               ),
             ),
           );
@@ -72,17 +74,32 @@ class _LoginScreenState extends State<LoginScreen> {
             (route) => false,
           );
         } else {
+          if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('✅ Welcome back farmer! Redirecting to your dashboard...'),
+              content: Text(
+                '✅ Welcome back farmer! Redirecting to your dashboard...',
+              ),
               backgroundColor: Color.fromARGB(255, 10, 24, 11),
             ),
+          );
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(
+              builder: (context) => FarmerDashboardScreen(
+                userId: uid,
+                welcomeMessage: 'Welcome back farmer!',
+              ),
+            ),
+            (route) => false,
           );
         }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('❌ Account not found! Please sign up or contact admin.'),
+            content: Text(
+              '❌ Account not found! Please sign up or contact admin.',
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -90,7 +107,9 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('❌ Login failed! Invalid email or password. Please try again.'),
+          content: Text(
+            '❌ Login failed! Invalid email or password. Please try again.',
+          ),
           backgroundColor: Colors.red,
         ),
       );
@@ -115,9 +134,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
 
           // Dark overlay
-          Container(
-            color: Colors.black.withOpacity(0.55),
-          ),
+          Container(color: Colors.black.withOpacity(0.55)),
 
           // Content
           SafeArea(
@@ -142,10 +159,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 8),
                     const Text(
                       'Welcome Back!',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.white70,
-                      ),
+                      style: TextStyle(fontSize: 16, color: Colors.white70),
                     ),
                     const SizedBox(height: 40),
 
@@ -189,7 +203,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         fillColor: Colors.white.withOpacity(0.15),
                         suffixIcon: IconButton(
                           icon: Icon(
-                            passwordVisible ? Icons.visibility : Icons.visibility_off,
+                            passwordVisible
+                                ? Icons.visibility
+                                : Icons.visibility_off,
                             color: Colors.white70,
                           ),
                           onPressed: () {
@@ -222,7 +238,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           if (emailController.text.isEmpty) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                content: Text('⚠️ Please enter your email address to reset password!'),
+                                content: Text(
+                                  '⚠️ Please enter your email address to reset password!',
+                                ),
                                 backgroundColor: Colors.orange,
                               ),
                             );
@@ -232,15 +250,24 @@ class _LoginScreenState extends State<LoginScreen> {
                             );
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                content: Text('✅ Password reset email sent! Please check your inbox.'),
-                                backgroundColor: Color.fromARGB(255, 64, 167, 64),
+                                content: Text(
+                                  '✅ Password reset email sent! Please check your inbox.',
+                                ),
+                                backgroundColor: Color.fromARGB(
+                                  255,
+                                  64,
+                                  167,
+                                  64,
+                                ),
                               ),
                             );
                           }
                         },
                         child: const Text(
                           'Forgot Password?',
-                          style: TextStyle(color: Color.fromARGB(255, 224, 234, 234)),
+                          style: TextStyle(
+                            color: Color.fromARGB(255, 224, 234, 234),
+                          ),
                         ),
                       ),
                     ),
@@ -253,13 +280,20 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: ElevatedButton(
                         onPressed: isLoading ? null : loginUser,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color.fromARGB(255, 128, 214, 131),
+                          backgroundColor: const Color.fromARGB(
+                            255,
+                            128,
+                            214,
+                            131,
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
                         child: isLoading
-                            ? const CircularProgressIndicator(color: Colors.white)
+                            ? const CircularProgressIndicator(
+                                color: Colors.white,
+                              )
                             : const Text(
                                 'Login',
                                 style: TextStyle(

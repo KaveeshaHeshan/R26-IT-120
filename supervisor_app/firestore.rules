@@ -1,0 +1,73 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function ownsUser(userId) {
+      return signedIn() && request.auth.uid == userId;
+    }
+
+    function isSupervisor() {
+      // Set this claim from a trusted Admin SDK / Cloud Function. Do not use
+      // the editable users/{uid}.role field for authorization.
+      return signedIn() && request.auth.token.role == 'supervisor';
+    }
+
+    function farmerKeepsModelIdentity() {
+      return !request.resource.data.diff(resource.data).affectedKeys()
+        .hasAny(['modelFarmerId']);
+    }
+
+    function farmerCreatesWithoutModelIdentity() {
+      return !request.resource.data.keys().hasAny(['modelFarmerId']);
+    }
+
+    // A farmer can create and maintain only their own profile document.
+    match /users/{userId} {
+      allow create: if (ownsUser(userId) && farmerCreatesWithoutModelIdentity())
+        || isSupervisor();
+      allow read: if ownsUser(userId) || isSupervisor();
+      // The training identity must be set by a supervisor / trusted backend,
+      // never by a farmer editing their own profile.
+      allow update: if (ownsUser(userId) && farmerKeepsModelIdentity())
+        || isSupervisor();
+      allow delete: if false;
+
+      match /tasks/{taskId} {
+        allow read, create, update, delete: if ownsUser(userId);
+      }
+    }
+
+    // Every tapping record is owned by its userId field.
+    match /tapping_details/{recordId} {
+      allow create: if signedIn()
+        && request.resource.data.userId == request.auth.uid;
+      allow read, delete: if signedIn() && resource.data.userId == request.auth.uid;
+      allow update: if signedIn()
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.userId == request.auth.uid;
+    }
+
+    // Collection verification is performed by a supervisor.
+    match /collections/{collectionId} {
+      allow read, create, update: if isSupervisor();
+      allow delete: if false;
+    }
+
+    // Supervisor workflow data; farmers may only read the current session.
+    match /latex_sessions/{sessionId} {
+      allow read: if signedIn();
+      allow write: if isSupervisor();
+    }
+
+    // The Admin SDK writes forecast results; each farmer may read only their
+    // own farmer-facing forecast.
+    match /quality_forecasts/{userId} {
+      allow read: if ownsUser(userId);
+      allow write: if false;
+    }
+  }
+}

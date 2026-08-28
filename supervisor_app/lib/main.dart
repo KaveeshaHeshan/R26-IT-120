@@ -21,14 +21,17 @@ class LatexGuardApp extends StatelessWidget {
       title: 'LatexGuard — Supervisor',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.theme,
-      home: const MobileFrame(),
+      // Wrap every route, so the frame survives login/logout navigation
+      builder: (context, child) => MobileFrame(child: child),
+      home: const LoginScreen(),
     );
   }
 }
 
 // Wraps the app in a phone-sized frame in the browser
 class MobileFrame extends StatelessWidget {
-  const MobileFrame({super.key});
+  final Widget? child;
+  const MobileFrame({super.key, this.child});
 
   @override
   Widget build(BuildContext context) {
@@ -54,7 +57,7 @@ class MobileFrame extends StatelessWidget {
             ],
           ),
           clipBehavior: Clip.hardEdge,
-          child: const LoginScreen(),
+          child: child,
         ),
       ),
     );

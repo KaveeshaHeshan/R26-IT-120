@@ -7,6 +7,11 @@ class Farm {
   final double lat;
   final double lng;
 
+  /// False when the farmer app has not supplied coordinates yet. Such a farm
+  /// still belongs in the stop list (it has latex waiting) but must be kept
+  /// off the map and out of distance calculations.
+  final bool hasLocation;
+
   Farm({
     required this.farmId,
     required this.farmerName,
@@ -15,6 +20,7 @@ class Farm {
     required this.riskLevel,
     required this.lat,
     required this.lng,
+    this.hasLocation = true,
   });
 
   // Convert Firestore map → Farm object
@@ -27,6 +33,10 @@ class Farm {
       riskLevel:  map['risk_level']  ?? 'safe',
       lat:        (map['lat']        ?? 0.0).toDouble(),
       lng:        (map['lng']        ?? 0.0).toDouble(),
+      // Older session documents predate this flag, so fall back to treating
+      // a non-zero coordinate pair as a real location.
+      hasLocation: map['has_location'] as bool? ??
+          ((map['lat'] ?? 0) != 0 || (map['lng'] ?? 0) != 0),
     );
   }
 }

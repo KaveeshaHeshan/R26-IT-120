@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../core/app_theme.dart';
 import '../models/farm.dart';
 import '../services/firestore_service.dart';
 import '../widgets/hotspot_indicator.dart';
+import 'login_screen.dart';
 import 'stop_list_screen.dart';
 
 class SyncScreen extends StatefulWidget {
@@ -37,10 +39,9 @@ class _SyncScreenState extends State<SyncScreen>
       parent: _pulseController,
       curve: Curves.easeOut,
     );
-    // Reset session first so app always starts fresh
-    _service.resetSession().then((_) {
-      _listenToFirestore();
-    });
+    // Do NOT reset here: the dashboard has just seeded this session with the
+    // farms the supervisor selected, and resetSession() would wipe them.
+    _listenToFirestore();
   }
 
   void _listenToFirestore() {
@@ -70,6 +71,16 @@ class _SyncScreenState extends State<SyncScreen>
     _sessionSub?.cancel();
     _pulseController.dispose();
     super.dispose();
+  }
+
+  Future<void> _logout() async {
+    await FirebaseAuth.instance.signOut();
+    if (!mounted) return;
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      (route) => false,
+    );
   }
 
   _StatusInfo get _statusInfo {
@@ -128,19 +139,28 @@ class _SyncScreenState extends State<SyncScreen>
               ),
             ),
             const SizedBox(width: 10),
-            Text(
-              'LatexGuard',
-              style: GoogleFonts.jetBrainsMono(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
+            Flexible(
+              child: Text(
+                'LatexGuard',
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.jetBrainsMono(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
           ],
         ),
-        actions: const [
-          HotspotIndicator(),
-          SizedBox(width: 16),
+        actions: [
+          const HotspotIndicator(),
+          const SizedBox(width: 8),
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.white),
+            tooltip: 'Logout',
+            onPressed: _logout,
+          ),
+          const SizedBox(width: 8),
         ],
       ),
       body: SingleChildScrollView(

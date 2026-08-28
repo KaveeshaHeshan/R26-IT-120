@@ -4,7 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'signup_screen.dart';
 import 'otp_screen.dart';
-import 'sync_screen.dart';
+import 'dashboard_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -51,11 +51,9 @@ class _LoginScreenState extends State<LoginScreen> {
         bool isNew = userDoc['isNew'] ?? false;
 
         if (isNew) {
-          await FirebaseFirestore.instance
-              .collection('users')
-              .doc(uid)
-              .update({'isNew': false});
-
+          // Don't clear isNew here — the OTP screen only clears it once the
+          // user actually enters the correct code, so an abandoned OTP flow
+          // will correctly prompt again on the next login attempt.
           if (!mounted) return;
           Navigator.push(
             context,
@@ -70,7 +68,7 @@ class _LoginScreenState extends State<LoginScreen> {
           if (!mounted) return;
           Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(builder: (context) => const SyncScreen()),
+            MaterialPageRoute(builder: (context) => const DashboardScreen()),
             (route) => false,
           );
         } else {

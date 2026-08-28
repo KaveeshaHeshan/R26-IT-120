@@ -11,9 +11,10 @@ class AppTheme {
   static const Color accent       = Color(0xFFE8F5E9); // Light Green
 
   // VFA Risk Colors
-  static const Color riskHigh   = Color(0xFFF44336); // Red — urgent
-  static const Color riskMedium = Color(0xFFFF9800); // Orange — watch
-  static const Color riskSafe   = Color(0xFF4CAF50); // Green — safe
+  static const Color riskHigh    = Color(0xFFF44336); // Red — urgent
+  static const Color riskMedium  = Color(0xFFFF9800); // Orange — watch
+  static const Color riskSafe    = Color(0xFF4CAF50); // Green — safe
+  static const Color riskPending = Color(0xFF757575); // Grey — not yet measured
 
   // Text Colors
   static const Color textPrimary   = Color(0xFF1B1B1B); // Dark text
@@ -55,21 +56,26 @@ class AppTheme {
     );
   }
 
-  // Get color based on risk level
+  // Get color based on risk level.
+  // 'pending' means no sensor reading yet — it must never look like 'safe'.
   static Color riskColor(String riskLevel) {
     switch (riskLevel.toLowerCase()) {
-      case 'high':   return riskHigh;
-      case 'medium': return riskMedium;
-      default:       return riskSafe;
+      case 'high':    return riskHigh;
+      case 'medium':  return riskMedium;
+      case 'safe':    return riskSafe;
+      case 'pending': return riskPending;
+      default:        return riskPending;
     }
   }
 
   // Get label based on risk level
   static String riskLabel(String riskLevel) {
     switch (riskLevel.toLowerCase()) {
-      case 'high':   return 'URGENT';
-      case 'medium': return 'WATCH';
-      default:       return 'SAFE';
+      case 'high':    return 'URGENT';
+      case 'medium':  return 'WATCH';
+      case 'safe':    return 'SAFE';
+      case 'pending': return 'AWAITING READING';
+      default:        return 'AWAITING READING';
     }
   }
 }

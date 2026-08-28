@@ -19,10 +19,12 @@ void main() {
     expect(find.text('route content'), findsOneWidget);
   });
 
-  testWidgets('MobileFrame constrains its child to phone dimensions',
+  testWidgets('MobileFrame gives the route the full available space',
       (tester) async {
-    // Give the test surface room for the full 844px-tall frame, otherwise
-    // the frame is clamped by the default 800x600 viewport.
+    // The phone-sized frame was deliberately removed so web, tablet and
+    // desktop can use their real estate; feature shells now handle their own
+    // adaptive layout. MobileFrame is a pass-through, and this test pins that
+    // down so the frame is not silently reintroduced.
     tester.view.physicalSize = const Size(1200, 1000);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
@@ -33,11 +35,9 @@ void main() {
       ),
     );
 
-    // The frame is 390x844 including its 2px border, so a child asking for
-    // all available space is bounded to the area inside that border.
     final size = tester.getSize(find.byType(SizedBox).last);
-    expect(size.width, 390 - 4);
-    expect(size.height, 844 - 4);
+    expect(size.width, 1200);
+    expect(size.height, 1000);
   });
 
   testWidgets('MobileFrame tolerates a null child', (tester) async {

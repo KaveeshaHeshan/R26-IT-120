@@ -10,8 +10,6 @@ dependencies:
   flutter:
     sdk: flutter
 
-  shared_preferences: ^2.3.2
-
   # Firebase
   firebase_core: ^4.7.0
   firebase_auth: ^6.4.0
@@ -24,16 +22,18 @@ dependencies:
   google_fonts: ^6.2.1
   cupertino_icons: ^1.0.8
 
-  # Google Maps
-  google_maps_flutter: ^2.9.0
-  google_maps_flutter_web: ^0.5.10
   http: ^1.2.2
 
-  # OpenStreetMap route map (SupervisorRouteScreen) — no API key or billing.
+  # OpenStreetMap maps — no API key or billing. Used by both the supervisor
+  # route screen and the farmer location picker.
   # Pinned to flutter_map 7.x: the screen targets the v7 API
   # (MapOptions.initialCenter/initialZoom, Marker.child).
   flutter_map: ^7.0.0
   latlong2: ^0.9.1
+  geolocator: ^13.0.2
+
+  # Local persistence (farmer app settings)
+  shared_preferences: ^2.3.3
 
 dev_dependencies:
   flutter_test:

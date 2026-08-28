@@ -7,7 +7,7 @@ import '../models/farm.dart';
 import '../services/firestore_service.dart';
 import '../widgets/hotspot_indicator.dart';
 import 'login_screen.dart';
-import 'stop_list_screen.dart';
+import 'supervisor_route_screen.dart';
 
 class SyncScreen extends StatefulWidget {
   const SyncScreen({super.key});
@@ -57,8 +57,10 @@ class _SyncScreenState extends State<SyncScreen>
           if (!mounted) return;
           Navigator.push(
             context,
+            // The route screen replaces the old stop list: it plans the order
+            // through the backend DQN rather than sorting the session's farms.
             MaterialPageRoute(
-              builder: (_) => StopListScreen(farms: session.farms),
+              builder: (_) => const SupervisorRouteScreen(),
             ),
           );
         });

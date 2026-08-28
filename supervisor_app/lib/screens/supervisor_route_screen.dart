@@ -25,12 +25,14 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../models/collection_stop.dart';
 import '../models/user_profile.dart' show kFarmerIdField;
 import '../services/firestore_service.dart';
+import 'verify_screen.dart';
 
 // Change this to your laptop's IP on the shared hotspot (e.g. 192.168.43.101).
 // Find it with `ipconfig` (Windows) or `ifconfig`/`ip addr` (Mac/Linux).
-const String kBackendBaseUrl = 'http://192.168.x.x:5000';
+const String kBackendBaseUrl = 'http://10.227.76.146:5000';
 
 // Set true to send the synthetic 12-farmer sample instead of Firestore data,
 // which is useful for checking the map renders without touching the database.
@@ -45,7 +47,12 @@ const int kExpectedFarmerCount = 12;
 // field named by kFarmerIdField in models/user_profile.dart.
 
 class SupervisorRouteScreen extends StatefulWidget {
-  const SupervisorRouteScreen({super.key});
+  /// Firestore user ids the supervisor picked on the dashboard. Null means
+  /// "route every farmer that can be routed", which is what the dashboard's
+  /// standalone "Collection Route" tile does.
+  final Set<String>? selectedUserIds;
+
+  const SupervisorRouteScreen({super.key, this.selectedUserIds});
 
   @override
   State<SupervisorRouteScreen> createState() => _SupervisorRouteScreenState();
@@ -56,7 +63,37 @@ class _SupervisorRouteScreenState extends State<SupervisorRouteScreen> {
   String? _error;
   String? _warning;
   LatLng? _depot;
-  List<_Stop> _stops = [];
+  List<CollectionStop> _stops = [];
+
+  /// Farmer ids already collected — greyed out and skipped as "next stop".
+  /// Seeded from today's `collections` so progress survives a restart.
+  Set<String> _completed = {};
+
+  /// Farmer id -> display name, so stops show people rather than "F007".
+  Map<String, String> _names = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCompleted();
+  }
+
+  Future<void> _loadCompleted() async {
+    try {
+      final done = await _firestore.getFarmIdsCollectedToday();
+      if (mounted) setState(() => _completed = done);
+    } catch (_) {
+      // Non-fatal: worst case a finished stop looks pending.
+    }
+  }
+
+  /// First stop of the planned order that has not been collected yet.
+  CollectionStop? get _nextStop {
+    for (final s in _stops) {
+      if (!_completed.contains(s.farmerId)) return s;
+    }
+    return null;
+  }
 
   final FirestoreService _firestore = FirestoreService();
 
@@ -75,54 +112,100 @@ class _SupervisorRouteScreenState extends State<SupervisorRouteScreen> {
       );
     }
 
+    // Remember names so stops read as people, not "F007".
+    _names = {
+      for (final s in snapshots)
+        if (s.hasFarmerId) s.farmerId: s.farmerName,
+    };
+
     final now = DateTime.now();
     final payload = <Map<String, dynamic>>[];
-    final withoutId = <String>[];
+    final notEnrolled = <String>[];
     final incomplete = <String>[];
     final missingTime = <String>[];
 
+    final selection = widget.selectedUserIds;
+    final notSelected = <String>[];
+    final noCoordinates = <String>[];
+
     for (final s in snapshots) {
-      if (!s.hasFarmerId) {
-        withoutId.add('${s.farmerName} (${s.userId})');
+      // When the supervisor picked farmers on the dashboard, route only those.
+      if (selection != null && !selection.contains(s.userId)) {
+        notSelected.add(s.farmerName);
         continue;
       }
 
+      // A farmer needs either a slot in farmers.json or their own coordinates.
+      // With neither, the backend cannot place them on the map.
       final tapping = s.tapping;
-      final hours = tapping?.hoursSinceTapping(now);
-      if (tapping != null && hours == null) missingTime.add(s.farmerId);
-      if (s.missingFields.isNotEmpty) {
-        incomplete.add('${s.farmerId}: ${s.missingFields.join(", ")}');
+      final hasCoords = tapping?.hasLocation ?? false;
+      if (!s.hasFarmerId && !hasCoords) {
+        notEnrolled.add(s.farmerName);
+        continue;
       }
+      if (!hasCoords && !s.hasFarmerId) noCoordinates.add(s.farmerName);
+
+      final hours = tapping?.hoursSinceTapping(now);
+      final id = s.hasFarmerId ? s.farmerId : s.userId;
+      if (tapping != null && hours == null) missingTime.add(id);
+      if (s.missingFields.isNotEmpty) {
+        incomplete.add('$id: ${s.missingFields.join(", ")}');
+      }
+      _names[id] = s.farmerName;
 
       payload.add({
-        'farmer_id': s.farmerId,
+        'farmer_id': id,
         'hours_since_tapping': hours ?? 0.0,
         'weatherCondition': tapping?.weatherCondition ?? '',
         'district': s.district,
         'experience': s.experience,
         'treeCondition': tapping?.treeCondition ?? '',
+        // Routing inputs, not model features. Sent when the farmer app has
+        // recorded them; the backend falls back to farmers.json otherwise.
+        if (hasCoords) 'latitude': tapping!.lat,
+        if (hasCoords) 'longitude': tapping!.lng,
       });
     }
 
-    if (withoutId.isNotEmpty) {
+    if (payload.isEmpty) {
       throw Exception(
-        'These farmers have no "$kFarmerIdField" on their users document:\n'
-        '${withoutId.join("\n")}\n\n'
-        'Add the field in Firestore, or change kFarmerIdField in '
-        'models/user_profile.dart if it is stored under another name.',
+        'No farmers could be routed. Select at least one farmer who has '
+        'either a $kFarmerIdField or recorded coordinates.',
       );
     }
 
-    if (payload.length != kExpectedFarmerCount) {
+    // Two farmers on the same slot would silently collapse into one stop.
+    final duplicates = <String>{};
+    final seen = <String>{};
+    for (final p in payload) {
+      if (!seen.add(p['farmer_id'] as String)) {
+        duplicates.add(p['farmer_id'] as String);
+      }
+    }
+    if (duplicates.isNotEmpty) {
       throw Exception(
-        'The route model expects all $kExpectedFarmerCount farmers from '
-        'backend/farmers.json, but only ${payload.length} could be built. '
-        'The backend would fail with a KeyError on the missing ids.',
+        'More than one farmer shares the same $kFarmerIdField: '
+        '${(duplicates.toList()..sort()).join(", ")}.\n\n'
+        'Each id must belong to exactly one farmer, otherwise a farm is '
+        'silently dropped from the route.',
+      );
+    }
+
+    if (payload.length > kExpectedFarmerCount) {
+      throw Exception(
+        'The route model can plan at most $kExpectedFarmerCount stops at once, '
+        'but ${payload.length} farmers were selected. Deselect '
+        '${payload.length - kExpectedFarmerCount} of them.',
       );
     }
 
     // Surface quietly-degrading data rather than letting the model score it.
     final warnings = <String>[
+      if (notEnrolled.isNotEmpty)
+        'Skipped (no $kFarmerIdField and no coordinates): '
+            '${notEnrolled.join(", ")}',
+      if (notSelected.isNotEmpty && notSelected.length <= 5)
+        'Not selected: ${notSelected.join(", ")}',
       if (missingTime.isNotEmpty)
         'No usable tapping time for: ${missingTime.join(", ")} (sent as 0 h)',
       if (incomplete.isNotEmpty)
@@ -176,7 +259,10 @@ class _SupervisorRouteScreenState extends State<SupervisorRouteScreen> {
       final data = jsonDecode(res.body) as Map<String, dynamic>;
       final depot = data['depot'] as Map<String, dynamic>;
       final stops = (data['stops'] as List)
-          .map((s) => _Stop.fromJson(s as Map<String, dynamic>))
+          .map((s) => CollectionStop.fromBackend(
+                s as Map<String, dynamic>,
+                farmerName: _names[s['farmer_id']] ?? '',
+              ))
           .toList();
 
       setState(() {
@@ -218,7 +304,7 @@ class _SupervisorRouteScreenState extends State<SupervisorRouteScreen> {
         height: 34,
         child: Container(
           decoration: BoxDecoration(
-            color: _scoreColour(s.score),
+            color: _scoreColour(s.spoilageScore),
             shape: BoxShape.circle,
             border: Border.all(color: Colors.white, width: 2),
           ),
@@ -303,50 +389,131 @@ class _SupervisorRouteScreenState extends State<SupervisorRouteScreen> {
           ),
           if (_stops.isNotEmpty)
             SizedBox(
-              height: 150,
+              height: 170,
               child: ListView.builder(
                 itemCount: _stops.length,
-                itemBuilder: (ctx, i) {
-                  final s = _stops[i];
-                  return ListTile(
-                    dense: true,
-                    leading: CircleAvatar(
-                      backgroundColor: _scoreColour(s.score),
-                      child: Text('${s.order}',
-                          style: const TextStyle(color: Colors.white)),
-                    ),
-                    title: Text(s.farmerId),
-                    trailing: Text('score ${s.score.toStringAsFixed(0)}'),
-                  );
-                },
+                itemBuilder: (ctx, i) => _buildStopTile(_stops[i]),
               ),
             ),
         ],
       ),
     );
   }
-}
 
-class _Stop {
-  final int order;
-  final String farmerId;
-  final double latitude;
-  final double longitude;
-  final double score;
+  Widget _buildStopTile(CollectionStop s) {
+    final done = _completed.contains(s.farmerId);
+    final isNext = !done && identical(s, _nextStop);
 
-  _Stop({
-    required this.order,
-    required this.farmerId,
-    required this.latitude,
-    required this.longitude,
-    required this.score,
-  });
+    return ListTile(
+      dense: true,
+      onTap: done ? null : () => _openArrivalSheet(s),
+      tileColor: isNext ? Colors.green.withValues(alpha: 0.08) : null,
+      leading: CircleAvatar(
+        backgroundColor:
+            done ? Colors.grey : _scoreColour(s.spoilageScore),
+        child: done
+            ? const Icon(Icons.check, size: 18, color: Colors.white)
+            : Text('${s.order}',
+                style: const TextStyle(color: Colors.white)),
+      ),
+      title: Text(
+        s.farmerName,
+        style: TextStyle(
+          decoration: done ? TextDecoration.lineThrough : null,
+          color: done ? Colors.grey : null,
+          fontWeight: isNext ? FontWeight.w700 : null,
+        ),
+      ),
+      subtitle: Text(
+        done
+            ? '${s.farmerId} — collected'
+            : isNext
+                ? '${s.farmerId} — next stop'
+                : s.farmerId,
+        style: const TextStyle(fontSize: 11),
+      ),
+      trailing: Text(
+        'risk ${s.spoilageScore.toStringAsFixed(0)}',
+        style: TextStyle(color: done ? Colors.grey : null),
+      ),
+    );
+  }
 
-  factory _Stop.fromJson(Map<String, dynamic> j) => _Stop(
-        order: j['order'] as int,
-        farmerId: j['farmer_id'] as String,
-        latitude: (j['latitude'] as num).toDouble(),
-        longitude: (j['longitude'] as num).toDouble(),
-        score: (j['spoilage_risk_score'] as num).toDouble(),
-      );
+  /// Arrival sheet: confirm the stop, then hand off to verification.
+  void _openArrivalSheet(CollectionStop s) {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Stop ${s.order} — ${s.farmerName}',
+                style: const TextStyle(
+                    fontSize: 17, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 4),
+            Text(s.farmerId,
+                style: const TextStyle(color: Colors.grey, fontSize: 12)),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Icon(Icons.warning_amber_rounded,
+                    size: 18, color: _scoreColour(s.spoilageScore)),
+                const SizedBox(width: 8),
+                Text(
+                  'Predicted spoilage risk '
+                  '${s.spoilageScore.toStringAsFixed(0)}/100',
+                  style: TextStyle(color: _scoreColour(s.spoilageScore)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            // Says plainly that no chemical reading exists yet, rather than
+            // implying the predicted score is a measurement.
+            Row(
+              children: [
+                const Icon(Icons.sensors, size: 18, color: Colors.grey),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    s.hasSensorReading
+                        ? 'Sensor VFA ${s.vfaResult!.toStringAsFixed(2)}'
+                        : 'Awaiting IoT sensor reading at the farm',
+                    style: const TextStyle(color: Colors.grey, fontSize: 13),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  _verifyStop(s);
+                },
+                icon: const Icon(Icons.check_circle_outline, size: 18),
+                label: const Text('Arrived — Verify Collection'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _verifyStop(CollectionStop s) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => VerifyScreen(farm: s, stopNumber: s.order),
+      ),
+    );
+    // VerifyScreen writes to `collections` (or the offline queue), so re-read
+    // rather than assuming the collection succeeded.
+    await _loadCompleted();
+  }
 }

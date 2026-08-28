@@ -1,0 +1,520 @@
+[
+  {
+    "name": "projects/rubberquality-33cab/databases/(default)/documents/users/ID7LTacqMOeTmfG4ULdemTVWshE3",
+    "fields": {
+      "name": {
+        "stringValue": "ruchira madushan"
+      },
+      "isNew": {
+        "booleanValue": false
+      },
+      "createdAt": {
+        "stringValue": "2026-08-28 16:40:50.799"
+      },
+      "nic": {
+        "stringValue": "200144799663"
+      },
+      "email": {
+        "stringValue": "ruchiramadushanw@gmail.com"
+      },
+      "role": {
+        "stringValue": "supervisor"
+      },
+      "phone": {
+        "stringValue": "0716558897"
+      },
+      "employeeId": {
+        "stringValue": "E101"
+      }
+    },
+    "createTime": "2026-08-28T11:10:51.434356Z",
+    "updateTime": "2026-08-28T11:11:13.296951Z"
+  },
+  {
+    "name": "projects/rubberquality-33cab/databases/(default)/documents/users/IqH5IKcmT4eMzgbwuYVF0tPh5u72",
+    "fields": {
+      "role": {
+        "stringValue": "farmer"
+      },
+      "isNew": {
+        "booleanValue": false
+      },
+      "experience": {
+        "stringValue": "Less than 1 year"
+      },
+      "nic": {
+        "stringValue": "200352369988"
+      },
+      "district": {
+        "stringValue": "kaduwela"
+      },
+      "address": {
+        "stringValue": "ka"
+      },
+      "createdAt": {
+        "stringValue": "2026-08-23 15:57:58.554"
+      },
+      "landSize": {
+        "stringValue": "12"
+      },
+      "rubberTrees": {
+        "stringValue": "100"
+      },
+      "phone": {
+        "stringValue": "0779563325"
+      },
+      "name": {
+        "stringValue": "prabodha"
+      },
+      "email": {
+        "stringValue": "pm@gmail.com"
+      }
+    },
+    "createTime": "2026-08-23T10:27:59.178023Z",
+    "updateTime": "2026-08-24T17:26:33.012754Z"
+  },
+  {
+    "name": "projects/rubberquality-33cab/databases/(default)/documents/users/NmUMH0XmBGSwTpFum4z0Uin97122",
+    "fields": {
+      "email": {
+        "stringValue": "madurox@gmail.com"
+      },
+      "nic": {
+        "stringValue": "200233100566"
+      },
+      "phone": {
+        "stringValue": "0703234543"
+      },
+      "name": {
+        "stringValue": "madushan"
+      },
+      "isNew": {
+        "booleanValue": false
+      },
+      "employeeId": {
+        "stringValue": "1234"
+      },
+      "createdAt": {
+        "stringValue": "2026-08-19 23:05:44.081"
+      },
+      "role": {
+        "stringValue": "supervisor"
+      }
+    },
+    "createTime": "2026-08-19T17:35:45.423582Z",
+    "updateTime": "2026-08-19T17:44:39.040379Z"
+  },
+  {
+    "name": "projects/rubberquality-33cab/databases/(default)/documents/users/O27bGhFroBMLv1sdzALpAhZdKkE3",
+    "fields": {
+      "name": {
+        "stringValue": "madhura sithumina"
+      },
+      "email": {
+        "stringValue": "madhurasithumina004@gmail.com"
+      },
+      "createdAt": {
+        "stringValue": "2026-08-27 00:55:25.679"
+      },
+      "phone": {
+        "stringValue": "0765615061"
+      },
+      "role": {
+        "stringValue": "supervisor"
+      },
+      "isNew": {
+        "booleanValue": false
+      },
+      "nic": {
+        "stringValue": "20013540085"
+      },
+      "employeeId": {
+        "stringValue": "E105"
+      }
+    },
+    "createTime": "2026-08-26T19:25:21.278947Z",
+    "updateTime": "2026-08-26T19:33:25.723224Z"
+  },
+  {
+    "name": "projects/rubberquality-33cab/databases/(default)/documents/users/XsuExWqxv8VNEdHGy2GOaIUBsBv1",
+    "fields": {
+      "name": {
+        "stringValue": "Sachith Perera"
+      },
+      "createdAt": {
+        "stringValue": "2026-08-22 23:01:06.789"
+      },
+      "employeeId": {
+        "stringValue": "s15"
+      },
+      "email": {
+        "stringValue": "sachithanjula@gmail.com"
+      },
+      "phone": {
+        "stringValue": "0758963214"
+      },
+      "role": {
+        "stringValue": "supervisor"
+      },
+      "isNew": {
+        "booleanValue": false
+      },
+      "nic": {
+        "stringValue": "19987763245"
+      }
+    },
+    "createTime": "2026-08-22T17:31:07.433458Z",
+    "updateTime": "2026-08-22T17:31:35.773429Z"
+  },
+  {
+    "name": "projects/rubberquality-33cab/databases/(default)/documents/users/eOAqWsoazNQwpo4pMispfWY5wIh1",
+    "fields": {
+      "createdAt": {
+        "stringValue": "2026-08-16 11:55:57.123"
+      },
+      "rubberTrees": {
+        "stringValue": "2"
+      },
+      "modelFarmerId": {
+        "stringValue": "F002"
+      },
+      "district": {
+        "stringValue": "kaduwela"
+      },
+      "landSize": {
+        "stringValue": "10"
+      },
+      "phone": {
+        "stringValue": "0778633534"
+      },
+      "modelFarmerId ": {
+        "stringValue": "F001"
+      },
+      "isNew": {
+        "booleanValue": false
+      },
+      "updatedAt": {
+        "timestampValue": "2026-08-26T14:56:34.391145Z"
+      },
+      "role": {
+        "stringValue": "farmer"
+      },
+      "nic": {
+        "stringValue": "200244220333"
+      },
+      "address": {
+        "stringValue": "kalutara"
+      },
+      "name": {
+        "stringValue": "Subodhi Mihisarani"
+      },
+      "experience": {
+        "stringValue": "Less than 1 year"
+      },
+      "email": {
+        "stringValue": "subo@farmer.com"
+      }
+    },
+    "createTime": "2026-08-16T06:25:58.273629Z",
+    "updateTime": "2026-08-27T10:24:03.918684Z"
+  },
+  {
+    "name": "projects/rubberquality-33cab/databases/(default)/documents/users/gIYJBChx3ievgvpWkJVyNKk1dB32",
+    "fields": {
+      "email": {
+        "stringValue": "hades@gmail.com"
+      },
+      "phone": {
+        "stringValue": "0775369852"
+      },
+      "role": {
+        "stringValue": "farmer"
+      },
+      "district": {
+        "stringValue": "kelaniya"
+      },
+      "isNew": {
+        "booleanValue": false
+      },
+      "rubberTrees": {
+        "stringValue": "30"
+      },
+      "nic": {
+        "stringValue": "200w56790077"
+      },
+      "experience": {
+        "stringValue": "1 - 3 years"
+      },
+      "landSize": {
+        "stringValue": "2"
+      },
+      "address": {
+        "stringValue": "kelaniya"
+      },
+      "name": {
+        "stringValue": "oshan anjana"
+      },
+      "createdAt": {
+        "stringValue": "2026-08-21 03:12:51.475693"
+      }
+    },
+    "createTime": "2026-08-20T21:42:52.318017Z",
+    "updateTime": "2026-08-28T06:49:19.245100Z"
+  },
+  {
+    "name": "projects/rubberquality-33cab/databases/(default)/documents/users/lcHZfAS0pSNiy4RXE3Pkhczs50n1",
+    "fields": {
+      "createdAt": {
+        "stringValue": "2026-08-27 01:20:03.203"
+      },
+      "name": {
+        "stringValue": "Chalani Perera"
+      },
+      "isNew": {
+        "booleanValue": false
+      },
+      "employeeId": {
+        "stringValue": "S100"
+      },
+      "role": {
+        "stringValue": "supervisor"
+      },
+      "email": {
+        "stringValue": "chalaniamandyaperera@gmail.com"
+      },
+      "nic": {
+        "stringValue": "200288955447"
+      },
+      "phone": {
+        "stringValue": "0778996874"
+      }
+    },
+    "createTime": "2026-08-26T19:50:04.173520Z",
+    "updateTime": "2026-08-26T19:50:39.707996Z"
+  },
+  {
+    "name": "projects/rubberquality-33cab/databases/(default)/documents/users/nv4jLfDDniZrOIDFibhxDv1rMm52",
+    "fields": {
+      "isNew": {
+        "booleanValue": false
+      },
+      "createdAt": {
+        "stringValue": "2026-08-23 10:21:57.289"
+      },
+      "nic": {
+        "stringValue": "123"
+      },
+      "name": {
+        "stringValue": "miheli"
+      },
+      "email": {
+        "stringValue": "miheli@gmail.com"
+      },
+      "employeeId": {
+        "stringValue": "123"
+      },
+      "phone": {
+        "stringValue": "123"
+      },
+      "role": {
+        "stringValue": "supervisor"
+      }
+    },
+    "createTime": "2026-08-23T04:51:58.082904Z",
+    "updateTime": "2026-08-23T17:50:11.534360Z"
+  },
+  {
+    "name": "projects/rubberquality-33cab/databases/(default)/documents/users/pqrzjWJINxN8eY6dbbtIY5rLdum2",
+    "fields": {
+      "role": {
+        "stringValue": "supervisor"
+      },
+      "employeeId": {
+        "stringValue": "S01"
+      },
+      "isNew": {
+        "booleanValue": false
+      },
+      "name": {
+        "stringValue": "Chalani Perera"
+      },
+      "phone": {
+        "stringValue": "0778963147"
+      },
+      "nic": {
+        "stringValue": "200044899746"
+      },
+      "createdAt": {
+        "stringValue": "2026-08-16 12:02:22.894"
+      },
+      "email": {
+        "stringValue": "chala@supervisor.com"
+      }
+    },
+    "createTime": "2026-08-16T06:32:24.137645Z",
+    "updateTime": "2026-08-16T06:33:06.111636Z"
+  },
+  {
+    "name": "projects/rubberquality-33cab/databases/(default)/documents/users/rfZGRzqyLwa86DfOqRwNderMzy62",
+    "fields": {
+      "isNew": {
+        "booleanValue": false
+      },
+      "nic": {
+        "stringValue": "20013540085"
+      },
+      "role": {
+        "stringValue": "farmer"
+      },
+      "landSize": {
+        "stringValue": "1500"
+      },
+      "rubberTrees": {
+        "stringValue": "150000"
+      },
+      "district": {
+        "stringValue": "galle"
+      },
+      "experience": {
+        "stringValue": "Less than 1 year"
+      },
+      "phone": {
+        "stringValue": "0765615061"
+      },
+      "address": {
+        "stringValue": "galle"
+      },
+      "name": {
+        "stringValue": "madhura"
+      },
+      "email": {
+        "stringValue": "amilajanith0927@gmail.com"
+      },
+      "createdAt": {
+        "stringValue": "2026-08-21 13:48:25.335"
+      }
+    },
+    "createTime": "2026-08-21T08:18:25.556829Z",
+    "updateTime": "2026-08-21T08:18:59.009418Z"
+  },
+  {
+    "name": "projects/rubberquality-33cab/databases/(default)/documents/users/x7j6sc2UmTai1T2SdgdJpZTzo6s2",
+    "fields": {
+      "phone": {
+        "stringValue": "789"
+      },
+      "landSize": {
+        "stringValue": "1"
+      },
+      "email": {
+        "stringValue": "kavee@farmer.com"
+      },
+      "name": {
+        "stringValue": "kaveesha heshan"
+      },
+      "nic": {
+        "stringValue": "20007"
+      },
+      "role": {
+        "stringValue": "farmer"
+      },
+      "rubberTrees": {
+        "stringValue": "3"
+      },
+      "address": {
+        "stringValue": "home"
+      },
+      "createdAt": {
+        "stringValue": "2026-08-16 15:13:09.839"
+      },
+      "isNew": {
+        "booleanValue": false
+      },
+      "district": {
+        "stringValue": "colombo"
+      },
+      "experience": {
+        "stringValue": "1 - 3 years"
+      }
+    },
+    "createTime": "2026-08-16T09:43:10.812382Z",
+    "updateTime": "2026-08-28T06:49:19.801206Z"
+  },
+  {
+    "name": "projects/rubberquality-33cab/databases/(default)/documents/users/yKN6N9kJlId9TJ0IvHCwHXG3e1m2",
+    "fields": {
+      "role": {
+        "stringValue": "supervisor"
+      },
+      "phone": {
+        "stringValue": "0765615061"
+      },
+      "email": {
+        "stringValue": "sarasaleague@gmail.com"
+      },
+      "name": {
+        "stringValue": "madhura"
+      },
+      "employeeId": {
+        "stringValue": "E101"
+      },
+      "createdAt": {
+        "stringValue": "2026-08-26 23:41:08.677"
+      },
+      "nic": {
+        "stringValue": "20013540085"
+      },
+      "isNew": {
+        "booleanValue": true
+      }
+    },
+    "createTime": "2026-08-26T18:11:09.290734Z",
+    "updateTime": "2026-08-26T18:11:09.290734Z"
+  },
+  {
+    "name": "projects/rubberquality-33cab/databases/(default)/documents/users/zfUOks3HPxTMjBpAKBWSn1NZrTe2",
+    "fields": {
+      "address": {
+        "stringValue": "320/2 ihala bomiriya kaduwela"
+      },
+      "updatedAt": {
+        "timestampValue": "2026-08-23T13:49:17.292682Z"
+      },
+      "phone": {
+        "stringValue": "0778633534"
+      },
+      "nic": {
+        "stringValue": "200352388800"
+      },
+      "rubberTrees": {
+        "stringValue": "5"
+      },
+      "experience": {
+        "stringValue": "3 - 5 years"
+      },
+      "isNew": {
+        "booleanValue": true
+      },
+      "role": {
+        "stringValue": "farmer"
+      },
+      "landSize": {
+        "stringValue": "1"
+      },
+      "createdAt": {
+        "stringValue": "2026-08-23 19:18:08.606584"
+      },
+      "district": {
+        "stringValue": "kaduwela"
+      },
+      "email": {
+        "stringValue": "subodhimihisarani23@gmail.com"
+      },
+      "name": {
+        "stringValue": "luuna terrace"
+      }
+    },
+    "createTime": "2026-08-23T13:48:09.130453Z",
+    "updateTime": "2026-08-28T06:49:20.364169Z"
+  }
+]

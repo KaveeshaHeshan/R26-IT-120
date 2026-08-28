@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../core/app_theme.dart';
-import '../models/farm.dart';
+import '../models/collection_stop.dart';
 import '../services/firestore_service.dart';
 import '../widgets/hotspot_indicator.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import '../services/offline_queue_service.dart';
 
 class VerifyScreen extends StatefulWidget {
-  final Farm farm;
+  final CollectionStop farm;
   final int stopNumber;
 
   const VerifyScreen({
@@ -77,8 +77,9 @@ Future<void> _submitCollection() async {
   if (isOnline) {
     try {
       await FirestoreService().saveCollection(
-        farmId:     widget.farm.farmId,
+        farmId:     widget.farm.farmerId,
         farmerName: widget.farm.farmerName,
+        spoilageScore: widget.farm.spoilageScore,
         vfaResult:  widget.farm.vfaResult,
         grade:      widget.farm.grade,
         riskLevel:  widget.farm.riskLevel,
@@ -93,8 +94,9 @@ Future<void> _submitCollection() async {
 
   if (!savedOnline) {
     await OfflineQueueService().addPendingCollection(
-      farmId:     widget.farm.farmId,
+      farmId:     widget.farm.farmerId,
       farmerName: widget.farm.farmerName,
+      spoilageScore: widget.farm.spoilageScore,
       vfaResult:  widget.farm.vfaResult,
       grade:      widget.farm.grade,
       riskLevel:  widget.farm.riskLevel,
@@ -292,7 +294,7 @@ Future<void> _submitCollection() async {
                                     ),
                                   ),
                                   Text(
-                                    'Farm ID: ${widget.farm.farmId} — Stop ${widget.stopNumber}',
+                                    'Farm ID: ${widget.farm.farmerId} — Stop ${widget.stopNumber}',
                                     style: GoogleFonts.inter(
                                       color: AppTheme.textSecondary,
                                       fontSize: 12,
@@ -315,7 +317,8 @@ Future<void> _submitCollection() async {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  widget.farm.grade,
+                                  // Em dash until a sensor reading grades it.
+                                  widget.farm.grade ?? '—',
                                   style: GoogleFonts.jetBrainsMono(
                                     color: riskColor,
                                     fontSize: 52,
@@ -355,12 +358,17 @@ Future<void> _submitCollection() async {
 
                             const Spacer(),
 
-                            // VFA result
+                            // Sensor VFA when available, otherwise the
+                            // predicted spoilage score. These are different
+                            // measurements, so the label always says which.
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
                                 Text(
-                                  widget.farm.vfaResult.toStringAsFixed(2),
+                                  widget.farm.hasSensorReading
+                                      ? widget.farm.vfaResult!.toStringAsFixed(2)
+                                      : widget.farm.spoilageScore
+                                          .toStringAsFixed(0),
                                   style: GoogleFonts.jetBrainsMono(
                                     color: riskColor,
                                     fontSize: 28,
@@ -368,7 +376,9 @@ Future<void> _submitCollection() async {
                                   ),
                                 ),
                                 Text(
-                                  'VFA Result',
+                                  widget.farm.hasSensorReading
+                                      ? 'VFA Result'
+                                      : 'Spoilage Risk',
                                   style: GoogleFonts.inter(
                                     color: AppTheme.textSecondary,
                                     fontSize: 11,
@@ -376,7 +386,9 @@ Future<void> _submitCollection() async {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  'Threshold: 0.85',
+                                  widget.farm.hasSensorReading
+                                      ? 'Threshold: 0.85'
+                                      : 'Predicted — no sensor reading',
                                   style: GoogleFonts.inter(
                                     color: AppTheme.textSecondary,
                                     fontSize: 11,

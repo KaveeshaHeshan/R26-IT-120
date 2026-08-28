@@ -25,11 +25,67 @@ from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
+
+@app.after_request
+def add_cors_headers(resp):
+    """Allow the Flutter web build to call this API from the browser.
+
+    Flutter web issues real cross-origin requests, and a JSON content-type
+    triggers a preflight. Without these headers the browser blocks the call
+    before Flask sees it, which surfaces in the app as the opaque
+    "ClientException: Failed to fetch". Flask already answers the OPTIONS
+    preflight itself; only the headers were missing.
+
+    "*" is fine for a dev server on a local hotspot. Restrict the origin if
+    this is ever exposed beyond that.
+    """
+    resp.headers["Access-Control-Allow-Origin"] = "*"
+    resp.headers["Access-Control-Allow-Headers"] = "Content-Type"
+    resp.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+    return resp
+
+
 # ----------------------------------------------------------------------
 # 1. Load everything ONCE at startup (not per request)
 # ----------------------------------------------------------------------
-SPOILAGE = joblib.load("spoilage_model.joblib")   # {'model','columns','num','cat'}
+SPOILAGE = joblib.load("spoilage_model.joblib")   # {'model','columns'} (+ optional 'num','cat')
 CONFIG = json.load(open("farmers.json"))
+
+# The saved model only carries {'model','columns'}, so the numeric/categorical
+# split is derived from the training column names instead of being read off the
+# file. If a future export does include 'num'/'cat', those are used as-is.
+#
+# Derivation cannot simply split on "_": 'hours_since_tapping' contains
+# underscores but is a single numeric feature. A request key is therefore
+# numeric when it appears verbatim in the training columns, and categorical
+# when the columns contain one-hot expansions named "<key>_<value>".
+COLUMNS = list(SPOILAGE["columns"])
+_COLSET = set(COLUMNS)
+
+
+def split_features(keys):
+    """Split request keys into (categorical, numeric) using the training columns.
+
+    Keys matching neither are unknown to the model; reindex drops them later.
+    """
+    saved_cat = SPOILAGE.get("cat")
+    saved_num = SPOILAGE.get("num")
+    if saved_cat is not None and saved_num is not None:
+        return list(saved_cat), list(saved_num)
+
+    cat, num = [], []
+    for k in keys:
+        if k in _COLSET:
+            num.append(k)
+        elif any(c.startswith(f"{k}_") for c in COLUMNS):
+            cat.append(k)
+    return cat, num
+
+
+def known_values(base):
+    """Category values the model was trained on for a categorical feature."""
+    prefix = f"{base}_"
+    return {c[len(prefix):] for c in COLUMNS if c.startswith(prefix)}
 
 FARMERS = sorted(CONFIG["farmers"], key=lambda f: f["farmer_id"])   # keep training order
 DEPOT = CONFIG["depot"]
@@ -68,9 +124,23 @@ DQN.eval()
 # ----------------------------------------------------------------------
 def score_one(record: dict) -> float:
     """record = farmer-entered tapping fields -> 0-100 spoilage score."""
+    cat, _num = split_features(record.keys())
+
+    # An unrecognised category one-hot encodes to a column the model never saw,
+    # which reindex then drops — leaving that feature all-zeros and quietly
+    # skewing the score instead of raising. Log it so it is at least visible.
+    for base in cat:
+        value = record.get(base)
+        if value is not None and value not in known_values(base):
+            app.logger.warning(
+                "unknown %s=%r; model knows %s. Feature encoded as all-zeros.",
+                base, value, sorted(known_values(base)),
+            )
+
     row = pd.DataFrame([record])
-    row = pd.get_dummies(row, columns=SPOILAGE["cat"])
-    row = row.reindex(columns=SPOILAGE["columns"], fill_value=0)  # align to training columns
+    if cat:
+        row = pd.get_dummies(row, columns=cat)
+    row = row.reindex(columns=COLUMNS, fill_value=0)  # align to training columns
     return float(np.clip(SPOILAGE["model"].predict(row)[0], 0, 100))
 
 def _state_vec(visited, cur, s):

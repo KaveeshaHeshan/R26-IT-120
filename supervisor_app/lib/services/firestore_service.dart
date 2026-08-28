@@ -209,25 +209,49 @@ class FirestoreService {
       'updated_at': FieldValue.serverTimestamp(),
     });
   }
-  // Save completed collection record
-Future<void> saveCollection({
-  required String farmId,
-  required String farmerName,
-  required double vfaResult,
-  required String grade,
-  required String riskLevel,
-  required double volume,
-  required String notes,
-}) async {
-  await _db.collection('collections').add({
-    'farm_id':     farmId,
-    'farmer_name': farmerName,
-    'vfa_result':  vfaResult,
-    'grade':       grade,
-    'risk_level':  riskLevel,
-    'volume':      volume,
-    'notes':       notes,
-    'collected_at': FieldValue.serverTimestamp(),
-  });
+  /// Save a completed collection record.
+  ///
+  /// [spoilageScore] (0-100, predicted before arrival) and [vfaResult] (the
+  /// sensor's chemical reading) are stored under separate keys. `vfa_result`
+  /// is written only when a reading exists — never as 0.0, which downstream
+  /// consumers such as the LSTM forecasting would read as pristine latex.
+  Future<void> saveCollection({
+    required String farmId,
+    required String farmerName,
+    required double spoilageScore,
+    double? vfaResult,
+    String? grade,
+    required String riskLevel,
+    required double volume,
+    required String notes,
+  }) async {
+    await _db.collection('collections').add({
+      'farm_id':      farmId,
+      'farmer_name':  farmerName,
+      'spoilage_risk_score': spoilageScore,
+      if (vfaResult != null) 'vfa_result': vfaResult,
+      if (grade != null) 'grade': grade,
+      'risk_level':   riskLevel,
+      'volume':       volume,
+      'notes':        notes,
+      'collected_at': FieldValue.serverTimestamp(),
+    });
+  }
+
+  /// Farm ids already collected today, so a round survives an app restart
+  /// without offering stops the supervisor has finished.
+  Future<Set<String>> getFarmIdsCollectedToday() async {
+    final now = DateTime.now();
+    final startOfDay = DateTime(now.year, now.month, now.day);
+
+    final snap = await _db
+        .collection('collections')
+        .where('collected_at', isGreaterThanOrEqualTo: startOfDay)
+        .get();
+
+    return snap.docs
+        .map((d) => (d.data()['farm_id'] ?? '').toString())
+        .where((id) => id.isNotEmpty)
+        .toSet();
   }
 }

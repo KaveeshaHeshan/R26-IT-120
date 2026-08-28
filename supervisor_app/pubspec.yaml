@@ -24,9 +24,6 @@ dependencies:
   google_fonts: ^6.2.1
   cupertino_icons: ^1.0.8
 
-  # Google Maps
-  google_maps_flutter: ^2.9.0
-  google_maps_flutter_web: ^0.5.10
   http: ^1.2.2
 
   # OpenStreetMap route map (SupervisorRouteScreen) — no API key or billing.

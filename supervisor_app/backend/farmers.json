@@ -1,69 +1,95 @@
 {
-  "_note": "PLACEHOLDER coordinates (synthetic). Replace every latitude/longitude with REAL farmer GPS, and depot with the REAL Lalan factory location, before using for real routing.",
+  "_note": "REAL coordinates supplied by the project team (Kalutara / Gampaha rubber belt). Depot is the Lalan Rubbers factory, Biyagama EPZ. IMPORTANT: dqn_router.pt was trained against the previous synthetic coordinates, so its learned policy does not match this geometry. Retrain the DQN on these points before quoting any route-efficiency figure. Previous synthetic values are kept in .migration_backup/farmers_synthetic_before_real_coords.json",
   "farmers": [
     {
       "farmer_id": "F001",
-      "latitude": 6.5769,
-      "longitude": 79.9959
+      "name": "Panadura",
+      "district": "Kalutara",
+      "latitude": 6.713,
+      "longitude": 79.9074
     },
     {
       "farmer_id": "F002",
-      "latitude": 6.7257,
-      "longitude": 80.3434
+      "name": "Wadduwa",
+      "district": "Kalutara",
+      "latitude": 6.6631,
+      "longitude": 79.9312
     },
     {
       "farmer_id": "F003",
-      "latitude": 7.2791,
-      "longitude": 80.3746
+      "name": "Kalutara Town",
+      "district": "Kalutara",
+      "latitude": 6.5831,
+      "longitude": 79.9593
     },
     {
       "farmer_id": "F004",
-      "latitude": 6.0158,
-      "longitude": 80.216
+      "name": "Beruwala / Aluthgama",
+      "district": "Kalutara",
+      "latitude": 6.4428,
+      "longitude": 79.9866
     },
     {
       "farmer_id": "F005",
-      "latitude": 6.6257,
-      "longitude": 79.9744
+      "name": "Matugama",
+      "district": "Kalutara",
+      "latitude": 6.5218,
+      "longitude": 80.1147
     },
     {
       "farmer_id": "F006",
-      "latitude": 6.7383,
-      "longitude": 80.3783
+      "name": "Horana",
+      "district": "Kalutara",
+      "latitude": 6.7156,
+      "longitude": 80.0628
     },
     {
       "farmer_id": "F007",
-      "latitude": 7.2585,
-      "longitude": 80.3024
+      "name": "Negombo",
+      "district": "Gampaha",
+      "latitude": 7.2008,
+      "longitude": 79.8737
     },
     {
       "farmer_id": "F008",
-      "latitude": 6.0858,
-      "longitude": 80.2342
+      "name": "Ja-Ela",
+      "district": "Gampaha",
+      "latitude": 7.0744,
+      "longitude": 79.892
     },
     {
       "farmer_id": "F009",
-      "latitude": 6.5685,
-      "longitude": 80.0071
+      "name": "Gampaha Town",
+      "district": "Gampaha",
+      "latitude": 7.084,
+      "longitude": 80.0098
     },
     {
       "farmer_id": "F010",
-      "latitude": 6.7453,
-      "longitude": 80.4118
+      "name": "Nittambuwa",
+      "district": "Gampaha",
+      "latitude": 7.1444,
+      "longitude": 80.0956
     },
     {
       "farmer_id": "F011",
-      "latitude": 7.2497,
-      "longitude": 80.3004
+      "name": "Mirigama",
+      "district": "Gampaha",
+      "latitude": 7.2435,
+      "longitude": 80.1306
     },
     {
       "farmer_id": "F012",
-      "latitude": 6.0184,
-      "longitude": 80.2393
+      "name": "Biyagama / Malwana",
+      "district": "Gampaha",
+      "latitude": 6.945,
+      "longitude": 79.983
     }
   ],
   "depot": {
-    "latitude": 6.6573,
-    "longitude": 80.2315
+    "name": "Lalan Rubbers (Biyagama EPZ)",
+    "district": "Gampaha",
+    "latitude": 6.9538,
+    "longitude": 80.0152
   }
 }

@@ -9,8 +9,9 @@ class OfflineQueueService {
   Future<void> addPendingCollection({
     required String farmId,
     required String farmerName,
-    required double vfaResult,
-    required String grade,
+    required double spoilageScore,
+    double? vfaResult,
+    String? grade,
     required String riskLevel,
     required double volume,
     required String notes,
@@ -22,8 +23,11 @@ class OfflineQueueService {
       'local_id':   DateTime.now().millisecondsSinceEpoch.toString(),
       'farm_id':    farmId,
       'farmer_name': farmerName,
-      'vfa_result': vfaResult,
-      'grade':      grade,
+      'spoilage_risk_score': spoilageScore,
+      // Omitted entirely when no sensor reading exists, so a queued record
+      // never invents a VFA value.
+      if (vfaResult != null) 'vfa_result': vfaResult,
+      if (grade != null) 'grade': grade,
       'risk_level': riskLevel,
       'volume':     volume,
       'notes':      notes,
@@ -57,8 +61,9 @@ class OfflineQueueService {
         await service.saveCollection(
           farmId:     item['farm_id'],
           farmerName: item['farmer_name'],
-          vfaResult:  (item['vfa_result'] as num).toDouble(),
-          grade:      item['grade'],
+          spoilageScore: (item['spoilage_risk_score'] as num?)?.toDouble() ?? 0.0,
+          vfaResult:  (item['vfa_result'] as num?)?.toDouble(),
+          grade:      item['grade'] as String?,
           riskLevel:  item['risk_level'],
           volume:     (item['volume'] as num).toDouble(),
           notes:      item['notes'],

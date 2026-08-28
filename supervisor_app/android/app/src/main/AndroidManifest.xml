@@ -10,10 +10,8 @@
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true">
 
-        <!-- Google Maps API Key -->
-        <meta-data
-            android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyA6o7tftUtjAbNZcDpQy1Thvv_IQ_bIWV8"/>
+        <!-- Google Maps key removed: the app now uses flutter_map with
+             OpenStreetMap tiles, which needs no API key or billing. -->
 
         <activity
             android:name=".MainActivity"

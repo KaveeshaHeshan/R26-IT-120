@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:supervisor_app/core/app_theme.dart';
+import 'package:supervisor_app/models/collection_stop.dart';
 import 'package:supervisor_app/models/farm.dart';
 import 'package:supervisor_app/models/farmer_tapping_snapshot.dart';
 import 'package:supervisor_app/models/tapping_detail.dart';
@@ -290,6 +291,77 @@ void main() {
         'startTime': '06:00',
       });
       expect(t.hoursSinceTapping(DateTime(2026, 8, 20, 7, 30)), 1.5);
+    });
+  });
+
+  group('CollectionStop', () {
+    Map<String, dynamic> backendStop({double score = 50}) => {
+          'order': 1,
+          'farmer_id': 'F001',
+          'latitude': 6.5769,
+          'longitude': 79.9959,
+          'spoilage_risk_score': score,
+        };
+
+    test('parses a backend stop and takes the resolved farmer name', () {
+      final s = CollectionStop.fromBackend(backendStop(score: 66.5),
+          farmerName: 'Sunil');
+
+      expect(s.order, 1);
+      expect(s.farmerId, 'F001');
+      expect(s.farmerName, 'Sunil');
+      expect(s.spoilageScore, 66.5);
+    });
+
+    test('falls back to the farmer id when no name is known', () {
+      final s = CollectionStop.fromBackend(backendStop());
+      expect(s.farmerName, 'F001');
+    });
+
+    test('has no VFA until a sensor reports — never a fabricated 0', () {
+      // A defaulted 0.0 would read as pristine latex, which is worse than
+      // showing nothing at all.
+      final s = CollectionStop.fromBackend(backendStop());
+
+      expect(s.vfaResult, isNull);
+      expect(s.grade, isNull);
+      expect(s.hasSensorReading, isFalse);
+    });
+
+    test('carries VFA and spoilage as separate figures', () {
+      final s = CollectionStop.fromBackend(backendStop(score: 96.6))
+          .copyWith(vfaResult: 0.92, grade: 'C');
+
+      expect(s.hasSensorReading, isTrue);
+      expect(s.vfaResult, 0.92);
+      // The 0-100 spoilage prediction must survive alongside the 0-1 reading.
+      expect(s.spoilageScore, 96.6);
+    });
+
+    test('derives risk bands from the spoilage score', () {
+      expect(CollectionStop.fromBackend(backendStop(score: 80)).riskLevel,
+          'high');
+      expect(CollectionStop.fromBackend(backendStop(score: 50)).riskLevel,
+          'medium');
+      expect(CollectionStop.fromBackend(backendStop(score: 20)).riskLevel,
+          'safe');
+    });
+
+    test('band boundaries are exclusive, matching the map colours', () {
+      expect(CollectionStop.fromBackend(backendStop(score: 60)).riskLevel,
+          'medium');
+      expect(CollectionStop.fromBackend(backendStop(score: 40)).riskLevel,
+          'safe');
+    });
+
+    test('copyWith leaves untouched fields alone', () {
+      final s = CollectionStop.fromBackend(backendStop(score: 33),
+              farmerName: 'Kamal')
+          .copyWith(vfaResult: 0.4);
+
+      expect(s.farmerName, 'Kamal');
+      expect(s.spoilageScore, 33);
+      expect(s.latitude, 6.5769);
     });
   });
 

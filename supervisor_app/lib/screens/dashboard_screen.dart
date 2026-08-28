@@ -9,7 +9,6 @@ import '../services/firestore_service.dart';
 import '../widgets/hotspot_indicator.dart';
 import 'login_screen.dart';
 import 'supervisor_route_screen.dart';
-import 'sync_screen.dart';
 
 /// Landing screen after login. Shows who is signed in and the tapping records
 /// submitted by farmers, before the supervisor starts a collection session.
@@ -91,12 +90,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     setState(() => _starting = true);
     try {
+      // Records which farms are in this round for the IoT sensor pipeline,
+      // which watches the live session document.
       await _service.startSessionForFarms(selected);
       if (!mounted) return;
       setState(() => _starting = false);
+
+      // The route screen plans the order over exactly these farmers; the rest
+      // are masked out of the DQN, so no full 12-farmer roster is needed.
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => const SyncScreen()),
+        MaterialPageRoute(
+          builder: (_) => SupervisorRouteScreen(
+            selectedUserIds: selected.map((t) => t.userId).toSet(),
+          ),
+        ),
       );
     } catch (e) {
       if (!mounted) return;

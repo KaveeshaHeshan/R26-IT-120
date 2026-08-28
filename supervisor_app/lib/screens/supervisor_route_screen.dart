@@ -47,7 +47,12 @@ const int kExpectedFarmerCount = 12;
 // field named by kFarmerIdField in models/user_profile.dart.
 
 class SupervisorRouteScreen extends StatefulWidget {
-  const SupervisorRouteScreen({super.key});
+  /// Firestore user ids the supervisor picked on the dashboard. Null means
+  /// "route every farmer that can be routed", which is what the dashboard's
+  /// standalone "Collection Route" tile does.
+  final Set<String>? selectedUserIds;
+
+  const SupervisorRouteScreen({super.key, this.selectedUserIds});
 
   @override
   State<SupervisorRouteScreen> createState() => _SupervisorRouteScreenState();
@@ -119,43 +124,63 @@ class _SupervisorRouteScreenState extends State<SupervisorRouteScreen> {
     final incomplete = <String>[];
     final missingTime = <String>[];
 
+    final selection = widget.selectedUserIds;
+    final notSelected = <String>[];
+    final noCoordinates = <String>[];
+
     for (final s in snapshots) {
-      // The DQN has a fixed roster of 12 slots (backend/farmers.json), so a
-      // farmer without an id simply is not part of this route. New signups
-      // land here rather than breaking the round.
-      if (!s.hasFarmerId) {
-        notEnrolled.add(s.farmerName);
+      // When the supervisor picked farmers on the dashboard, route only those.
+      if (selection != null && !selection.contains(s.userId)) {
+        notSelected.add(s.farmerName);
         continue;
       }
 
+      // A farmer needs either a slot in farmers.json or their own coordinates.
+      // With neither, the backend cannot place them on the map.
       final tapping = s.tapping;
-      final hours = tapping?.hoursSinceTapping(now);
-      if (tapping != null && hours == null) missingTime.add(s.farmerId);
-      if (s.missingFields.isNotEmpty) {
-        incomplete.add('${s.farmerId}: ${s.missingFields.join(", ")}');
+      final hasCoords = tapping?.hasLocation ?? false;
+      if (!s.hasFarmerId && !hasCoords) {
+        notEnrolled.add(s.farmerName);
+        continue;
       }
+      if (!hasCoords && !s.hasFarmerId) noCoordinates.add(s.farmerName);
+
+      final hours = tapping?.hoursSinceTapping(now);
+      final id = s.hasFarmerId ? s.farmerId : s.userId;
+      if (tapping != null && hours == null) missingTime.add(id);
+      if (s.missingFields.isNotEmpty) {
+        incomplete.add('$id: ${s.missingFields.join(", ")}');
+      }
+      _names[id] = s.farmerName;
 
       payload.add({
-        'farmer_id': s.farmerId,
+        'farmer_id': id,
         'hours_since_tapping': hours ?? 0.0,
         'weatherCondition': tapping?.weatherCondition ?? '',
         'district': s.district,
         'experience': s.experience,
         'treeCondition': tapping?.treeCondition ?? '',
+        // Routing inputs, not model features. Sent when the farmer app has
+        // recorded them; the backend falls back to farmers.json otherwise.
+        if (hasCoords) 'latitude': tapping!.lat,
+        if (hasCoords) 'longitude': tapping!.lng,
       });
     }
 
-    // The backend looks up every slot id, so validate the roster here and
-    // report precisely what is wrong rather than letting it 500.
-    final ids = payload.map((p) => p['farmer_id'] as String).toList();
-    final expected = {
-      for (var i = 1; i <= kExpectedFarmerCount; i++) 'F${i.toString().padLeft(3, '0')}'
-    };
+    if (payload.isEmpty) {
+      throw Exception(
+        'No farmers could be routed. Select at least one farmer who has '
+        'either a $kFarmerIdField or recorded coordinates.',
+      );
+    }
 
+    // Two farmers on the same slot would silently collapse into one stop.
     final duplicates = <String>{};
     final seen = <String>{};
-    for (final id in ids) {
-      if (!seen.add(id)) duplicates.add(id);
+    for (final p in payload) {
+      if (!seen.add(p['farmer_id'] as String)) {
+        duplicates.add(p['farmer_id'] as String);
+      }
     }
     if (duplicates.isNotEmpty) {
       throw Exception(
@@ -166,24 +191,21 @@ class _SupervisorRouteScreenState extends State<SupervisorRouteScreen> {
       );
     }
 
-    final missing = (expected.difference(seen).toList()..sort());
-    final unexpected = (seen.difference(expected).toList()..sort());
-    if (missing.isNotEmpty || unexpected.isNotEmpty) {
+    if (payload.length > kExpectedFarmerCount) {
       throw Exception(
-        'The route model expects exactly the ids '
-        'F001-F${kExpectedFarmerCount.toString().padLeft(3, '0')} from '
-        'backend/farmers.json.\n'
-        '${missing.isNotEmpty ? "Unfilled slots: ${missing.join(", ")}\n" : ""}'
-        '${unexpected.isNotEmpty ? "Unrecognised ids: ${unexpected.join(", ")}\n" : ""}'
-        '\nAssign the missing ids in Firestore, on users documents with '
-        'role "farmer".',
+        'The route model can plan at most $kExpectedFarmerCount stops at once, '
+        'but ${payload.length} farmers were selected. Deselect '
+        '${payload.length - kExpectedFarmerCount} of them.',
       );
     }
 
     // Surface quietly-degrading data rather than letting the model score it.
     final warnings = <String>[
       if (notEnrolled.isNotEmpty)
-        'Not on this route (no $kFarmerIdField): ${notEnrolled.join(", ")}',
+        'Skipped (no $kFarmerIdField and no coordinates): '
+            '${notEnrolled.join(", ")}',
+      if (notSelected.isNotEmpty && notSelected.length <= 5)
+        'Not selected: ${notSelected.join(", ")}',
       if (missingTime.isNotEmpty)
         'No usable tapping time for: ${missingTime.join(", ")} (sent as 0 h)',
       if (incomplete.isNotEmpty)

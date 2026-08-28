@@ -10,8 +10,6 @@ dependencies:
   flutter:
     sdk: flutter
 
-  shared_preferences: ^2.3.2
-
   # Firebase
   firebase_core: ^4.7.0
   firebase_auth: ^6.4.0
@@ -34,6 +32,10 @@ dependencies:
   # (MapOptions.initialCenter/initialZoom, Marker.child).
   flutter_map: ^7.0.0
   latlong2: ^0.9.1
+  geolocator: ^13.0.2
+
+  # Local persistence (farmer app settings)
+  shared_preferences: ^2.3.3
 
 dev_dependencies:
   flutter_test:

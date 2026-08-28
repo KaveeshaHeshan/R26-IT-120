@@ -1,0 +1,7 @@
+Flask>=3.0,<4.0
+firebase-admin>=6.0,<7.0
+joblib>=1.5,<2.0
+numpy>=1.26,<3.0
+# Required by the saved scaler artifacts. Do not upgrade until artifacts are regenerated.
+scikit-learn==1.6.1
+tensorflow>=2.21,<2.22

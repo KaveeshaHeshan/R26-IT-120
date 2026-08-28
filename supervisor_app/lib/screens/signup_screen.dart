@@ -129,7 +129,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         const SnackBar(content: Text('✅ Account created successfully! Please verify OTP 📱'), backgroundColor: Colors.green));
 
       Navigator.pushReplacement(context,
-        MaterialPageRoute(builder: (context) => OTPScreen(email: emailController.text.trim(), role: selectedRole)));
+        MaterialPageRoute(builder: (context) => OTPScreen(email: emailController.text.trim(), role: selectedRole, userId: uid)));
 
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(

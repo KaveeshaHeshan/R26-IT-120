@@ -13,21 +13,27 @@ class OfflineQueueService {
     required String grade,
     required String riskLevel,
     required double volume,
+    required double recommendedAmmoniaL,
+    required double actualAmmoniaL,
+    required bool followedStandardAmmoniaRatio,
     required String notes,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     final pending = await _getRawList(prefs);
 
     pending.add({
-      'local_id':   DateTime.now().millisecondsSinceEpoch.toString(),
-      'farm_id':    farmId,
+      'local_id': DateTime.now().millisecondsSinceEpoch.toString(),
+      'farm_id': farmId,
       'farmer_name': farmerName,
       'vfa_result': vfaResult,
-      'grade':      grade,
+      'grade': grade,
       'risk_level': riskLevel,
-      'volume':     volume,
-      'notes':      notes,
-      'queued_at':  DateTime.now().toIso8601String(),
+      'volume': volume,
+      'recommended_ammonia_l': recommendedAmmoniaL,
+      'actual_ammonia_l': actualAmmoniaL,
+      'followed_standard_ammonia_ratio': followedStandardAmmoniaRatio,
+      'notes': notes,
+      'queued_at': DateTime.now().toIso8601String(),
     });
 
     await prefs.setString(_key, jsonEncode(pending));
@@ -39,8 +45,7 @@ class OfflineQueueService {
     return _getRawList(prefs);
   }
 
-  Future<int> get pendingCount async =>
-      (await getPendingCollections()).length;
+  Future<int> get pendingCount async => (await getPendingCollections()).length;
 
   // Try to push everything in the queue to Firestore.
   // Successful items are removed; failed ones stay queued for next try.
@@ -54,14 +59,30 @@ class OfflineQueueService {
 
     for (final item in pending) {
       try {
+        // Older queued records predate the litre-based ammonia fields. Use
+        // the standard 3% amount as a conservative migration default so an
+        // existing offline queue does not become permanently unsyncable.
+        final volume = (item['volume'] as num).toDouble();
+        final recommendedAmmonia = item['recommended_ammonia_l'] is num
+            ? (item['recommended_ammonia_l'] as num).toDouble()
+            : volume * 0.03;
+        final actualAmmonia = item['actual_ammonia_l'] is num
+            ? (item['actual_ammonia_l'] as num).toDouble()
+            : recommendedAmmonia;
+        final followedStandard = item['followed_standard_ammonia_ratio'] is bool
+            ? item['followed_standard_ammonia_ratio'] as bool
+            : true;
         await service.saveCollection(
-          farmId:     item['farm_id'],
+          farmId: item['farm_id'],
           farmerName: item['farmer_name'],
-          vfaResult:  (item['vfa_result'] as num).toDouble(),
-          grade:      item['grade'],
-          riskLevel:  item['risk_level'],
-          volume:     (item['volume'] as num).toDouble(),
-          notes:      item['notes'],
+          vfaResult: (item['vfa_result'] as num).toDouble(),
+          grade: item['grade'],
+          riskLevel: item['risk_level'],
+          volume: volume,
+          recommendedAmmoniaL: recommendedAmmonia,
+          actualAmmoniaL: actualAmmonia,
+          followedStandardAmmoniaRatio: followedStandard,
+          notes: item['notes'],
         );
         // synced successfully — drop it from the queue
       } catch (e) {
@@ -74,7 +95,8 @@ class OfflineQueueService {
   }
 
   Future<List<Map<String, dynamic>>> _getRawList(
-      SharedPreferences prefs) async {
+    SharedPreferences prefs,
+  ) async {
     final raw = prefs.getString(_key);
     if (raw == null) return [];
     final decoded = jsonDecode(raw) as List<dynamic>;

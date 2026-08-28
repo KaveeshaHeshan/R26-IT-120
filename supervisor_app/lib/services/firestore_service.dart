@@ -217,8 +217,21 @@ Future<void> saveCollection({
   required String grade,
   required String riskLevel,
   required double volume,
+  required double recommendedAmmoniaL,
+  required double actualAmmoniaL,
+  required bool followedStandardAmmoniaRatio,
   required String notes,
 }) async {
+  if (!volume.isFinite || volume <= 0) {
+    throw ArgumentError.value(volume, 'volume', 'Latex volume must be a finite number greater than zero.');
+  }
+  if (!actualAmmoniaL.isFinite || actualAmmoniaL < 0) {
+    throw ArgumentError.value(actualAmmoniaL, 'actualAmmoniaL', 'Actual ammonia must be a finite number that is zero or greater.');
+  }
+  if (!recommendedAmmoniaL.isFinite || (recommendedAmmoniaL - (volume * 0.03)).abs() > 0.000000001) {
+    throw ArgumentError.value(recommendedAmmoniaL, 'recommendedAmmoniaL', 'Recommended ammonia must equal 3% of the latex volume.');
+  }
+
   await _db.collection('collections').add({
     'farm_id':     farmId,
     'farmer_name': farmerName,
@@ -226,6 +239,14 @@ Future<void> saveCollection({
     'grade':       grade,
     'risk_level':  riskLevel,
     'volume':      volume,
+    // Canonical collection fields for future litre-based model retraining.
+    // These must not be used as a replacement for the current model's kg input.
+    'latex_volume_l': volume,
+    'recommended_ammonia_l': recommendedAmmoniaL,
+    'recommended_ammonia_ratio': 0.03,
+    'actual_ammonia_l': actualAmmoniaL,
+    'actual_ammonia_ratio': actualAmmoniaL / volume,
+    'followed_standard_ammonia_ratio': followedStandardAmmoniaRatio,
     'notes':       notes,
     'collected_at': FieldValue.serverTimestamp(),
   });

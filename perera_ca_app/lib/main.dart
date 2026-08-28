@@ -32,6 +32,8 @@ class MyApp extends StatelessWidget {
 }
 
 class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
+
   @override
   _LoginScreenState createState() => _LoginScreenState();
 }
@@ -334,6 +336,8 @@ class _LoginScreenState extends State<LoginScreen> {
 }
 
 class SignUpScreen extends StatefulWidget {
+  const SignUpScreen({super.key});
+
   @override
   _SignUpScreenState createState() => _SignUpScreenState();
 }
@@ -532,7 +536,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   _buildField(rubberTreesController, 'Number of Rubber Trees', Icons.park, type: TextInputType.number),
                   SizedBox(height: 8),
                   DropdownButtonFormField<String>(
-                    value: selectedExperience,
+                    initialValue: selectedExperience,
                     decoration: InputDecoration(
                       labelText: 'Tapping Experience',
                       prefixIcon: Icon(Icons.work, color: Colors.green),
@@ -618,7 +622,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 class OTPScreen extends StatefulWidget {
   final String email;
   final String role;
-  OTPScreen({required this.email, required this.role});
+  const OTPScreen({super.key, required this.email, required this.role});
 
   @override
   _OTPScreenState createState() => _OTPScreenState();

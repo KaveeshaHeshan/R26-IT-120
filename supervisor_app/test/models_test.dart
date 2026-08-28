@@ -1,7 +1,24 @@
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:supervisor_app/core/app_theme.dart';
+import 'package:supervisor_app/models/farm.dart';
+import 'package:supervisor_app/models/farmer_tapping_snapshot.dart';
 import 'package:supervisor_app/models/tapping_detail.dart';
 import 'package:supervisor_app/models/user_profile.dart';
+
+/// Stands in for a Firestore GeoPoint, which exposes latitude/longitude.
+class _FakeGeoPoint {
+  final double latitude;
+  final double longitude;
+  const _FakeGeoPoint(this.latitude, this.longitude);
+}
+
+/// Stands in for a Firestore Timestamp, which exposes toDate().
+class _Ts {
+  final DateTime _d;
+  const _Ts(this._d);
+  DateTime toDate() => _d;
+}
 
 void main() {
   group('UserProfile', () {
@@ -85,6 +102,215 @@ void main() {
 
       expect(t.farmerName, 'Kamal');
       expect(t.latexVolumeL, 1.5);
+    });
+  });
+
+  group('TappingDetail location', () {
+    test('is absent — not zero — when the farmer app has not written it', () {
+      // Critical: defaulting to (0, 0) would place the farm in the Atlantic
+      // and corrupt route distances.
+      final t = TappingDetail.fromMap('doc6', {});
+
+      expect(t.lat, isNull);
+      expect(t.lng, isNull);
+      expect(t.hasLocation, isFalse);
+    });
+
+    test('reads the latitude/longitude names the farmer app writes', () {
+      final t = TappingDetail.fromMap('doc7a', {
+        'latitude': 6.8211,
+        'longitude': 80.1367,
+      });
+
+      expect(t.hasLocation, isTrue);
+      expect(t.lat, 6.8211);
+      expect(t.lng, 80.1367);
+    });
+
+    test('reads top-level lat/lng numbers', () {
+      final t = TappingDetail.fromMap('doc7', {'lat': 6.8211, 'lng': 80.1367});
+
+      expect(t.hasLocation, isTrue);
+      expect(t.lat, 6.8211);
+      expect(t.lng, 80.1367);
+    });
+
+    test('reads integer coordinates', () {
+      final t = TappingDetail.fromMap('doc8', {'lat': 7, 'lng': 80});
+      expect(t.lat, 7.0);
+      expect(t.lng, 80.0);
+    });
+
+    test('falls back to a GeoPoint under `location`', () {
+      final t = TappingDetail.fromMap('doc9', {
+        'location': const _FakeGeoPoint(6.9, 79.9),
+      });
+
+      expect(t.hasLocation, isTrue);
+      expect(t.lat, 6.9);
+      expect(t.lng, 79.9);
+    });
+
+    test('copyWith preserves coordinates', () {
+      final t = TappingDetail.fromMap('doc10', {'lat': 6.5, 'lng': 80.5})
+          .copyWith(farmerName: 'Sunil');
+
+      expect(t.lat, 6.5);
+      expect(t.hasLocation, isTrue);
+    });
+  });
+
+  group('Farm.hasLocation', () {
+    test('honours an explicit has_location flag', () {
+      final f = Farm.fromMap({'lat': 0.0, 'lng': 0.0, 'has_location': false});
+      expect(f.hasLocation, isFalse);
+    });
+
+    test('infers true from non-zero coordinates on older documents', () {
+      final f = Farm.fromMap({'lat': 6.82, 'lng': 80.13});
+      expect(f.hasLocation, isTrue);
+    });
+
+    test('infers false from zeroed coordinates on older documents', () {
+      final f = Farm.fromMap({'lat': 0, 'lng': 0});
+      expect(f.hasLocation, isFalse);
+    });
+  });
+
+  group('Farmer id from users', () {
+    test('reads the backend farmer id off a farmer document', () {
+      final p = UserProfile.fromMap('uid1', {
+        'name': 'Sunil',
+        'role': 'farmer',
+        'district': 'Galle',
+        'experience': '3-5 years',
+        kFarmerIdField: 'F001',
+      });
+
+      expect(p.isFarmer, isTrue);
+      expect(p.farmerId, 'F001');
+      expect(p.district, 'Galle');
+      expect(p.experience, '3-5 years');
+    });
+
+    test('farmerId is empty when the field is absent', () {
+      final p = UserProfile.fromMap('uid2', {'role': 'farmer'});
+      expect(p.farmerId, isEmpty);
+    });
+
+    test('trims stray whitespace around the id', () {
+      final p = UserProfile.fromMap('uid3', {kFarmerIdField: '  F007 '});
+      expect(p.farmerId, 'F007');
+    });
+
+    test('coerces a non-string id', () {
+      // Guards against the field being saved as a number in Firestore.
+      final p = UserProfile.fromMap('uid4', {kFarmerIdField: 7});
+      expect(p.farmerId, '7');
+    });
+  });
+
+  group('FarmerTappingSnapshot', () {
+    FarmerTappingSnapshot make({
+      String farmerId = 'F001',
+      String district = 'Galle',
+      String experience = '3-5 years',
+      TappingDetail? tapping,
+    }) =>
+        FarmerTappingSnapshot(
+          farmerId: farmerId,
+          userId: 'uid1',
+          farmerName: 'Sunil',
+          district: district,
+          experience: experience,
+          tapping: tapping,
+        );
+
+    test('flags a farmer with no tapping record', () {
+      final s = make();
+      expect(s.hasTapping, isFalse);
+      expect(s.missingFields, contains('tapping record'));
+    });
+
+    test('flags blank profile fields the model would score as zero', () {
+      final s = make(district: '', experience: '   ');
+      expect(s.missingFields, containsAll(['district', 'experience']));
+    });
+
+    test('is complete when everything is present', () {
+      final s = make(tapping: TappingDetail.fromMap('t1', {}));
+      expect(s.hasFarmerId, isTrue);
+      expect(s.missingFields, isEmpty);
+    });
+  });
+
+  group('hours_since_tapping', () {
+    test('combines the date day with the startTime clock', () {
+      final t = TappingDetail.fromMap('t1', {
+        'date': _Ts(DateTime(2026, 8, 20)),
+        'startTime': '06:30',
+      });
+
+      expect(t.tappingStart, DateTime(2026, 8, 20, 6, 30));
+      final hours = t.hoursSinceTapping(DateTime(2026, 8, 20, 12, 30));
+      expect(hours, 6.0);
+    });
+
+    test('falls back to createdAt when startTime is unusable', () {
+      final created = DateTime(2026, 8, 20, 5);
+      final t = TappingDetail.fromMap('t2', {
+        'date': _Ts(DateTime(2026, 8, 20)),
+        'startTime': 'not-a-time',
+        'createdAt': _Ts(created),
+      });
+
+      expect(t.tappingStart, created);
+    });
+
+    test('rejects an out-of-range clock rather than building a bad date', () {
+      final created = DateTime(2026, 8, 20, 5);
+      final t = TappingDetail.fromMap('t3', {
+        'date': _Ts(DateTime(2026, 8, 20)),
+        'startTime': '99:99',
+        'createdAt': _Ts(created),
+      });
+
+      expect(t.tappingStart, created);
+    });
+
+    test('is null with no usable timestamp, so 0 is never guessed', () {
+      final t = TappingDetail.fromMap('t4', {});
+      expect(t.tappingStart, isNull);
+      expect(t.hoursSinceTapping(DateTime(2026, 8, 20)), isNull);
+    });
+
+    test('reports fractional hours', () {
+      final t = TappingDetail.fromMap('t5', {
+        'date': _Ts(DateTime(2026, 8, 20)),
+        'startTime': '06:00',
+      });
+      expect(t.hoursSinceTapping(DateTime(2026, 8, 20, 7, 30)), 1.5);
+    });
+  });
+
+  group('Risk presentation', () {
+    test('pending never reads as safe', () {
+      // A farm with no sensor reading must not be shown in reassuring green.
+      expect(AppTheme.riskColor('pending'), AppTheme.riskPending);
+      expect(AppTheme.riskColor('pending'), isNot(AppTheme.riskSafe));
+      expect(AppTheme.riskLabel('pending'), 'AWAITING READING');
+    });
+
+    test('unrecognised levels fall back to pending, not safe', () {
+      expect(AppTheme.riskColor('wat'), AppTheme.riskPending);
+      expect(AppTheme.riskLabel('wat'), 'AWAITING READING');
+    });
+
+    test('known levels keep their existing meaning', () {
+      expect(AppTheme.riskColor('high'), AppTheme.riskHigh);
+      expect(AppTheme.riskColor('medium'), AppTheme.riskMedium);
+      expect(AppTheme.riskColor('safe'), AppTheme.riskSafe);
+      expect(AppTheme.riskLabel('safe'), 'SAFE');
     });
   });
 }

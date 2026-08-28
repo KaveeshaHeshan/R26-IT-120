@@ -1,3 +1,12 @@
+/// Field on a `users` document holding the backend farmer id ("F001".."F012"),
+/// the ids the DQN in backend/farmers.json was trained against.
+///
+/// Confirmed against the live database: `users` documents with role "farmer"
+/// carry `modelFarmerId`. It is not `farmer_id` (no such field exists), and
+/// not `userId` — that lives on `tapping_details` and holds a Firebase Auth
+/// UID, not a backend farmer id.
+const String kFarmerIdField = 'modelFarmerId';
+
 /// A user record from the `users` collection.
 ///
 /// The same shape backs both supervisors and farmers — they are told apart by
@@ -12,6 +21,15 @@ class UserProfile {
   final String role;
   final String employeeId;
 
+  /// Backend farmer id ("F001".."F012"), read from [kFarmerIdField] on the
+  /// user document. Empty when the field is absent.
+  final String farmerId;
+
+  /// Farmer-only profile fields, written at signup and required by the
+  /// spoilage model. Empty for supervisors.
+  final String district;
+  final String experience;
+
   const UserProfile({
     required this.uid,
     required this.name,
@@ -20,9 +38,13 @@ class UserProfile {
     required this.nic,
     required this.role,
     required this.employeeId,
+    this.farmerId = '',
+    this.district = '',
+    this.experience = '',
   });
 
   bool get isSupervisor => role == 'supervisor';
+  bool get isFarmer => role == 'farmer';
 
   /// First letter of the name, for the avatar badge.
   String get initial =>
@@ -37,6 +59,9 @@ class UserProfile {
       nic:        map['nic']        ?? '',
       role:       map['role']       ?? '',
       employeeId: map['employeeId'] ?? '',
+      farmerId:   (map[kFarmerIdField] ?? '').toString().trim(),
+      district:   map['district']   ?? '',
+      experience: map['experience'] ?? '',
     );
   }
 }

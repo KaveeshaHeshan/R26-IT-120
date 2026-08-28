@@ -39,10 +39,9 @@ class _SyncScreenState extends State<SyncScreen>
       parent: _pulseController,
       curve: Curves.easeOut,
     );
-    // Reset session first so app always starts fresh
-    _service.resetSession().then((_) {
-      _listenToFirestore();
-    });
+    // Do NOT reset here: the dashboard has just seeded this session with the
+    // farms the supervisor selected, and resetSession() would wipe them.
+    _listenToFirestore();
   }
 
   void _listenToFirestore() {

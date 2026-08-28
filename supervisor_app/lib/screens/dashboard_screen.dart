@@ -8,6 +8,7 @@ import '../models/user_profile.dart';
 import '../services/firestore_service.dart';
 import '../widgets/hotspot_indicator.dart';
 import 'login_screen.dart';
+import 'supervisor_route_screen.dart';
 import 'sync_screen.dart';
 
 /// Landing screen after login. Shows who is signed in and the tapping records
@@ -25,7 +26,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
   UserProfile? _profile;
   List<TappingDetail> _tappings = [];
   bool _loading = true;
+  bool _starting = false;
   String? _error;
+
+  /// Ids of the tapping records the supervisor has picked for this round.
+  final Set<String> _selected = {};
+
+  List<TappingDetail> get _selectedTappings =>
+      _tappings.where((t) => _selected.contains(t.id)).toList();
+
+  /// Selected farms the DQN cannot route yet, because the farmer app has not
+  /// written coordinates for them.
+  int get _selectedWithoutLocation =>
+      _selectedTappings.where((t) => !t.hasLocation).length;
+
+  double get _selectedVolume =>
+      _selectedTappings.fold(0.0, (sum, t) => sum + t.latexVolumeL);
 
   @override
   void initState() {
@@ -46,6 +62,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       setState(() {
         _profile = profile;
         _tappings = tappings;
+        // Drop selections whose records no longer exist after a refresh.
+        _selected.retainAll(tappings.map((t) => t.id));
         _loading = false;
       });
     } catch (e) {
@@ -65,6 +83,31 @@ class _DashboardScreenState extends State<DashboardScreen> {
       MaterialPageRoute(builder: (_) => const LoginScreen()),
       (route) => false,
     );
+  }
+
+  Future<void> _startSession() async {
+    final selected = _selectedTappings;
+    if (selected.isEmpty || _starting) return;
+
+    setState(() => _starting = true);
+    try {
+      await _service.startSessionForFarms(selected);
+      if (!mounted) return;
+      setState(() => _starting = false);
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const SyncScreen()),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _starting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not start the session. Please try again.'),
+          backgroundColor: AppTheme.error,
+        ),
+      );
+    }
   }
 
   double get _totalVolume =>
@@ -128,6 +171,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   _buildSupervisorCard(),
                   const SizedBox(height: 16),
                   _buildStatsRow(),
+                  const SizedBox(height: 16),
+                  _buildRouteTile(),
                   const SizedBox(height: 20),
                   _buildSectionHeader(),
                   const SizedBox(height: 10),
@@ -350,57 +395,160 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  // ── Collection route entry point ─────────────────────────────
+
+  Widget _buildRouteTile() {
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const SupervisorRouteScreen()),
+        );
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: AppTheme.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppTheme.divider),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppTheme.surfaceLight,
+                borderRadius: BorderRadius.circular(9),
+              ),
+              child: const Icon(
+                Icons.route,
+                size: 18,
+                color: AppTheme.primary,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Collection Route',
+                    style: GoogleFonts.inter(
+                      color: AppTheme.textPrimary,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'AI-ordered stops by spoilage risk',
+                    style: GoogleFonts.inter(
+                      color: AppTheme.textSecondary,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.chevron_right,
+              size: 20,
+              color: AppTheme.textMuted,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   // ── Tapping details ──────────────────────────────────────────
 
   Widget _buildSectionHeader() {
+    final allSelected =
+        _tappings.isNotEmpty && _selected.length == _tappings.length;
+
     return Row(
       children: [
-        Text(
-          'FARMER TAPPING DETAILS',
-          style: GoogleFonts.jetBrainsMono(
-            color: AppTheme.textMuted,
-            fontSize: 11,
-            letterSpacing: 1.5,
+        Flexible(
+          child: Text(
+            'SELECT FARMS TO COLLECT',
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.jetBrainsMono(
+              color: AppTheme.textMuted,
+              fontSize: 11,
+              letterSpacing: 1.5,
+            ),
           ),
         ),
         const Spacer(),
-        Text(
-          '${_tappings.length} total',
-          style: GoogleFonts.inter(
-            color: AppTheme.textSecondary,
-            fontSize: 11,
+        if (_tappings.isNotEmpty)
+          TextButton(
+            onPressed: () {
+              setState(() {
+                if (allSelected) {
+                  _selected.clear();
+                } else {
+                  _selected
+                    ..clear()
+                    ..addAll(_tappings.map((t) => t.id));
+                }
+              });
+            },
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: Text(
+              allSelected ? 'Clear' : 'Select all',
+              style: GoogleFonts.inter(
+                color: AppTheme.primary,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
-        ),
       ],
     );
   }
 
   Widget _buildTappingCard(TappingDetail t) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppTheme.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppTheme.divider),
-      ),
-      child: Column(
+    final isSelected = _selected.contains(t.id);
+
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          if (isSelected) {
+            _selected.remove(t.id);
+          } else {
+            _selected.add(t.id);
+          }
+        });
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: isSelected ? AppTheme.surfaceLight : AppTheme.surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isSelected ? AppTheme.primary : AppTheme.divider,
+            width: isSelected ? 1.5 : 1,
+          ),
+        ),
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Farmer + date
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(7),
-                decoration: BoxDecoration(
-                  color: AppTheme.surfaceLight,
-                  borderRadius: BorderRadius.circular(9),
-                ),
-                child: const Icon(
-                  Icons.agriculture,
-                  size: 16,
-                  color: AppTheme.primary,
-                ),
+              Icon(
+                isSelected
+                    ? Icons.check_box
+                    : Icons.check_box_outline_blank,
+                size: 20,
+                color: isSelected ? AppTheme.primary : AppTheme.textMuted,
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -492,6 +640,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 t.weatherCondition,
                 AppTheme.textSecondary,
               ),
+              if (!t.hasLocation)
+                _buildChip(
+                  Icons.location_off_outlined,
+                  'Location pending',
+                  AppTheme.riskMedium,
+                ),
             ],
           ),
 
@@ -514,7 +668,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ),
           ],
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -606,6 +761,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // ── Start session CTA ────────────────────────────────────────
 
   Widget _buildStartBar() {
+    final count = _selected.length;
+
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
       decoration: BoxDecoration(
@@ -614,32 +771,80 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
       child: SafeArea(
         top: false,
-        child: SizedBox(
-          width: double.infinity,
-          height: 50,
-          child: ElevatedButton.icon(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const SyncScreen()),
-              );
-            },
-            icon: const Icon(Icons.sensors, size: 18),
-            label: Text(
-              'Start Collection Session',
-              style: GoogleFonts.inter(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Selected volume, and a warning when some stops can't be routed.
+            if (count > 0) ...[
+              Row(
+                children: [
+                  const Icon(
+                    Icons.water_drop_outlined,
+                    size: 14,
+                    color: AppTheme.textSecondary,
+                  ),
+                  const SizedBox(width: 5),
+                  Text(
+                    '${_selectedVolume.toStringAsFixed(1)} L selected',
+                    style: GoogleFonts.inter(
+                      color: AppTheme.textSecondary,
+                      fontSize: 12,
+                    ),
+                  ),
+                  const Spacer(),
+                  if (_selectedWithoutLocation > 0)
+                    Flexible(
+                      child: Text(
+                        '$_selectedWithoutLocation without location',
+                        textAlign: TextAlign.right,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.inter(
+                          color: AppTheme.riskMedium,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 10),
+            ],
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton.icon(
+                onPressed: (count == 0 || _starting) ? null : _startSession,
+                icon: _starting
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(Icons.sensors, size: 18),
+                label: Text(
+                  count == 0
+                      ? 'Select farms to collect from'
+                      : 'Start Collection Session ($count ${count == 1 ? 'farm' : 'farms'})',
+                  style: GoogleFonts.inter(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primary,
+                  foregroundColor: Colors.white,
+                  disabledBackgroundColor: AppTheme.divider,
+                  disabledForegroundColor: AppTheme.textMuted,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
               ),
             ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primary,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          ),
+          ],
         ),
       ),
     );

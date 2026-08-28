@@ -4,6 +4,20 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'otp_screen.dart';
 
+/// Tapping-experience buckets, written verbatim to `users.experience`.
+///
+/// These strings must match the categories the spoilage model was trained on
+/// exactly. The backend one-hot encodes this field and reindexes with
+/// `fill_value=0`, so an unrecognised string scores as all-zeros without
+/// raising — a silently wrong prediction rather than an error. Do not reword
+/// or re-space these without retraining the model.
+const List<String> kExperienceOptions = [
+  '1 - 3 years',
+  '3 - 5 years',
+  '5 - 10 years',
+  'More than 10 years',
+];
+
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
 
@@ -26,7 +40,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
   bool passwordVisible = false;
   bool isLoading = false;
   String selectedRole = 'farmer';
-  String selectedExperience = 'Less than 1 year';
+
+  /// Must stay one of [kExperienceOptions] — a value outside that list makes
+  /// DropdownButtonFormField assert at build time.
+  String selectedExperience = kExperienceOptions.first;
 
   Future<void> signUpUser() async {
     if (nameController.text.isEmpty) {
@@ -212,7 +229,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       prefixIcon: const Icon(Icons.work, color: Colors.green),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                     ),
-                    items: ['Less than 1 year', '1-3 years', '3-5 years', 'More than 5 years']
+                    items: kExperienceOptions
                         .map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
                     onChanged: (value) => setState(() => selectedExperience = value!),
                   ),

@@ -45,28 +45,29 @@ class DashboardHomeScreen extends StatelessWidget {
   }
 
   // ------------------------------------------------------------
-  // GET WEATHER USING FARMER ADDRESS
+  // GET WEATHER USING FARMER DISTRICT
   // ------------------------------------------------------------
 
-  Future<Map<String, dynamic>?> _loadWeatherFromAddress(String address) async {
-    if (address.trim().isEmpty || address == 'Address not added') {
+  Future<Map<String, dynamic>?> _loadWeatherForDistrict(String district) async {
+    final String districtQuery = district.trim();
+    if (districtQuery.isEmpty) {
       return null;
     }
 
     if (_googleApiKey.isEmpty) {
-      return _loadOpenMeteoWeather(address);
+      return _loadOpenMeteoWeather(districtQuery);
     }
 
     try {
       final Uri geocodeUrl = Uri.https(
         'maps.googleapis.com',
         '/maps/api/geocode/json',
-        <String, String>{'address': address, 'key': _googleApiKey},
+        <String, String>{'address': districtQuery, 'key': _googleApiKey},
       );
 
       final http.Response geocodeResponse = await http.get(geocodeUrl).timeout(const Duration(seconds: 10));
 
-      if (geocodeResponse.statusCode != 200) return _loadOpenMeteoWeather(address);
+      if (geocodeResponse.statusCode != 200) return _loadOpenMeteoWeather(districtQuery);
 
       final Map<String, dynamic> geocodeData = jsonDecode(geocodeResponse.body) as Map<String, dynamic>;
 
@@ -74,7 +75,7 @@ class DashboardHomeScreen extends StatelessWidget {
           ? geocodeData['results'] as List<dynamic>
           : <dynamic>[];
 
-      if (results.isEmpty) return _loadOpenMeteoWeather(address);
+      if (results.isEmpty) return _loadOpenMeteoWeather(districtQuery);
 
       final Map<String, dynamic> firstResult = results.first as Map<String, dynamic>;
 
@@ -89,7 +90,7 @@ class DashboardHomeScreen extends StatelessWidget {
       final dynamic latitude = location['lat'];
       final dynamic longitude = location['lng'];
 
-      if (latitude == null || longitude == null) return _loadOpenMeteoWeather(address);
+      if (latitude == null || longitude == null) return _loadOpenMeteoWeather(districtQuery);
 
       final Uri weatherUrl = Uri.https(
         'weather.googleapis.com',
@@ -105,17 +106,17 @@ class DashboardHomeScreen extends StatelessWidget {
 
       final http.Response weatherResponse = await http.get(weatherUrl).timeout(const Duration(seconds: 10));
 
-      if (weatherResponse.statusCode != 200) return _loadOpenMeteoWeather(address);
+      if (weatherResponse.statusCode != 200) return _loadOpenMeteoWeather(districtQuery);
 
       return jsonDecode(weatherResponse.body) as Map<String, dynamic>;
     } catch (_) {
-      return _loadOpenMeteoWeather(address);
+      return _loadOpenMeteoWeather(districtQuery);
     }
   }
 
-  Future<Map<String, dynamic>?> _loadOpenMeteoWeather(String address) async {
+  Future<Map<String, dynamic>?> _loadOpenMeteoWeather(String district) async {
     try {
-      final Uri geocodeUrl = Uri.https('geocoding-api.open-meteo.com', '/v1/search', <String, String>{'name': address, 'count': '1'});
+      final Uri geocodeUrl = Uri.https('geocoding-api.open-meteo.com', '/v1/search', <String, String>{'name': district, 'count': '1'});
       final http.Response geocodeResponse = await http.get(geocodeUrl).timeout(const Duration(seconds: 10));
       if (geocodeResponse.statusCode != 200) return null;
       final Map<String, dynamic> geocode = jsonDecode(geocodeResponse.body) as Map<String, dynamic>;
@@ -212,11 +213,13 @@ class DashboardHomeScreen extends StatelessWidget {
 
         final String name = _stringOrDefault(data['name'], fallback: settings.t('Farmer', 'ගොවියා'));
         final String address = _stringOrDefault(data['address'], fallback: settings.t('Address not added', 'ලිපිනය එකතු කර නැත'));
+        final String district = data['district']?.toString().trim() ?? '';
+        final String displayId = data['displayId']?.toString().trim() ?? '';
 
         final List<dynamic> savedAlerts = data['alerts'] is List<dynamic> ? data['alerts'] as List<dynamic> : <dynamic>[];
 
         return StreamBuilder<List<Map<String, dynamic>>>(
-          stream: _watchLstmForecastAlerts(),
+          stream: _watchLstmForecastAlerts(displayId),
           builder: (BuildContext context, AsyncSnapshot<List<Map<String, dynamic>>> modelSnapshot) {
             final List<dynamic> alerts = <dynamic>[...savedAlerts, ...(modelSnapshot.data ?? <Map<String, dynamic>>[])];
             final int notificationCount = _notificationCount(data, alerts);
@@ -318,15 +321,15 @@ class DashboardHomeScreen extends StatelessWidget {
             // WEATHER
             // =====================================================
             FutureBuilder<Map<String, dynamic>?>(
-              future: _loadWeatherFromAddress(address),
+              future: _loadWeatherForDistrict(district),
               builder: (BuildContext context, AsyncSnapshot<Map<String, dynamic>?> weatherSnapshot) {
                 if (weatherSnapshot.connectionState == ConnectionState.waiting) {
-                  return _weatherLoadingCard(settings, address);
+                  return _weatherLoadingCard(settings, district);
                 }
 
                 final Map<String, dynamic> weather = weatherSnapshot.data ?? <String, dynamic>{};
 
-                return _weatherCard(settings, weather, address);
+                return _weatherCard(settings, weather, district);
               },
             ),
 
@@ -526,7 +529,7 @@ class DashboardHomeScreen extends StatelessWidget {
   // WEATHER
   // ------------------------------------------------------------
 
-  Widget _weatherLoadingCard(FarmerSettings settings, String address) {
+  Widget _weatherLoadingCard(FarmerSettings settings, String district) {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -559,13 +562,13 @@ class DashboardHomeScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          Text(address, style: const TextStyle(color: Colors.white70)),
+          Text(district, style: const TextStyle(color: Colors.white70)),
         ],
       ),
     );
   }
 
-  Widget _weatherCard(FarmerSettings settings, Map<String, dynamic> weather, String address) {
+  Widget _weatherCard(FarmerSettings settings, Map<String, dynamic> weather, String district) {
     final bool available = weather.isNotEmpty;
 
     final Map<String, dynamic> weatherCondition = _mapValue(weather['weatherCondition']);
@@ -614,7 +617,11 @@ class DashboardHomeScreen extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            available ? address : settings.t('Weather could not be loaded for this address.', 'මෙම ලිපිනය සඳහා කාලගුණය ලබා ගත නොහැක.'),
+            district.isEmpty
+                ? settings.t('Add your district to view local weather.', 'ප්‍රදේශීය කාලගුණය බැලීමට ඔබගේ දිස්ත්‍රික්කය එක් කරන්න.')
+                : available
+                    ? district
+                    : settings.t('Weather could not be loaded for this district.', 'මෙම දිස්ත්‍රික්කය සඳහා කාලගුණය ලබා ගත නොහැක.'),
             style: const TextStyle(color: Colors.white70),
           ),
           if (available) ...<Widget>[
@@ -814,7 +821,7 @@ class DashboardHomeScreen extends StatelessWidget {
   /// Expected document: `quality_forecasts/{farmer Firebase UID}`.
   /// The alert contents are generated by the prediction backend; this screen
   /// only renders the complete backend result or an unavailable state.
-  Stream<List<Map<String, dynamic>>> _watchLstmForecastAlerts() {
+  Stream<List<Map<String, dynamic>>> _watchLstmForecastAlerts(String displayId) {
     return FirebaseFirestore.instance.collection('quality_forecasts').doc(userId).snapshots().map(
       (DocumentSnapshot<Map<String, dynamic>> snapshot) {
         final Map<String, dynamic>? forecast = snapshot.data();
@@ -824,6 +831,19 @@ class DashboardHomeScreen extends StatelessWidget {
               'source': 'lstm_prediction_unavailable',
               'title': 'Prediction unavailable',
               'message': 'A complete quality forecast is not available yet.',
+            },
+          ];
+        }
+
+        final String forecastFarmerId = forecast['farmerId']?.toString().trim() ?? '';
+        if (displayId.isEmpty || forecastFarmerId != displayId) {
+          return <Map<String, dynamic>>[
+            <String, dynamic>{
+              'source': 'lstm_prediction_unavailable',
+              'title': 'Prediction unavailable',
+              'message': displayId.isEmpty
+                  ? 'This farmer profile does not have a display ID.'
+                  : 'The latest forecast does not belong to farmer $displayId.',
             },
           ];
         }
@@ -878,8 +898,6 @@ class DashboardHomeScreen extends StatelessWidget {
     final List<dynamic> recommendations = forecast['recommendations'] is List<dynamic>
         ? forecast['recommendations'] as List<dynamic>
         : <dynamic>[];
-    final num? vfa = forecast['predictedVfa'] is num ? forecast['predictedVfa'] as num : null;
-    final num? probability = forecast['riskProbability'] is num ? forecast['riskProbability'] as num : null;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -935,33 +953,6 @@ class DashboardHomeScreen extends StatelessWidget {
                   ),
                 )),
           ],
-          if (!unavailable) ...<Widget>[
-            const SizedBox(height: 8),
-            ExpansionTile(
-              tilePadding: EdgeInsets.zero,
-              childrenPadding: const EdgeInsets.only(bottom: 2),
-              title: Text('View prediction details', style: TextStyle(color: p.textSecondary, fontWeight: FontWeight.w700, fontSize: 13)),
-              children: <Widget>[
-                _predictionDetail(p, 'Forecast date', _stringOrDefault(forecast['forecastDate'], fallback: '--')),
-                _predictionDetail(p, 'Predicted VFA', vfa == null ? '--' : vfa.toStringAsFixed(3)),
-                _predictionDetail(p, 'Risk probability', probability == null ? '--' : '${(probability * 100).toStringAsFixed(0)}%'),
-                _predictionDetail(p, 'Trend', _stringOrDefault(forecast['trend'], fallback: '--')),
-              ],
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _predictionDetail(FarmerPalette p, String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: <Widget>[
-          Text(label, style: TextStyle(color: p.textSecondary, fontSize: 12)),
-          Text(value, style: TextStyle(color: p.textPrimary, fontSize: 12, fontWeight: FontWeight.w700)),
         ],
       ),
     );

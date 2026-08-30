@@ -230,7 +230,59 @@ def plan_route(records, scores_by_id):
         order.append(a)                    # index into `records`
         visited[a] = 1
         cur = a
-    return [(records[i]["farmer_id"], pts[i]) for i in order]
+    return order, pts, dist_matrix
+
+
+# ----------------------------------------------------------------------
+# Route metrics: distance, ETA, and a baseline to compare the DQN against
+# ----------------------------------------------------------------------
+
+# Straight-line distance underestimates road distance. 1.3 is a common
+# planning factor; tune it against odometer readings from a real round.
+ROAD_FACTOR = 1.3
+
+# Average driving speed on rural plantation roads.
+AVG_SPEED_KMH = 30.0
+
+# Time spent at each farm: measuring, filling, paperwork.
+SERVICE_MINUTES_PER_STOP = 10.0
+
+
+def leg_distances(order, dist_matrix):
+    """Depot -> each stop in order -> depot, as road-adjusted kilometres."""
+    legs, prev = [], N                      # N is the depot slot
+    for idx in order:
+        legs.append(float(dist_matrix[prev, idx]) * ROAD_FACTOR)
+        prev = idx
+    legs.append(float(dist_matrix[prev, N]) * ROAD_FACTOR)   # return leg
+    return legs
+
+
+def nearest_neighbour_order(k, dist_matrix):
+    """Shortest-next-hop tour — a fair stand-in for how a route is planned by
+    hand, which is by proximity rather than by spoilage urgency."""
+    remaining, cur, order = set(range(k)), N, []
+    while remaining:
+        nxt = min(remaining, key=lambda i: dist_matrix[cur, i])
+        order.append(nxt)
+        remaining.discard(nxt)
+        cur = nxt
+    return order
+
+
+def risk_exposure(order, legs, scores):
+    """Spoilage risk carried per kilometre before collection.
+
+    Sum of (score x distance travelled before reaching that farm). Lower is
+    better: it falls when urgent farms are collected early. This is what the
+    DQN optimises for, and it is where a quality-aware route should beat a
+    purely distance-greedy one even when it drives further.
+    """
+    total, travelled = 0.0, 0.0
+    for pos, idx in enumerate(order):
+        travelled += legs[pos]
+        total += scores[idx] * travelled
+    return total
 
 # ----------------------------------------------------------------------
 # 3. Endpoints
@@ -271,32 +323,77 @@ def plan_collection():
             {k: v for k, v in rec.items() if k not in non_feature})
 
     try:
-        routed = plan_route(records, scores)
+        order, pts, dist_matrix = plan_route(records, scores)
     except ValueError as e:
         return jsonify(error=str(e)), 400
 
-    stops = [
-        {
+    by_index = [scores[r["farmer_id"]] for r in records]
+
+    dqn_legs = leg_distances(order, dist_matrix)
+    dqn_km = sum(dqn_legs)
+
+    # Same farms, ordered the way a supervisor would by hand: always drive to
+    # the nearest unvisited farm.
+    base_order = nearest_neighbour_order(len(order), dist_matrix)
+    base_legs = leg_distances(base_order, dist_matrix)
+    base_km = sum(base_legs)
+
+    dqn_risk = risk_exposure(order, dqn_legs, by_index)
+    base_risk = risk_exposure(base_order, base_legs, by_index)
+
+    def pct(new, old):
+        return round((old - new) / old * 100, 1) if old else 0.0
+
+    # Cumulative ETA: driving time for each leg plus time spent at each farm.
+    stops, elapsed = [], 0.0
+    for i, idx in enumerate(order):
+        elapsed += dqn_legs[i] / AVG_SPEED_KMH * 60.0
+        fid = records[idx]["farmer_id"]
+        stops.append({
             "order": i + 1,
             "farmer_id": fid,
-            "latitude": pt[0],
-            "longitude": pt[1],
+            "latitude": pts[idx][0],
+            "longitude": pts[idx][1],
             "spoilage_risk_score": round(scores[fid], 1),
-        }
-        for i, (fid, pt) in enumerate(routed)
-    ]
+            "leg_km": round(dqn_legs[i], 2),
+            "eta_minutes": round(elapsed),
+        })
+        elapsed += SERVICE_MINUTES_PER_STOP
+
+    elapsed += dqn_legs[-1] / AVG_SPEED_KMH * 60.0     # drive back to depot
 
     return jsonify(
-        collection_order=[fid for fid, _ in routed],
+        collection_order=[records[i]["farmer_id"] for i in order],
         scores={k: round(v, 1) for k, v in scores.items()},
         depot={"latitude": DEPOT["latitude"], "longitude": DEPOT["longitude"]},
         stops=stops,
         routed_count=len(stops),
+        efficiency={
+            "dqn_km": round(dqn_km, 2),
+            "baseline_km": round(base_km, 2),
+            "baseline_method": "nearest_neighbour",
+            "km_saving_pct": pct(dqn_km, base_km),
+            # Risk exposure is the metric the DQN actually optimises. It can
+            # drive further than the shortest tour and still be the better
+            # route, by reaching the most perishable latex sooner.
+            "dqn_risk_exposure": round(dqn_risk, 1),
+            "baseline_risk_exposure": round(base_risk, 1),
+            "risk_saving_pct": pct(dqn_risk, base_risk),
+            "return_leg_km": round(dqn_legs[-1], 2),
+            "total_minutes": round(elapsed),
+        },
+        assumptions={
+            "road_factor": ROAD_FACTOR,
+            "avg_speed_kmh": AVG_SPEED_KMH,
+            "service_minutes_per_stop": SERVICE_MINUTES_PER_STOP,
+        },
         note=(
             f"Route from DQN over {len(stops)} of {N} slots; scores 0-100. "
             "Unselected farmers are masked. The policy was trained on full "
             f"{N}-farm tours, so a partial route is a heuristic restriction "
-            "of it — do not quote route-efficiency figures without retraining."
+            "of it — do not quote route-efficiency figures without retraining. "
+            "Distances are straight-line x road_factor, not routed road "
+            "distances, so ETAs are estimates."
         ),
     )
 

@@ -66,6 +66,37 @@ class FirestoreService {
         .toList();
   }
 
+  /// Deletes one farmer tapping record and returns the raw document that was
+  /// removed, so the caller can offer an undo.
+  ///
+  /// Firestore has no recycle bin, and this record belongs to the farmer
+  /// rather than the supervisor deleting it. Returning the raw map — not a
+  /// [TappingDetail], which silently drops any field this app does not parse
+  /// — lets [restoreTappingDetail] put the document back exactly as the
+  /// farmer app wrote it.
+  ///
+  /// Returns null when the document is already gone: nothing was deleted, so
+  /// there is nothing to restore.
+  Future<Map<String, dynamic>?> deleteTappingDetail(String id) async {
+    final ref = _db.collection('tapping_details').doc(id);
+
+    final snap = await ref.get();
+    final data = snap.data();
+    if (data == null) return null;
+
+    await ref.delete();
+    return data;
+  }
+
+  /// Writes a deleted tapping record back under its original document id.
+  ///
+  /// Reusing the id matters: the dashboard tracks selections by document id,
+  /// and an undo that minted a new id would leave a duplicate-looking record
+  /// behind.
+  Future<void> restoreTappingDetail(String id, Map<String, dynamic> data) {
+    return _db.collection('tapping_details').doc(id).set(data);
+  }
+
   // Listen to Firestore in real-time
   Stream<LatexSession> watchLiveSession() {
     return _db
@@ -277,9 +308,8 @@ class FirestoreService {
     });
   }
 
-  /// Farm ids already collected today, so a round survives an app restart
-  /// without offering stops the supervisor has finished.
-  Future<Set<String>> getFarmIdsCollectedToday() async {
+  /// Collection records saved today.
+  Future<List<Map<String, dynamic>>> getTodaysCollections() async {
     final now = DateTime.now();
     final startOfDay = DateTime(now.year, now.month, now.day);
 
@@ -288,8 +318,15 @@ class FirestoreService {
         .where('collected_at', isGreaterThanOrEqualTo: startOfDay)
         .get();
 
-    return snap.docs
-        .map((d) => (d.data()['farm_id'] ?? '').toString())
+    return snap.docs.map((d) => d.data()).toList();
+  }
+
+  /// Farm ids already collected today, so a round survives an app restart
+  /// without offering stops the supervisor has finished.
+  Future<Set<String>> getFarmIdsCollectedToday() async {
+    final records = await getTodaysCollections();
+    return records
+        .map((r) => (r['farm_id'] ?? '').toString())
         .where((id) => id.isNotEmpty)
         .toSet();
   }

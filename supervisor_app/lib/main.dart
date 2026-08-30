@@ -44,24 +44,34 @@ class _LatexGuardAppState extends State<LatexGuardApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'LatexGuard — Supervisor',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.theme,
-      // Wrap every route, so the frame (and farmer settings) survive
-      // login/logout navigation and any route pushed from within.
-      builder: (context, child) => FarmerSettingsScope(
-        settings: _farmerSettings,
-        // Farmers who bump up their phone's system font size for
-        // readability shouldn't end up with broken, overflowing layouts —
-        // clamp how far text can scale instead of ignoring the setting.
-        child: MediaQuery.withClampedTextScaling(
-          minScaleFactor: 0.9,
-          maxScaleFactor: 1.25,
-          child: MobileFrame(child: child),
-        ),
-      ),
-      home: const LoginScreen(),
+    // The supervisor screens read AppTheme's static colours directly, so the
+    // mode is set here — immediately before the rebuild that repaints them —
+    // and the whole app is rebuilt when the setting changes.
+    return ListenableBuilder(
+      listenable: _farmerSettings,
+      builder: (context, _) {
+        AppTheme.isDark = _farmerSettings.darkMode;
+
+        return MaterialApp(
+          title: 'LatexGuard — Supervisor',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.theme,
+          // Wrap every route, so the frame (and farmer settings) survive
+          // login/logout navigation and any route pushed from within.
+          builder: (context, child) => FarmerSettingsScope(
+            settings: _farmerSettings,
+            // Farmers who bump up their phone's system font size for
+            // readability shouldn't end up with broken, overflowing layouts —
+            // clamp how far text can scale instead of ignoring the setting.
+            child: MediaQuery.withClampedTextScaling(
+              minScaleFactor: 0.9,
+              maxScaleFactor: 1.25,
+              child: MobileFrame(child: child),
+            ),
+          ),
+          home: const LoginScreen(),
+        );
+      },
     );
   }
 }

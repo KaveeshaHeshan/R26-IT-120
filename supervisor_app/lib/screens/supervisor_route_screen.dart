@@ -23,12 +23,16 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_map/flutter_map.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:latlong2/latlong.dart';
+
+import '../core/app_theme.dart';
 
 import '../models/collection_stop.dart';
 import '../models/sensor_reading.dart';
 import '../models/user_profile.dart' show kFarmerIdField;
 import '../services/firestore_service.dart';
+import 'round_summary_screen.dart';
 import 'sensor_reading_screen.dart';
 import 'verify_screen.dart';
 
@@ -81,6 +85,12 @@ class _SupervisorRouteScreenState extends State<SupervisorRouteScreen> {
   /// Farmer id -> display name, so stops show people rather than "F007".
   Map<String, String> _names = {};
 
+  /// DQN route versus a hand-planned one, from the last plan.
+  RouteEfficiency? _efficiency;
+
+  /// Stops the supervisor could not collect, with the reason given.
+  final Map<String, String> _skipped = {};
+
   @override
   void initState() {
     super.initState();
@@ -96,13 +106,18 @@ class _SupervisorRouteScreenState extends State<SupervisorRouteScreen> {
     }
   }
 
-  /// First stop of the planned order that has not been collected yet.
+  /// First stop of the planned order still to be collected, ignoring any the
+  /// supervisor has skipped.
   CollectionStop? get _nextStop {
     for (final s in _stops) {
-      if (!_completed.contains(s.farmerId)) return s;
+      if (!_completed.contains(s.farmerId) && !_skipped.containsKey(s.farmerId)) {
+        return s;
+      }
     }
     return null;
   }
+
+  bool get _roundFinished => _stops.isNotEmpty && _nextStop == null;
 
   final FirestoreService _firestore = FirestoreService();
 
@@ -280,6 +295,10 @@ class _SupervisorRouteScreenState extends State<SupervisorRouteScreen> {
           (depot['longitude'] as num).toDouble(),
         );
         _stops = stops;
+        _efficiency = data['efficiency'] is Map
+            ? RouteEfficiency.fromJson(
+                (data['efficiency'] as Map).cast<String, dynamic>())
+            : null;
       });
     } catch (e) {
       setState(() => _error = 'Could not plan collection.\n$e');
@@ -396,6 +415,8 @@ class _SupervisorRouteScreenState extends State<SupervisorRouteScreen> {
               ],
             ),
           ),
+          if (_efficiency != null) _buildEfficiencyPanel(_efficiency!),
+          if (_roundFinished) _buildFinishBar(),
           if (_stops.isNotEmpty)
             SizedBox(
               height: 170,
@@ -411,40 +432,240 @@ class _SupervisorRouteScreenState extends State<SupervisorRouteScreen> {
 
   Widget _buildStopTile(CollectionStop s) {
     final done = _completed.contains(s.farmerId);
-    final isNext = !done && identical(s, _nextStop);
+    final skipped = _skipped.containsKey(s.farmerId);
+    final inactive = done || skipped;
+    final isNext = !inactive && identical(s, _nextStop);
 
     return ListTile(
       dense: true,
-      onTap: done ? null : () => _openArrivalSheet(s),
+      onTap: inactive ? null : () => _openArrivalSheet(s),
+      onLongPress: inactive ? null : () => _skipStop(s),
       tileColor: isNext ? Colors.green.withValues(alpha: 0.08) : null,
       leading: CircleAvatar(
-        backgroundColor:
-            done ? Colors.grey : _scoreColour(s.spoilageScore),
+        backgroundColor: done
+            ? Colors.grey
+            : skipped
+                ? Colors.orange.shade300
+                : _scoreColour(s.spoilageScore),
         child: done
             ? const Icon(Icons.check, size: 18, color: Colors.white)
-            : Text('${s.order}',
-                style: const TextStyle(color: Colors.white)),
+            : skipped
+                ? const Icon(Icons.redo, size: 18, color: Colors.white)
+                : Text('${s.order}',
+                    style: const TextStyle(color: Colors.white)),
       ),
       title: Text(
         s.farmerName,
         style: TextStyle(
-          decoration: done ? TextDecoration.lineThrough : null,
-          color: done ? Colors.grey : null,
+          decoration: inactive ? TextDecoration.lineThrough : null,
+          color: inactive ? Colors.grey : null,
           fontWeight: isNext ? FontWeight.w700 : null,
         ),
       ),
       subtitle: Text(
         done
             ? '${s.farmerId} — collected'
-            : isNext
-                ? '${s.farmerId} — next stop'
-                : s.farmerId,
+            : skipped
+                ? '${s.farmerId} — skipped: ${_skipped[s.farmerId]}'
+                : isNext
+                    ? '${s.farmerId} — next stop'
+                    : s.farmerId,
         style: const TextStyle(fontSize: 11),
       ),
-      trailing: Text(
-        'risk ${s.spoilageScore.toStringAsFixed(0)}',
-        style: TextStyle(color: done ? Colors.grey : null),
+      trailing: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Text(
+            'risk ${s.spoilageScore.toStringAsFixed(0)}',
+            style: TextStyle(
+                fontSize: 12, color: inactive ? Colors.grey : null),
+          ),
+          if (s.etaMinutes != null)
+            Text(
+              'ETA ${s.etaLabel}',
+              style: TextStyle(
+                fontSize: 10,
+                color: inactive ? Colors.grey : AppTheme.textSecondary,
+              ),
+            ),
+        ],
       ),
+    );
+  }
+
+  /// Real rounds change — a farmer is out, a road is blocked. Skipping keeps
+  /// the round moving without pretending the stop was collected.
+  Future<void> _skipStop(CollectionStop s) async {
+    const reasons = [
+      'Farmer not available',
+      'Road blocked',
+      'No latex ready',
+      'Vehicle full',
+      'Other',
+    ];
+
+    final reason = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text('Skip ${s.farmerName}?',
+                    style: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.w700)),
+              ),
+            ),
+            for (final r in reasons)
+              ListTile(
+                dense: true,
+                title: Text(r),
+                onTap: () => Navigator.pop(ctx, r),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (reason == null || !mounted) return;
+
+    setState(() => _skipped[s.farmerId] = reason);
+
+    // The remaining farms are a different routing problem, so offer to plan
+    // them again rather than following an order that assumed this stop.
+    final remaining = _stops
+        .where((x) =>
+            !_completed.contains(x.farmerId) && !_skipped.containsKey(x.farmerId))
+        .length;
+    if (remaining >= 2) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('$remaining stops left — re-plan the route?'),
+          action: SnackBarAction(label: 'Re-plan', onPressed: _planCollection),
+          duration: const Duration(seconds: 6),
+        ),
+      );
+    }
+  }
+
+  Widget _buildFinishBar() {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+      width: double.infinity,
+      height: 46,
+      child: ElevatedButton.icon(
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => RoundSummaryScreen(
+              stops: _stops,
+              completed: _completed,
+              skipped: _skipped,
+              efficiency: _efficiency,
+            ),
+          ),
+        ),
+        icon: const Icon(Icons.flag_outlined, size: 18),
+        label: const Text('Finish round — view summary'),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppTheme.primary,
+          foregroundColor: Colors.white,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEfficiencyPanel(RouteEfficiency e) {
+    final good = !e.worseOnBoth;
+    final colour = good ? AppTheme.success : AppTheme.riskMedium;
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: colour.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colour.withValues(alpha: 0.35)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(good ? Icons.insights : Icons.warning_amber_rounded,
+                  size: 16, color: colour),
+              const SizedBox(width: 8),
+              Text('Route efficiency',
+                  style: GoogleFonts.inter(
+                      fontSize: 13, fontWeight: FontWeight.w700, color: colour)),
+              const Spacer(),
+              Text('${e.totalMinutes} min round',
+                  style: GoogleFonts.inter(
+                      fontSize: 11, color: AppTheme.textSecondary)),
+            ],
+          ),
+          const SizedBox(height: 10),
+          _effRow('Distance', '${e.dqnKm.toStringAsFixed(1)} km',
+              '${e.baselineKm.toStringAsFixed(1)} km', e.kmSavingPct),
+          const SizedBox(height: 4),
+          _effRow(
+              'Risk exposure',
+              e.dqnRiskExposure.toStringAsFixed(0),
+              e.baselineRiskExposure.toStringAsFixed(0),
+              e.riskSavingPct),
+          const SizedBox(height: 8),
+          Text(
+            e.worseOnBoth
+                // Losing on the metric it optimises means the policy does not
+                // fit this geometry — worth saying plainly rather than hiding.
+                ? 'The AI route is longer AND carries more spoilage risk than '
+                    'simply driving to the nearest farm each time. The DQN was '
+                    'trained on different coordinates — retrain it before '
+                    'relying on these figures.'
+                : e.drivesFurther
+                    ? 'The AI route drives further but reaches the most '
+                        'perishable latex sooner — distance traded for freshness.'
+                    : 'Compared with driving to the nearest farm each time.',
+            style: GoogleFonts.inter(
+                fontSize: 10.5, color: AppTheme.textSecondary, height: 1.35),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _effRow(String label, String dqn, String base, double pct) {
+    final better = pct > 0;
+    return Row(
+      children: [
+        SizedBox(
+          width: 92,
+          child: Text(label,
+              style: GoogleFonts.inter(
+                  fontSize: 11, color: AppTheme.textSecondary)),
+        ),
+        Text(dqn,
+            style: GoogleFonts.jetBrainsMono(
+                fontSize: 12, fontWeight: FontWeight.w700)),
+        Text('  vs $base',
+            style: GoogleFonts.jetBrainsMono(
+                fontSize: 11, color: AppTheme.textMuted)),
+        const Spacer(),
+        Text(
+          '${better ? '−' : '+'}${pct.abs().toStringAsFixed(1)}%',
+          style: GoogleFonts.jetBrainsMono(
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: better ? AppTheme.success : AppTheme.riskHigh,
+          ),
+        ),
+      ],
     );
   }
 

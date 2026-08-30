@@ -447,6 +447,78 @@ void main() {
     });
   });
 
+  group('CollectionStop ETA', () {
+    CollectionStop stop({num? eta, num? leg}) => CollectionStop.fromBackend({
+          'order': 1,
+          'farmer_id': 'F001',
+          'latitude': 6.7,
+          'longitude': 80.0,
+          'spoilage_risk_score': 50,
+          if (eta != null) 'eta_minutes': eta,
+          if (leg != null) 'leg_km': leg,
+        });
+
+    test('parses leg distance and ETA', () {
+      final s = stop(eta: 95, leg: 12.4);
+      expect(s.etaMinutes, 95);
+      expect(s.legKm, 12.4);
+    });
+
+    test('formats sub-hour and multi-hour ETAs', () {
+      expect(stop(eta: 45).etaLabel, '45m');
+      expect(stop(eta: 95).etaLabel, '1h 35m');
+      expect(stop(eta: 120).etaLabel, '2h 0m');
+    });
+
+    test('shows a dash when the backend sent no ETA', () {
+      expect(stop().etaLabel, '—');
+      expect(stop().legKm, isNull);
+    });
+
+    test('copyWith keeps routing figures', () {
+      final s = stop(eta: 30, leg: 5).copyWith(vfaResult: 0.8);
+      expect(s.etaMinutes, 30);
+      expect(s.legKm, 5);
+    });
+  });
+
+  group('RouteEfficiency', () {
+    RouteEfficiency eff(double km, double risk) => RouteEfficiency.fromJson({
+          'dqn_km': 100.0,
+          'baseline_km': 90.0,
+          'km_saving_pct': km,
+          'dqn_risk_exposure': 500.0,
+          'baseline_risk_exposure': 400.0,
+          'risk_saving_pct': risk,
+          'total_minutes': 240,
+        });
+
+    test('a shorter route is not flagged', () {
+      final e = eff(12.0, 8.0);
+      expect(e.drivesFurther, isFalse);
+      expect(e.worseOnBoth, isFalse);
+    });
+
+    test('driving further but cutting risk is the intended trade', () {
+      // The DQN is quality-aware, so a longer route that reaches perishable
+      // latex sooner is a success, not a regression.
+      final e = eff(-15.0, 20.0);
+      expect(e.drivesFurther, isTrue);
+      expect(e.worseOnBoth, isFalse);
+    });
+
+    test('losing on distance AND risk means the policy does not fit', () {
+      final e = eff(-72.1, -101.7);
+      expect(e.worseOnBoth, isTrue);
+    });
+
+    test('tolerates a response missing efficiency figures', () {
+      final e = RouteEfficiency.fromJson({});
+      expect(e.dqnKm, 0);
+      expect(e.totalMinutes, 0);
+    });
+  });
+
   group('Risk presentation', () {
     test('pending never reads as safe', () {
       // A farm with no sensor reading must not be shown in reassuring green.

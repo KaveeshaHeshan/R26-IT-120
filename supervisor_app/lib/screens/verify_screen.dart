@@ -395,7 +395,7 @@ class _VerifyScreenState extends State<VerifyScreen> {
                           ],
                         ),
 
-                        const Divider(height: 24, color: AppTheme.divider),
+                        Divider(height: 24, color: AppTheme.divider),
 
                         // Grade + VFA row
                         Row(
@@ -488,7 +488,7 @@ class _VerifyScreenState extends State<VerifyScreen> {
                           ],
                         ),
 
-                        const Divider(height: 24, color: AppTheme.divider),
+                        Divider(height: 24, color: AppTheme.divider),
 
                         // Stats grid
                         Row(
@@ -594,11 +594,11 @@ class _VerifyScreenState extends State<VerifyScreen> {
                       fillColor: AppTheme.background,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: AppTheme.divider),
+                        borderSide: BorderSide(color: AppTheme.divider),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: AppTheme.divider),
+                        borderSide: BorderSide(color: AppTheme.divider),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
@@ -691,13 +691,13 @@ class _VerifyScreenState extends State<VerifyScreen> {
                           fillColor: AppTheme.background,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(
+                            borderSide: BorderSide(
                               color: AppTheme.divider,
                             ),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(
+                            borderSide: BorderSide(
                               color: AppTheme.divider,
                             ),
                           ),
@@ -736,11 +736,11 @@ class _VerifyScreenState extends State<VerifyScreen> {
                       fillColor: AppTheme.background,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: AppTheme.divider),
+                        borderSide: BorderSide(color: AppTheme.divider),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: AppTheme.divider),
+                        borderSide: BorderSide(color: AppTheme.divider),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
@@ -756,7 +756,7 @@ class _VerifyScreenState extends State<VerifyScreen> {
                     ),
                   ),
 
-                  const Divider(height: 24, color: AppTheme.divider),
+                  Divider(height: 24, color: AppTheme.divider),
 
                   // Digital Signature
                   Text(
@@ -823,7 +823,7 @@ class _VerifyScreenState extends State<VerifyScreen> {
                             : Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const Icon(
+                                  Icon(
                                     Icons.edit_outlined,
                                     color: AppTheme.textMuted,
                                     size: 24,

@@ -2,10 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// Shared visual system for every standard Material control in the app.
+///
+/// Surface and text colours resolve through [isDark] rather than being
+/// constants. The supervisor screens reference `AppTheme.background` and
+/// friends directly in ~100 places, so switching them here avoids rewriting
+/// every call site to `Theme.of(context)`.
+///
+/// Set [isDark] only from the widget that also rebuilds the app (see
+/// `LatexGuardApp`), otherwise the tree will not repaint.
 class AppTheme {
-  static const Color background = Color(0xFFF4F8F4);
-  static const Color surface = Color(0xFFFFFFFF);
-  static const Color surfaceLight = Color(0xFFE5F2E8);
+  static bool _dark = false;
+
+  static bool get isDark => _dark;
+  static set isDark(bool value) => _dark = value;
+
+  // Brand and semantic colours read the same in both modes — a risk colour
+  // that shifted between themes would undermine the whole point of it.
   static const Color primary = Color(0xFF12613A);
   static const Color primaryGlow = Color(0xFF31A568);
   static const Color accent = Color(0xFFD8F0E0);
@@ -16,19 +28,32 @@ class AppTheme {
   // Pending readings must remain visually distinct from verified-safe latex.
   static const Color riskPending = Color(0xFF757575);
 
-  static const Color textPrimary = Color(0xFF15231A);
-  static const Color textSecondary = Color(0xFF5C6F63);
-  static const Color textMuted = Color(0xFF8A9B90);
-
   static const Color error = riskHigh;
   static const Color success = riskSafe;
-  static const Color divider = Color(0xFFDDE8DF);
+
+  // Surfaces and text follow the selected mode.
+  static Color get background =>
+      _dark ? const Color(0xFF10150F) : const Color(0xFFF4F8F4);
+  static Color get surface =>
+      _dark ? const Color(0xFF1A211B) : const Color(0xFFFFFFFF);
+  static Color get surfaceLight =>
+      _dark ? const Color(0xFF1E3527) : const Color(0xFFE5F2E8);
+
+  static Color get textPrimary =>
+      _dark ? const Color(0xFFE8EFE9) : const Color(0xFF15231A);
+  static Color get textSecondary =>
+      _dark ? const Color(0xFFA8B8AC) : const Color(0xFF5C6F63);
+  static Color get textMuted =>
+      _dark ? const Color(0xFF77877C) : const Color(0xFF8A9B90);
+
+  static Color get divider =>
+      _dark ? const Color(0xFF2A342C) : const Color(0xFFDDE8DF);
 
   static ThemeData get theme => ThemeData(
     useMaterial3: true,
     brightness: Brightness.light,
     scaffoldBackgroundColor: background,
-    colorScheme: const ColorScheme.light(
+    colorScheme: ColorScheme.light(
       surface: surface,
       primary: primary,
       onPrimary: Colors.white,
@@ -50,7 +75,7 @@ class AppTheme {
         fontSize: 20,
         fontWeight: FontWeight.w800,
       ),
-      iconTheme: const IconThemeData(color: textPrimary),
+      iconTheme: IconThemeData(color: textPrimary),
     ),
     cardTheme: CardThemeData(
       color: surface,
@@ -59,15 +84,15 @@ class AppTheme {
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        side: const BorderSide(color: divider),
+        side: BorderSide(color: divider),
       ),
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: surface,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 17),
-      labelStyle: const TextStyle(color: textSecondary),
-      hintStyle: const TextStyle(color: textMuted),
+      labelStyle: TextStyle(color: textSecondary),
+      hintStyle: TextStyle(color: textMuted),
       border: _inputBorder(divider),
       enabledBorder: _inputBorder(divider),
       focusedBorder: _inputBorder(primary, width: 1.8),
@@ -106,7 +131,7 @@ class AppTheme {
       surfaceTintColor: Colors.transparent,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
     ),
-    dividerTheme: const DividerThemeData(color: divider, space: 1),
+    dividerTheme: DividerThemeData(color: divider, space: 1),
   );
 
   static OutlineInputBorder _inputBorder(Color color, {double width = 1}) =>

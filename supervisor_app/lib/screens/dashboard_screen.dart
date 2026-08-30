@@ -7,6 +7,8 @@ import '../models/tapping_detail.dart';
 import '../models/user_profile.dart';
 import '../services/firestore_service.dart';
 import '../widgets/hotspot_indicator.dart';
+// Dark mode is stored in FarmerSettings, which already scopes the whole app.
+import 'farmer_screens/core/farmer_settings.dart';
 import 'login_screen.dart';
 import 'supervisor_route_screen.dart';
 
@@ -30,6 +32,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   /// Ids of the tapping records the supervisor has picked for this round.
   final Set<String> _selected = {};
+
+  /// Ids currently being deleted, so the card shows progress and repeat taps
+  /// are ignored while the write is in flight.
+  final Set<String> _deleting = {};
+
+  /// Free-text filter over farmer names, for when the list gets long.
+  String _query = '';
+  final TextEditingController _searchController = TextEditingController();
+
+  /// Records matching the current search. Selection is tracked by record id,
+  /// so filtering never silently drops a farmer the supervisor already ticked.
+  List<TappingDetail> get _visibleTappings {
+    final q = _query.trim().toLowerCase();
+    if (q.isEmpty) return _tappings;
+    return _tappings
+        .where((t) => t.farmerName.toLowerCase().contains(q))
+        .toList();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   List<TappingDetail> get _selectedTappings =>
       _tappings.where((t) => _selected.contains(t.id)).toList();
@@ -118,6 +144,161 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
+  // ── Deleting a tapping record ────────────────────────
+
+  /// Asks before deleting, naming the record so the wrong row cannot be
+  /// removed by a mistimed tap.
+  Future<void> _confirmDelete(TappingDetail t) async {
+    if (_deleting.contains(t.id)) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: AppTheme.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Text(
+          'Delete this record?',
+          style: GoogleFonts.inter(
+            color: AppTheme.textPrimary,
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Several farmers may submit on the same day, so identify the
+            // record by more than its owner's name.
+            Text(
+              '${t.farmerName} — ${_formatDate(t.date)}',
+              style: GoogleFonts.inter(
+                color: AppTheme.textPrimary,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '${t.latexVolumeL.toStringAsFixed(1)} L from ${t.treesCount} trees',
+              style: GoogleFonts.inter(
+                color: AppTheme.textSecondary,
+                fontSize: 12,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              "This removes the farmer's submission from Firestore. You can "
+              'undo it for a few seconds afterwards.',
+              style: GoogleFonts.inter(
+                color: AppTheme.textSecondary,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.inter(color: AppTheme.textSecondary),
+            ),
+          ),
+          FilledButton.icon(
+            style: FilledButton.styleFrom(backgroundColor: AppTheme.error),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            icon: const Icon(Icons.delete_outline, size: 18),
+            label: Text(
+              'Delete',
+              style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+    await _deleteTapping(t);
+  }
+
+  Future<void> _deleteTapping(TappingDetail t) async {
+    // Remember the position: the list is ordered by tapping date, not by
+    // insertion, so an undo has to put the record back where it was.
+    final index = _tappings.indexWhere((r) => r.id == t.id);
+
+    setState(() => _deleting.add(t.id));
+
+    try {
+      final data = await _service.deleteTappingDetail(t.id);
+      if (!mounted) return;
+
+      setState(() {
+        _deleting.remove(t.id);
+        _tappings.removeWhere((r) => r.id == t.id);
+        // The stats row and the round selection both derive from _tappings
+        // and _selected, so both correct themselves here.
+        _selected.remove(t.id);
+      });
+
+      if (data == null) {
+        _snack('That record had already been deleted.', AppTheme.textMuted);
+        return;
+      }
+
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text("Deleted ${t.farmerName}'s record."),
+            duration: const Duration(seconds: 6),
+            action: SnackBarAction(
+              label: 'Undo',
+              textColor: AppTheme.accent,
+              onPressed: () => _restoreTapping(t, data, index),
+            ),
+          ),
+        );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _deleting.remove(t.id));
+      _snack('Could not delete the record. Please try again.', AppTheme.error);
+    }
+  }
+
+  Future<void> _restoreTapping(
+    TappingDetail t,
+    Map<String, dynamic> data,
+    int index,
+  ) async {
+    try {
+      await _service.restoreTappingDetail(t.id, data);
+      if (!mounted) return;
+
+      setState(() {
+        // The list may have been refreshed while the snackbar was showing, so
+        // the remembered index is a hint rather than a guarantee.
+        var at = index;
+        if (at < 0 || at > _tappings.length) at = _tappings.length;
+        if (!_tappings.any((r) => r.id == t.id)) _tappings.insert(at, t);
+      });
+    } catch (e) {
+      if (!mounted) return;
+      _snack(
+        'Could not restore the record. Pull down to refresh.',
+        AppTheme.error,
+      );
+    }
+  }
+
+  void _snack(String message, Color background) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: background),
+    );
+  }
+
   double get _totalVolume =>
       _tappings.fold(0.0, (sum, t) => sum + t.latexVolumeL);
 
@@ -156,13 +337,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
         actions: [
           const HotspotIndicator(),
-          const SizedBox(width: 8),
+          const SizedBox(width: 4),
+          Builder(
+            builder: (context) {
+              final settings = FarmerSettingsScope.of(context);
+              return IconButton(
+                icon: Icon(
+                  settings.darkMode ? Icons.light_mode : Icons.dark_mode,
+                  color: Colors.white,
+                ),
+                tooltip: settings.darkMode ? 'Light mode' : 'Dark mode',
+                onPressed: () => settings.setDarkMode(!settings.darkMode),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.white),
             tooltip: 'Logout',
             onPressed: _logout,
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 4),
         ],
       ),
       body: _loading
@@ -179,11 +373,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   _buildSupervisorCard(),
                   const SizedBox(height: 16),
                   _buildStatsRow(),
-                  const SizedBox(height: 16),
-                  _buildRouteTile(),
                   const SizedBox(height: 20),
                   _buildSectionHeader(),
                   const SizedBox(height: 10),
+                  if (_tappings.isNotEmpty) ...[
+                    _buildSearchField(),
+                    const SizedBox(height: 10),
+                  ],
                   if (_error != null)
                     _buildMessage(_error!, Icons.error_outline, AppTheme.error)
                   else if (_tappings.isEmpty)
@@ -192,8 +388,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       Icons.inbox_outlined,
                       AppTheme.textMuted,
                     )
+                  else if (_visibleTappings.isEmpty)
+                    _buildMessage(
+                      'No farmers match "$_query".',
+                      Icons.search_off,
+                      AppTheme.textMuted,
+                    )
                   else
-                    ..._tappings.map(_buildTappingCard),
+                    ..._visibleTappings.map(_buildTappingCard),
                 ],
               ),
             ),
@@ -403,74 +605,44 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // ── Collection route entry point ─────────────────────────────
+  // ── Tapping details ──────────────────────────────────────────
 
-  Widget _buildRouteTile() {
-    return InkWell(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const SupervisorRouteScreen()),
-        );
-      },
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: AppTheme.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppTheme.divider),
+  Widget _buildSearchField() {
+    return TextField(
+      controller: _searchController,
+      onChanged: (v) => setState(() => _query = v),
+      style: GoogleFonts.inter(fontSize: 13),
+      decoration: InputDecoration(
+        isDense: true,
+        hintText: 'Search farmers',
+        hintStyle: GoogleFonts.inter(
+            fontSize: 13, color: AppTheme.textMuted),
+        prefixIcon:
+            Icon(Icons.search, size: 18, color: AppTheme.textMuted),
+        suffixIcon: _query.isEmpty
+            ? null
+            : IconButton(
+                icon: Icon(Icons.close, size: 16, color: AppTheme.textMuted),
+                onPressed: () {
+                  _searchController.clear();
+                  setState(() => _query = '');
+                },
+              ),
+        filled: true,
+        fillColor: AppTheme.surface,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: AppTheme.divider),
         ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppTheme.surfaceLight,
-                borderRadius: BorderRadius.circular(9),
-              ),
-              child: const Icon(
-                Icons.route,
-                size: 18,
-                color: AppTheme.primary,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Collection Route',
-                    style: GoogleFonts.inter(
-                      color: AppTheme.textPrimary,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'AI-ordered stops by spoilage risk',
-                    style: GoogleFonts.inter(
-                      color: AppTheme.textSecondary,
-                      fontSize: 11,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const Icon(
-              Icons.chevron_right,
-              size: 20,
-              color: AppTheme.textMuted,
-            ),
-          ],
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: AppTheme.divider),
         ),
       ),
     );
   }
-
-  // ── Tapping details ──────────────────────────────────────────
 
   Widget _buildSectionHeader() {
     final allSelected =
@@ -577,6 +749,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   fontSize: 11,
                 ),
               ),
+              const SizedBox(width: 2),
+              _buildDeleteButton(t),
             ],
           ),
           const SizedBox(height: 12),
@@ -606,7 +780,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           // Time window
           Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.access_time,
                 size: 13,
                 color: AppTheme.textMuted,
@@ -679,6 +853,33 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  /// Delete affordance on a card. The IconButton consumes its own tap, so
+  /// pressing it does not also toggle the card's round selection.
+  Widget _buildDeleteButton(TappingDetail t) {
+    if (_deleting.contains(t.id)) {
+      return const Padding(
+        padding: EdgeInsets.all(8),
+        child: SizedBox(
+          width: 16,
+          height: 16,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: AppTheme.error,
+          ),
+        ),
+      );
+    }
+
+    return IconButton(
+      icon: Icon(Icons.delete_outline, size: 18, color: AppTheme.textMuted),
+      tooltip: 'Delete record',
+      padding: EdgeInsets.zero,
+      visualDensity: VisualDensity.compact,
+      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+      onPressed: () => _confirmDelete(t),
     );
   }
 
@@ -786,7 +987,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             if (count > 0) ...[
               Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.water_drop_outlined,
                     size: 14,
                     color: AppTheme.textSecondary,

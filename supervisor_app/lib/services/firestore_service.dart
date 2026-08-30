@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/farm.dart';
 import '../models/farmer_tapping_snapshot.dart';
+import '../models/sensor_reading.dart';
 import '../models/tapping_detail.dart';
 import '../models/user_profile.dart';
 
@@ -229,6 +230,7 @@ class FirestoreService {
     required double actualAmmoniaL,
     required bool followedStandardAmmoniaRatio,
     required String notes,
+    SensorReading? reading,
   }) async {
     if (!volume.isFinite || volume <= 0) {
       throw ArgumentError.value(
@@ -260,6 +262,16 @@ class FirestoreService {
       'actual_ammonia_l': actualAmmoniaL,
       'actual_ammonia_ratio': actualAmmoniaL / volume,
       'followed_standard_ammonia_ratio': followedStandardAmmoniaRatio,
+      // Full sensor context, so a collection is traceable back to the exact
+      // probe sample that graded it.
+      if (reading != null) ...{
+        'sensor_sample_id':   reading.sampleId,
+        'sensor_ph':          reading.ph,
+        'sensor_temperature': reading.temperature,
+        'sensor_turbidity':   reading.turbidity,
+        'sensor_reading_at':  reading.timestamp?.toIso8601String(),
+        'sensor_captured_at': DateTime.now().toIso8601String(),
+      },
       'notes':        notes,
       'collected_at': FieldValue.serverTimestamp(),
     });

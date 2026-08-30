@@ -4,6 +4,7 @@ import 'package:supervisor_app/core/app_theme.dart';
 import 'package:supervisor_app/models/collection_stop.dart';
 import 'package:supervisor_app/models/farm.dart';
 import 'package:supervisor_app/models/farmer_tapping_snapshot.dart';
+import 'package:supervisor_app/models/sensor_reading.dart';
 import 'package:supervisor_app/models/tapping_detail.dart';
 import 'package:supervisor_app/models/user_profile.dart';
 
@@ -362,6 +363,87 @@ void main() {
       expect(s.farmerName, 'Kamal');
       expect(s.spoilageScore, 33);
       expect(s.latitude, 6.5769);
+    });
+  });
+
+  group('SensorReading', () {
+    // Shape taken from a real Realtime Database `predictions` record.
+    Map<String, dynamic> record({Object? vfa = 0.74, Object? ts}) => {
+          'device_id': 'UNKNOWN',
+          'farmer_id': 'UNKNOWN',
+          'grade': 'B',
+          'pH': 7,
+          'sample_id': 'LAT_20260821123044',
+          'temperature': 30.2,
+          'timestamp': ts ?? '2026-08-21T12:30:44.284728',
+          'turbidity': 2671.64844,
+          if (vfa != null) 'vfa': vfa,
+        };
+
+    test('parses a device record', () {
+      final r = SensorReading.fromMap('-P-Y6nSC', record());
+
+      expect(r.vfa, 0.74);
+      expect(r.grade, 'B');
+      expect(r.ph, 7.0); // written as an int
+      expect(r.temperature, 30.2);
+      expect(r.turbidity, 2671.64844);
+      expect(r.sampleId, 'LAT_20260821123044');
+      // The device sends microsecond precision; parsing preserves it.
+      expect(r.timestamp, DateTime(2026, 8, 21, 12, 30, 44, 284, 728));
+      expect(r.hasVfa, isTrue);
+    });
+
+    test('vfa is null rather than zero when absent', () {
+      // A defaulted 0.0 would read as pristine latex and be captured as fact.
+      final r = SensorReading.fromMap('k', record(vfa: null));
+      expect(r.vfa, isNull);
+      expect(r.hasVfa, isFalse);
+    });
+
+    test('accepts a numeric value sent as a string', () {
+      final r = SensorReading.fromMap('k', record(vfa: '0.91'));
+      expect(r.vfa, 0.91);
+    });
+
+    test('tolerates alternative pH casing', () {
+      final r = SensorReading.fromMap('k', {'ph': 6.4});
+      expect(r.ph, 6.4);
+    });
+
+    test('survives a completely empty record', () {
+      final r = SensorReading.fromMap('k', {});
+      expect(r.vfa, isNull);
+      expect(r.grade, isNull);
+      expect(r.timestamp, isNull);
+      expect(r.sampleId, isEmpty);
+    });
+  });
+
+  group('SensorReading staleness', () {
+    SensorReading at(DateTime t) =>
+        SensorReading.fromMap('k', {'vfa': 0.7, 'timestamp': t.toIso8601String()});
+
+    final now = DateTime(2026, 8, 29, 12, 0);
+
+    test('a fresh reading is not stale', () {
+      expect(at(now.subtract(const Duration(minutes: 2))).isStale(now), isFalse);
+    });
+
+    test('an old reading is stale — it may be the previous farm', () {
+      expect(at(now.subtract(const Duration(hours: 3))).isStale(now), isTrue);
+    });
+
+    test('a reading with no timestamp counts as stale', () {
+      // Unknown age cannot be trusted to belong to this visit.
+      final r = SensorReading.fromMap('k', {'vfa': 0.7});
+      expect(r.isStale(now), isTrue);
+      expect(r.ageFrom(now), isNull);
+    });
+
+    test('clock skew does not produce a negative age', () {
+      final future = at(now.add(const Duration(minutes: 5)));
+      expect(future.ageFrom(now), Duration.zero);
     });
   });
 

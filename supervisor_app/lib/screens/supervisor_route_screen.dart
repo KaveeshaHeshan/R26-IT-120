@@ -26,8 +26,10 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../models/collection_stop.dart';
+import '../models/sensor_reading.dart';
 import '../models/user_profile.dart' show kFarmerIdField;
 import '../services/firestore_service.dart';
+import 'sensor_reading_screen.dart';
 import 'verify_screen.dart';
 
 // Backend address.
@@ -513,10 +515,27 @@ class _SupervisorRouteScreenState extends State<SupervisorRouteScreen> {
   }
 
   Future<void> _verifyStop(CollectionStop s) async {
+    // Take a sensor reading first. Readings carry no farm identity, so
+    // capturing one here is what links it to this stop. Skipping is allowed —
+    // the sensor may be unavailable, and a collection must still be recordable.
+    final reading = await Navigator.push<SensorReading?>(
+      context,
+      MaterialPageRoute(builder: (_) => SensorReadingScreen(stop: s)),
+    );
+    if (!mounted) return;
+
+    final stop = reading == null
+        ? s
+        : s.copyWith(vfaResult: reading.vfa, grade: reading.grade);
+
     await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => VerifyScreen(farm: s, stopNumber: s.order),
+        builder: (_) => VerifyScreen(
+          farm: stop,
+          stopNumber: stop.order,
+          reading: reading,
+        ),
       ),
     );
     // VerifyScreen writes to `collections` (or the offline queue), so re-read

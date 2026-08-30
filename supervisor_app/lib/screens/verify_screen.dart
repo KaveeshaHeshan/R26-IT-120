@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../core/app_theme.dart';
 import '../models/collection_stop.dart';
+import '../models/sensor_reading.dart';
 import '../services/firestore_service.dart';
 import '../widgets/hotspot_indicator.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -11,7 +12,17 @@ class VerifyScreen extends StatefulWidget {
   final CollectionStop farm;
   final int stopNumber;
 
-  const VerifyScreen({super.key, required this.farm, required this.stopNumber});
+  /// Sensor reading captured on arrival, or null when the supervisor skipped
+  /// it. Its pH/temperature/turbidity are stored alongside the collection for
+  /// traceability from probe to payment.
+  final SensorReading? reading;
+
+  const VerifyScreen({
+    super.key,
+    required this.farm,
+    required this.stopNumber,
+    this.reading,
+  });
 
   @override
   State<VerifyScreen> createState() => _VerifyScreenState();
@@ -134,6 +145,7 @@ class _VerifyScreenState extends State<VerifyScreen> {
             actualAmmoniaL: actualAmmonia,
             followedStandardAmmoniaRatio: _followedStandardAmmoniaRatio!,
             notes: _notesController.text.trim(),
+            reading: widget.reading,
           );
           savedOnline = true;
         } catch (_) {

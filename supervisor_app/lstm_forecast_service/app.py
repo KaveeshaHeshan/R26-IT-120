@@ -31,6 +31,19 @@ RISK_PROBABILITY_THRESHOLD = METADATA["risk_probability_threshold"]
 app = Flask(__name__)
 
 
+@app.after_request
+def add_cors_headers(resp):
+    """Same rationale as backend/app.py's identical hook: Flutter web issues a
+    real cross-origin request and a JSON content-type triggers a CORS
+    preflight, which a bare Flask dev server does not answer with the right
+    headers by default. Restrict the origin before exposing this beyond a
+    local dev network."""
+    resp.headers["Access-Control-Allow-Origin"] = "*"
+    resp.headers["Access-Control-Allow-Headers"] = "Content-Type"
+    resp.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+    return resp
+
+
 def _numeric(value, field_name):
     try:
         return float(value)
@@ -358,4 +371,8 @@ def forecast():
 
 
 if __name__ == "__main__":
-    app.run(host=os.getenv("HOST", "0.0.0.0"), port=int(os.getenv("PORT", "5000")), debug=True)
+    # Default 5001, not 5000: backend/app.py (spoilage/route service) already
+    # uses 5000, and Flutter's FirestoreService.triggerQualityForecast()
+    # calls this service on 5001 by default. Keep these in sync if you
+    # override PORT / kForecastServiceBaseUrl.
+    app.run(host=os.getenv("HOST", "0.0.0.0"), port=int(os.getenv("PORT", "5001")), debug=True)

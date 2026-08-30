@@ -25,6 +25,18 @@ service cloud.firestore {
       return !request.resource.data.keys().hasAny(['modelFarmerId']);
     }
 
+    // Sequential F0xx/S0xx display-id counters, one per role. A signed-in
+    // user (including one mid-signup, before their `users` doc exists) may
+    // only ever move the value forward by exactly 1 — never set it directly,
+    // never skip ahead, never touch any other field. This makes the counter
+    // safe to write from an untrusted client while still guaranteeing unique,
+    // gap-free ids across concurrent signups (Firestore transactions
+    // serialise the read-modify-write).
+    function isSingleForwardStep() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['value'])
+        && request.resource.data.value == resource.data.value + 1;
+    }
+
     // A farmer can create and maintain only their own profile document.
     match /users/{userId} {
       allow create: if (ownsUser(userId) && farmerCreatesWithoutModelIdentity())
@@ -39,6 +51,15 @@ service cloud.firestore {
       match /tasks/{taskId} {
         allow read, create, update, delete: if ownsUser(userId);
       }
+    }
+
+    // F0xx/S0xx display-id sequence counters. See isSingleForwardStep().
+    match /counters/{counterId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.value == 1
+        && request.resource.data.keys().hasOnly(['value']);
+      allow update: if signedIn() && isSingleForwardStep();
+      allow delete: if false;
     }
 
     // Every tapping record is owned by its userId field.
@@ -66,6 +87,13 @@ service cloud.firestore {
     // The Admin SDK writes forecast results; each farmer may read only their
     // own farmer-facing forecast.
     match /quality_forecasts/{userId} {
+      allow read: if ownsUser(userId);
+      allow write: if false;
+    }
+
+    // The Admin SDK (grade_reason_service) writes the Grade-C explanation;
+    // each farmer may read only their own. Same shape as quality_forecasts.
+    match /grade_alerts/{userId} {
       allow read: if ownsUser(userId);
       allow write: if false;
     }

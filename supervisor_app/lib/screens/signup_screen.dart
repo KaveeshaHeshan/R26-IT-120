@@ -45,6 +45,38 @@ class _SignUpScreenState extends State<SignUpScreen> {
   /// DropdownButtonFormField assert at build time.
   String selectedExperience = kExperienceOptions.first;
 
+  /// Atomically reserves the next `F0xx` / `S0xx` display id.
+  ///
+  /// Backed by a `counters/{role}_seq` document holding a single integer.
+  /// Firestore transactions serialise concurrent signups so two farmers can
+  /// never be handed the same number, and the security rules only allow the
+  /// value to move forward by exactly 1 per write (see firestore.rules) — a
+  /// signed-in-but-unverified user cannot use this to tamper with the count.
+  ///
+  /// This id is a general-purpose account/display id only. It intentionally
+  /// has no relationship to `modelFarmerId`, which is a supervisor-assigned
+  /// mapping into the LSTM's fixed 12-farmer training set.
+  Future<String> _nextDisplayId(String role) async {
+    final String prefix = role == 'supervisor' ? 'S' : 'F';
+    final counterRef = FirebaseFirestore.instance
+        .collection('counters')
+        .doc('${role}_seq');
+
+    final int next = await FirebaseFirestore.instance.runTransaction<int>((tx) async {
+      final snapshot = await tx.get(counterRef);
+      final int current = snapshot.exists ? ((snapshot.data()?['value'] ?? 0) as num).toInt() : 0;
+      final int updated = current + 1;
+      if (snapshot.exists) {
+        tx.update(counterRef, {'value': updated});
+      } else {
+        tx.set(counterRef, {'value': updated});
+      }
+      return updated;
+    });
+
+    return '$prefix${next.toString().padLeft(3, '0')}';
+  }
+
   Future<void> signUpUser() async {
     if (nameController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('⚠️ Please enter your full name!'), backgroundColor: Colors.orange));
@@ -98,12 +130,21 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
       String uid = userCredential.user!.uid;
 
+      // Human-readable account id (F001, F002... / S001, S002...), separate
+      // from the Firebase Auth uid used as the document id and separate from
+      // `modelFarmerId` (the ML model's own closed set of 12 trained farmer
+      // identities, assigned only by a supervisor — see user_profile.dart).
+      // This is a *display/account* id only; it must never be treated as, or
+      // written to, `modelFarmerId`.
+      final String displayId = await _nextDisplayId(selectedRole);
+
       Map<String, dynamic> userData = {
         'name': nameController.text.trim(),
         'nic': nicController.text.trim(),
         'phone': phoneController.text.trim(),
         'email': emailController.text.trim(),
         'role': selectedRole,
+        'displayId': displayId,
         'isNew': true,
         'createdAt': DateTime.now().toString(),
       };

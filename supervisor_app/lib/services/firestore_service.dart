@@ -1,16 +1,77 @@
+import 'dart:convert';
+import 'dart:math' as math;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:http/http.dart' as http;
 import '../models/farm.dart';
 import '../models/farmer_tapping_snapshot.dart';
 import '../models/sensor_reading.dart';
 import '../models/tapping_detail.dart';
 import '../models/user_profile.dart';
 
+/// Base URL of `lstm_forecast_service/app.py`. Same "phone can't reach
+/// localhost" caveat as `kBackendBaseUrl` in supervisor_route_screen.dart —
+/// replace with the laptop's LAN IP for a physical device.
+///
+/// Runs on a different port from `backend/app.py` (spoilage/route service)
+/// on purpose, so the two Flask processes can run side by side.
+const String kForecastServiceBaseUrl = 'http://localhost:5001';
+
+/// Base URL of `grade_reason_service/app.py`. Same "phone can't reach
+/// localhost" caveat as the other two base URLs — replace with the
+/// laptop's LAN IP for a physical device. Runs on its own port so all
+/// three Flask processes (spoilage/route, VFA forecast, grade reason)
+/// can run side by side.
+const String kGradeReasonServiceBaseUrl = 'http://localhost:5002';
+
+/// Result of attempting to auto-trigger a quality forecast after a Grade C
+/// collection. This is surfaced to the supervisor UI so a missing-data
+/// outcome reads as an explained limitation, not a silent no-op or a crash.
+enum ForecastTriggerOutcome { skippedNotGradeC, queued, insufficientData, serviceUnreachable }
+
+class ForecastTriggerResult {
+  final ForecastTriggerOutcome outcome;
+  final String message;
+  const ForecastTriggerResult(this.outcome, this.message);
+}
+
+/// Result of attempting to auto-trigger a Grade-C reason explanation.
+/// [insufficientData] covers the model's actual required inputs
+/// (pH/temperature/turbidity) being missing from this reading — it does
+/// not mean VFA is missing, since the model does not use VFA at all
+/// (see grade_reason_service/README.md).
+enum GradeReasonTriggerOutcome { skippedNotGradeC, queued, insufficientData, serviceUnreachable }
+
+class GradeReasonTriggerResult {
+  final GradeReasonTriggerOutcome outcome;
+  final String message;
+  const GradeReasonTriggerResult(this.outcome, this.message);
+}
+
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
   static const String _collection = 'latex_sessions';
   static const String _document   = 'live_session';
+
+  /// Sequence/context fields the deployed LSTM requires (model/metadata.json)
+  /// that the app's current Firestore schema does not capture anywhere yet:
+  /// no lab DRC reading, no weather (temperature/humidity/rainfall), no
+  /// storage duration, no collection-gap hours, and no legacy
+  /// latex-quantity-in-kg. Per the model's own data-integrity rules, these
+  /// are never estimated or defaulted — see lstm_forecast_service/README.md.
+  /// Until a real source for these exists, forecast calls will correctly
+  /// come back `insufficient_history` / `prediction_data_incomplete` rather
+  /// than a fabricated prediction.
+  static const List<String> kUnavailableSequenceFields = <String>[
+    'drc_value',
+    'temperature_c',
+    'humidity_percent',
+    'rainfall_mm',
+    'storage_duration_hours',
+    'collection_gap_hours',
+    'latex_quantity_kg',
+  ];
 
   // ── Dashboard ────────────────────────────────────────────────
 
@@ -306,10 +367,197 @@ class FirestoreService {
       'notes':        notes,
       'collected_at': FieldValue.serverTimestamp(),
     });
+
+    if (grade == 'C') {
+      // Best-effort: a grade-C collection should prompt a fresh quality
+      // forecast for the farmer's dashboard, but a slow/offline forecast
+      // service must never fail or delay the collection save that already
+      // succeeded above.
+      try {
+        await triggerQualityForecast(farmId);
+      } catch (_) {
+        // Swallowed deliberately — see triggerQualityForecast's own
+        // exception handling for why, and call it directly for a status.
+      }
+
+      // Same best-effort contract as above, for the separate "why is this
+      // Grade C" explanation. Needs the sensor's pH/temperature/turbidity
+      // — those are the anomaly model's actual inputs, not VFA (see
+      // triggerGradeReason's doc comment) — so it's a no-op without a
+      // reading attached.
+      if (reading != null) {
+        try {
+          await triggerGradeReason(farmId, reading, vfa: vfaResult, grade: grade);
+        } catch (_) {
+          // Swallowed deliberately, same rationale as triggerQualityForecast.
+        }
+      }
+    }
   }
 
+<<<<<<< Updated upstream
   /// Collection records saved today.
   Future<List<Map<String, dynamic>>> getTodaysCollections() async {
+=======
+  /// Calls the LSTM forecast service for [userId] and asks it to persist the
+  /// result to `quality_forecasts/{userId}` (write access from the client is
+  /// blocked by firestore.rules; only the service's Admin SDK identity may
+  /// write that document — see firestore.rules and lstm_forecast_service/app.py).
+  ///
+  /// Builds `sequenceRecords` from this farmer's real `collections` history.
+  /// It never invents a value for a field the schema doesn't capture yet
+  /// (see [kUnavailableSequenceFields]); when required fields are missing,
+  /// the service correctly refuses to predict and this returns
+  /// [ForecastTriggerOutcome.insufficientData] with the service's own
+  /// explanation, rather than silently producing no forecast at all.
+  Future<ForecastTriggerResult> triggerQualityForecast(String userId) async {
+    try {
+      final history = await _db
+          .collection('collections')
+          .where('farm_id', isEqualTo: userId)
+          .orderBy('collected_at', descending: true)
+          .limit(30)
+          .get();
+
+      final List<Map<String, dynamic>> sequenceRecords = history.docs.map((doc) {
+        final data = doc.data();
+        final Timestamp? collectedAt = data['collected_at'] as Timestamp?;
+        return <String, dynamic>{
+          // Only fields this schema genuinely records. Missing keys are left
+          // out entirely rather than defaulted — see kUnavailableSequenceFields.
+          'vfa_value': data['vfa_result'],
+          'ammonia_amount_ml': (data['actual_ammonia_l'] is num)
+              ? (data['actual_ammonia_l'] as num) * 1000
+              : null,
+          'ammonia_added': (data['actual_ammonia_l'] is num) ? ((data['actual_ammonia_l'] as num) > 0 ? 1 : 0) : null,
+          'capturedAt': collectedAt?.toDate().toIso8601String(),
+        };
+      }).toList();
+
+      final DateTime now = DateTime.now();
+      final Map<String, dynamic> context = <String, dynamic>{
+        'tapping_hour': now.hour,
+        'doy_sin': _doySin(now),
+        'doy_cos': _doyCos(now),
+        // 'temperature_c', 'humidity_percent', 'rainfall_mm',
+        // 'storage_duration_hours', 'collection_gap_hours',
+        // 'latex_quantity_kg', 'drc_value', 'days_since_last':
+        // intentionally omitted — not captured by this app's schema yet.
+      };
+
+      final response = await http.post(
+        Uri.parse('$kForecastServiceBaseUrl/forecast'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(<String, dynamic>{
+          'userId': userId,
+          'sequenceRecords': sequenceRecords,
+          'context': context,
+          'forecastDate': now.toIso8601String(),
+          'saveToFirestore': true,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        return const ForecastTriggerResult(
+          ForecastTriggerOutcome.queued,
+          'Quality forecast updated for this farmer.',
+        );
+      }
+
+      // The service replies 422 with a precise reason (insufficient_history
+      // or prediction_data_incomplete) rather than a prediction — surface
+      // that reason as-is instead of a generic failure.
+      String reason = 'The forecast service could not run a prediction.';
+      try {
+        final body = jsonDecode(response.body) as Map<String, dynamic>;
+        reason = (body['message'] ?? reason).toString();
+      } catch (_) {
+        // Non-JSON error body; keep the generic reason.
+      }
+      return ForecastTriggerResult(ForecastTriggerOutcome.insufficientData, reason);
+    } catch (_) {
+      return const ForecastTriggerResult(
+        ForecastTriggerOutcome.serviceUnreachable,
+        'Could not reach the forecast service. Is lstm_forecast_service running?',
+      );
+    }
+  }
+
+  /// Calls the Grade-C reason service for [userId] and asks it to persist
+  /// the explanation to `grade_alerts/{userId}` (client writes to that
+  /// collection are blocked in firestore.rules; only the service's Admin
+  /// SDK identity may write it — same shape as quality_forecasts).
+  ///
+  /// The underlying model (grade_reason_service/README.md) was trained on
+  /// pH, temperature and turbidity only — VFA is not one of its inputs, so
+  /// [vfa] and [grade] are sent purely as context for display, never as
+  /// something the model reasons over. [reading] supplies the three values
+  /// the model actually needs; a reading missing any of them correctly
+  /// comes back as [GradeReasonTriggerOutcome.insufficientData] rather than
+  /// a fabricated explanation.
+  Future<GradeReasonTriggerResult> triggerGradeReason(
+    String userId,
+    SensorReading reading, {
+    double? vfa,
+    String? grade,
+  }) async {
+    if (reading.ph == null || reading.temperature == null || reading.turbidity == null) {
+      return const GradeReasonTriggerResult(
+        GradeReasonTriggerOutcome.insufficientData,
+        'This reading is missing pH, temperature or turbidity, so the '
+        'anomaly model cannot explain the grade.',
+      );
+    }
+
+    try {
+      final response = await http.post(
+        Uri.parse('$kGradeReasonServiceBaseUrl/grade-reason'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(<String, dynamic>{
+          'userId': userId,
+          'ph': reading.ph,
+          'temperature': reading.temperature,
+          'turbidity': reading.turbidity,
+          if (vfa != null) 'vfa': vfa,
+          if (grade != null) 'grade': grade,
+          'saveToFirestore': true,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        return const GradeReasonTriggerResult(
+          GradeReasonTriggerOutcome.queued,
+          'Grade explanation updated for this farmer.',
+        );
+      }
+
+      String reason = 'The grade-reason service could not run a prediction.';
+      try {
+        final body = jsonDecode(response.body) as Map<String, dynamic>;
+        reason = (body['message'] ?? reason).toString();
+      } catch (_) {
+        // Non-JSON error body; keep the generic reason.
+      }
+      return GradeReasonTriggerResult(GradeReasonTriggerOutcome.insufficientData, reason);
+    } catch (_) {
+      return const GradeReasonTriggerResult(
+        GradeReasonTriggerOutcome.serviceUnreachable,
+        'Could not reach the grade-reason service. Is grade_reason_service running?',
+      );
+    }
+  }
+
+  static int _dayOfYear(DateTime d) =>
+      d.difference(DateTime(d.year, 1, 1)).inDays;
+
+  static double _doySin(DateTime d) => math.sin(2 * math.pi * _dayOfYear(d) / 365.25);
+
+  static double _doyCos(DateTime d) => math.cos(2 * math.pi * _dayOfYear(d) / 365.25);
+
+  /// Farm ids already collected today, so a round survives an app restart
+  /// without offering stops the supervisor has finished.
+  Future<Set<String>> getFarmIdsCollectedToday() async {
+>>>>>>> Stashed changes
     final now = DateTime.now();
     final startOfDay = DateTime(now.year, now.month, now.day);
 

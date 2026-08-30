@@ -789,6 +789,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _profileHeader(FarmerPalette p, FarmerSettings settings, Map<String, dynamic> data) {
     final String name = _stringValue(data['name']);
+    final String displayId = _stringValue(data['displayId']);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -821,11 +822,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Text(
-                  name == '-' ? 'Farmer' : name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w900),
+                Row(
+                  children: <Widget>[
+                    Flexible(
+                      child: Text(
+                        name == '-' ? 'Farmer' : name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w900),
+                      ),
+                    ),
+                    if (displayId != '-') ...<Widget>[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.18),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          displayId,
+                          style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
                 const SizedBox(height: 5),
                 Text(

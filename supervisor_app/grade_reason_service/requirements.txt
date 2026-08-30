@@ -1,0 +1,7 @@
+Flask>=3.0,<4.0
+firebase-admin>=6.0,<7.0
+joblib>=1.5,<2.0
+numpy>=1.26,<3.0
+# Required by the saved model/scaler artifacts. Do not upgrade until the
+# artifacts are regenerated from the Colab notebook with the newer version.
+scikit-learn==1.6.1

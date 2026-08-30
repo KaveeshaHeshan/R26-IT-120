@@ -218,7 +218,14 @@ class DashboardHomeScreen extends StatelessWidget {
         return StreamBuilder<List<Map<String, dynamic>>>(
           stream: _watchLstmForecastAlerts(),
           builder: (BuildContext context, AsyncSnapshot<List<Map<String, dynamic>>> modelSnapshot) {
-            final List<dynamic> alerts = <dynamic>[...savedAlerts, ...(modelSnapshot.data ?? <Map<String, dynamic>>[])];
+            return StreamBuilder<List<Map<String, dynamic>>>(
+              stream: _watchGradeReasonAlerts(),
+              builder: (BuildContext context, AsyncSnapshot<List<Map<String, dynamic>>> gradeSnapshot) {
+            final List<dynamic> alerts = <dynamic>[
+              ...savedAlerts,
+              ...(modelSnapshot.data ?? <Map<String, dynamic>>[]),
+              ...(gradeSnapshot.data ?? <Map<String, dynamic>>[]),
+            ];
             final int notificationCount = _notificationCount(data, alerts);
 
             return ListView(
@@ -418,6 +425,8 @@ class DashboardHomeScreen extends StatelessWidget {
               },
             ),
           ],
+            );
+              },
             );
           },
         );
@@ -733,6 +742,10 @@ class DashboardHomeScreen extends StatelessWidget {
       return _forecastAlertTile(p, alert);
     }
 
+    if (alert is Map<String, dynamic> && alert['source'] == 'grade_c_reason') {
+      return _gradeReasonAlertTile(p, alert);
+    }
+
     String text = 'New farm alert';
     String? subtitle;
     String severity = '';
@@ -857,6 +870,88 @@ class DashboardHomeScreen extends StatelessWidget {
     );
   }
 
+  /// Reads the Grade-C anomaly explanation written by
+  /// `grade_reason_service/app.py` to `grade_alerts/{userId}`. That
+  /// document only exists once a Grade C collection has triggered the
+  /// service (firestore_service.dart's `saveCollection` -> `triggerGradeReason`),
+  /// so a missing document here just means no Grade C explanation is
+  /// pending -- it renders no alert at all, unlike the VFA forecast stream
+  /// which always shows something.
+  Stream<List<Map<String, dynamic>>> _watchGradeReasonAlerts() {
+    return FirebaseFirestore.instance.collection('grade_alerts').doc(userId).snapshots().map(
+      (DocumentSnapshot<Map<String, dynamic>> snapshot) {
+        final Map<String, dynamic>? alert = snapshot.data();
+        if (alert == null || alert['reason'] == null) return <Map<String, dynamic>>[];
+        return <Map<String, dynamic>>[
+          <String, dynamic>{...alert, 'source': 'grade_c_reason'},
+        ];
+      },
+    );
+  }
+
+  Widget _gradeReasonAlertTile(FarmerPalette p, Map<String, dynamic> alert) {
+    final bool isAnomaly = alert['is_anomaly'] == true;
+    final Color color = isAnomaly ? p.danger : p.warning;
+    final List<dynamic> deviations =
+        alert['deviations'] is List<dynamic> ? alert['deviations'] as List<dynamic> : <dynamic>[];
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withOpacity(p.isDark ? 0.14 : 0.07),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: color.withOpacity(0.30)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Container(
+                padding: const EdgeInsets.all(9),
+                decoration: BoxDecoration(color: color.withOpacity(0.16), shape: BoxShape.circle),
+                child: Icon(Icons.priority_high_rounded, color: color, size: 21),
+              ),
+              const SizedBox(width: 11),
+              Expanded(
+                child: Text(
+                  'Why was your latex Grade C?',
+                  style: TextStyle(color: p.textPrimary, fontSize: 16, fontWeight: FontWeight.w900),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(_stringOrDefault(alert['reason']), style: TextStyle(color: p.textSecondary, height: 1.38)),
+          if (deviations.isNotEmpty) ...<Widget>[
+            const SizedBox(height: 12),
+            ...deviations.map((dynamic d) {
+              final Map<String, dynamic> dev = _mapValue(d);
+              final num? z = dev['z_score'] is num ? dev['z_score'] as num : null;
+              final String feature = _stringOrDefault(dev['feature'], fallback: '--');
+              final num? value = dev['value'] is num ? dev['value'] as num : null;
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: <Widget>[
+                    Text(feature, style: TextStyle(color: p.textSecondary, fontSize: 12)),
+                    Text(
+                      value == null ? '--' : '${value.toStringAsFixed(2)}${z == null ? '' : ' (z=${z.toStringAsFixed(2)})'}',
+                      style: TextStyle(color: p.textPrimary, fontSize: 12, fontWeight: FontWeight.w700),
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _forecastAlertTile(FarmerPalette p, Map<String, dynamic> forecast) {
     final String source = _stringOrDefault(forecast['source'], fallback: '');
     final String risk = _stringOrDefault(forecast['riskLevel'], fallback: 'unavailable').toLowerCase();
@@ -880,6 +975,8 @@ class DashboardHomeScreen extends StatelessWidget {
         : <dynamic>[];
     final num? vfa = forecast['predictedVfa'] is num ? forecast['predictedVfa'] as num : null;
     final num? probability = forecast['riskProbability'] is num ? forecast['riskProbability'] as num : null;
+    final Map<String, dynamic> thresholds = _mapValue(forecast['thresholds']);
+    final num vfaThreshold = thresholds['vfa'] is num ? thresholds['vfa'] as num : 0.06;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -913,6 +1010,10 @@ class DashboardHomeScreen extends StatelessWidget {
               ),
             ],
           ),
+          if (!unavailable && vfa != null) ...<Widget>[
+            const SizedBox(height: 16),
+            _vfaRateGauge(p, vfa: vfa.toDouble(), threshold: vfaThreshold.toDouble(), color: color),
+          ],
           if (!unavailable && _stringOrDefault(forecast['reason'], fallback: '').isNotEmpty) ...<Widget>[
             const SizedBox(height: 16),
             Text('Why am I seeing this?', style: TextStyle(color: p.textPrimary, fontWeight: FontWeight.w800)),
@@ -951,6 +1052,88 @@ class DashboardHomeScreen extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+
+  /// A visual read of the predicted VFA (Volatile Fatty Acid) rate against
+  /// the safe threshold — the same numbers already in "Why am I seeing
+  /// this?", but as a bar someone can read at a glance instead of parsing a
+  /// sentence. VFA is the chemical freshness figure that separates Grade A
+  /// latex from Grade C: the higher it climbs past the threshold, the more
+  /// the latex has started to spoil.
+  Widget _vfaRateGauge(FarmerPalette p, {required double vfa, required double threshold, required Color color}) {
+    // Scale the bar to 2x the threshold so "at the line" sits at the
+    // midpoint and there is still room to show how far over it a bad
+    // reading is, without the bar maxing out for every alert.
+    final double scaleMax = threshold * 2 <= 0 ? 1.0 : threshold * 2;
+    final double fraction = (vfa / scaleMax).clamp(0.0, 1.0);
+    final double thresholdFraction = (threshold / scaleMax).clamp(0.0, 1.0);
+    final bool overThreshold = vfa >= threshold;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: <Widget>[
+            Text('VFA rate', style: TextStyle(color: p.textPrimary, fontWeight: FontWeight.w800, fontSize: 13)),
+            Row(
+              children: <Widget>[
+                Text(vfa.toStringAsFixed(3), style: TextStyle(color: color, fontWeight: FontWeight.w900, fontSize: 14)),
+                const SizedBox(width: 4),
+                Text(
+                  overThreshold ? 'above safe limit' : 'within safe limit',
+                  style: TextStyle(color: p.textSecondary, fontSize: 11, fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            final double width = constraints.maxWidth;
+            return SizedBox(
+              height: 14,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: <Widget>[
+                  // Track
+                  Container(
+                    height: 8,
+                    margin: const EdgeInsets.only(top: 3),
+                    decoration: BoxDecoration(
+                      color: p.border.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                  ),
+                  // Filled portion up to the predicted VFA value
+                  Container(
+                    height: 8,
+                    width: width * fraction,
+                    margin: const EdgeInsets.only(top: 3),
+                    decoration: BoxDecoration(
+                      color: color,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                  ),
+                  // Threshold marker: a small tick where the safe-limit line sits
+                  Positioned(
+                    left: (width * thresholdFraction - 1).clamp(0.0, width),
+                    top: 0,
+                    child: Container(width: 2, height: 14, color: p.textPrimary.withOpacity(0.55)),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Safe limit: ${threshold.toStringAsFixed(3)}',
+          style: TextStyle(color: p.textSecondary, fontSize: 10.5),
+        ),
+      ],
     );
   }
 

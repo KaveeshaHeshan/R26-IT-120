@@ -11,6 +11,29 @@ python -m pip install -r requirements.txt
 python app.py
 ```
 
+Runs on port `5001` by default (override with `PORT`) so it can run alongside
+`backend/app.py`, which uses `5000`. Set `FIREBASE_SERVICE_ACCOUNT` to a
+Firebase Admin SDK service-account JSON path before starting it if you want
+`saveToFirestore: true` writes to work.
+
+## Automatic call on a Grade C collection
+
+`FirestoreService.saveCollection()` in the Flutter app calls this service's
+`/forecast` automatically whenever a collection is saved with `grade: 'C'`
+(see `lib/services/firestore_service.dart`, `triggerQualityForecast()`). It
+builds `sequenceRecords` from that farmer's real `collections` history —
+never from a guess — so with the app's current schema it will correctly come
+back `insufficient_history` or `prediction_data_incomplete` until the fields
+below actually get captured somewhere:
+
+`drc_value`, `temperature_c`, `humidity_percent`, `rainfall_mm`,
+`storage_duration_hours`, `collection_gap_hours`, `latex_quantity_kg`.
+
+That is expected, not a bug — see the data-integrity rules just below. Once
+those fields are logged (a lab DRC reading, a weather source, storage
+timing), no further Flutter changes are needed for real predictions to start
+flowing through the same call path.
+
 Send `POST /forecast` with a Firebase `userId`, chronological
 `sequenceRecords` (each with `capturedAt`), a target-day `context` object, and
 `forecastDate`. The service reads the approved `modelFarmerId` from

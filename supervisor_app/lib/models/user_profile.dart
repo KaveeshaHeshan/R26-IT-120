@@ -25,6 +25,14 @@ class UserProfile {
   /// user document. Empty when the field is absent.
   final String farmerId;
 
+  /// General-purpose account/display id assigned sequentially at signup
+  /// ("F013", "S004", ...) — see `SignUpScreen._nextDisplayId`. This is
+  /// unrelated to [farmerId] / [kFarmerIdField]: it is issued to every
+  /// account, farmer or supervisor, while [farmerId] only ever exists for
+  /// the 12 farmers the LSTM model was trained on. Never use [displayId] as
+  /// a substitute for [farmerId] in a model request.
+  final String displayId;
+
   /// Farmer-only profile fields, written at signup and required by the
   /// spoilage model. Empty for supervisors.
   final String district;
@@ -39,6 +47,7 @@ class UserProfile {
     required this.role,
     required this.employeeId,
     this.farmerId = '',
+    this.displayId = '',
     this.district = '',
     this.experience = '',
   });
@@ -60,6 +69,7 @@ class UserProfile {
       role:       map['role']       ?? '',
       employeeId: map['employeeId'] ?? '',
       farmerId:   (map[kFarmerIdField] ?? '').toString().trim(),
+      displayId:  (map['displayId'] ?? '').toString().trim(),
       district:   map['district']   ?? '',
       experience: map['experience'] ?? '',
     );

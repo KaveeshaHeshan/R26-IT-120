@@ -169,14 +169,8 @@ def _numeric_deviations(records, context):
 
 
 def _farmer_guidance(predicted_vfa, risk_probability, risk_level, records, context):
-    """Creates transparent guidance from thresholds and submitted values only."""
-    vfa_trend, earlier_vfa, recent_vfa = _recent_trend(records, "vfa_value")
-    drc_trend, earlier_drc, recent_drc = _recent_trend(records, "drc_value")
-    threshold_reason = (
-        f"Predicted VFA is {predicted_vfa:.3f}, compared with the safe threshold of "
-        f"{VFA_ALERT_THRESHOLD:.3f}; risk probability is {risk_probability:.0%}, compared "
-        f"with the alert threshold of {RISK_PROBABILITY_THRESHOLD:.0%}."
-    )
+    """Creates short, non-technical guidance for the farmer dashboard."""
+    vfa_trend, _, _ = _recent_trend(records, "vfa_value")
 
     if risk_level == "normal":
         return (
@@ -191,32 +185,20 @@ def _farmer_guidance(predicted_vfa, risk_probability, risk_level, records, conte
             "stable" if vfa_trend == "remained stable" else vfa_trend,
         )
 
-    trend_observations = [
-        f"Recent submitted VFA values {vfa_trend} from {earlier_vfa:.3f} to {recent_vfa:.3f}.",
-        f"Recent submitted DRC values {drc_trend} from {earlier_drc:.3f} to {recent_drc:.3f}.",
-    ]
-    deviations = _numeric_deviations(records, context)
-    evidence = " ".join(trend_observations + deviations)
-    reason = f"{threshold_reason} {evidence} These values were included in the forecast; they are not proof of causation."
-
     if risk_level in {"critical", "high"}:
         return (
             "Critical Rubber Quality Risk",
-            "Your latex quality is likely to decline before the next collection.",
-            reason,
-            ["Arrange collection as soon as practical.", "Follow your established latex handling and storage procedure.", "Record the next quality measurement before collection when possible."],
+            "Your latex may lose quality before the next collection.",
+            "The predicted freshness level is above the safe limit.",
+            ["Arrange collection as soon as possible.", "Keep the latex covered and follow your normal storage procedure."],
             "increasing" if vfa_trend == "increased" else vfa_trend,
         )
 
     return (
-        "Rubber Quality May Decline",
-        (
-            "Your recent records indicate an increasing quality-risk trend."
-            if vfa_trend == "increased"
-            else "Your forecast is above a configured quality-risk threshold."
-        ),
-        reason,
-        ["Review the next collection plan.", "Follow your established latex handling and storage procedure.", "Record the next quality measurement on schedule."],
+        "Rubber Quality Warning",
+        "Your latex quality may decline before the next collection.",
+        "The predicted quality risk is higher than normal.",
+        ["Review the next collection time.", "Keep the latex covered and follow your normal storage procedure."],
         "increasing" if vfa_trend == "increased" else vfa_trend,
     )
 
@@ -231,13 +213,16 @@ def _firestore_client():
     return firestore.client()
 
 
-def _approved_model_farmer_id(user_id):
-    """Reads the supervisor-approved training identity without deriving one."""
+def _model_farmer_id_for_user(user_id):
+    """Uses the existing farmer display ID after validating model support."""
     user = _firestore_client().collection("users").document(user_id).get()
-    mapping = user.to_dict().get("modelFarmerId") if user.exists else None
-    if mapping is None or f"farmer_{mapping}" not in FARMER_COLUMNS:
+    display_id = user.to_dict().get("displayId") if user.exists else None
+    if display_id is None:
         return None
-    return str(mapping)
+    farmer_id = str(display_id).strip()
+    if f"farmer_{farmer_id}" not in FARMER_COLUMNS:
+        return None
+    return farmer_id
 
 
 def _save_forecast(user_id, result):
@@ -270,13 +255,13 @@ def forecast():
     if not user_id:
         return jsonify({"error": "userId is required"}), 400
     try:
-        farmer_id = _approved_model_farmer_id(user_id)
+        farmer_id = _model_farmer_id_for_user(user_id)
     except RuntimeError as error:
         return jsonify({"error": "model_deployment_limitation", "message": str(error)}), 422
     if farmer_id is None:
         return jsonify({
             "error": "model_deployment_limitation",
-            "message": "No approved modelFarmerId mapping exists for this user. This trained model supports only farmer IDs F001 through F012 and never maps Firebase UIDs automatically.",
+            "message": "The user's displayId is missing or unsupported. This trained model supports only farmer IDs F001 through F012.",
             "supportedFarmerIds": [column.removeprefix("farmer_") for column in FARMER_COLUMNS],
         }), 422
 
@@ -284,7 +269,7 @@ def forecast():
     # Nothing in this branch changes the farmer-facing forecast document/text.
     if payload.get("demoMode") is True:
         app.logger.warning(
-            "DEMO_MODE historical validation request: userId=%s modelFarmerId=%s case=%s",
+            "DEMO_MODE historical validation request: userId=%s displayId=%s case=%s",
             user_id,
             farmer_id,
             payload.get("demoCase", "unspecified"),
@@ -334,7 +319,7 @@ def forecast():
 
     if payload.get("demoMode") is True:
         app.logger.warning(
-            "DEMO_MODE historical validation result: userId=%s modelFarmerId=%s predictedVfa=%.6f riskProbability=%.6f riskLevel=%s",
+            "DEMO_MODE historical validation result: userId=%s displayId=%s predictedVfa=%.6f riskProbability=%.6f riskLevel=%s",
             user_id,
             farmer_id,
             predicted_vfa,

@@ -23,6 +23,7 @@ SERVICE_DIR = Path(__file__).resolve().parent
 METADATA_PATH = SERVICE_DIR / "model" / "metadata.json"
 DEFAULT_CSV = Path(r"C:\Users\subod\Downloads\farmer_dataset_12_farmers.csv")
 DEFAULT_PREDICTIONS = Path(r"C:\Users\subod\Downloads\Mihisarani_VFA_LSTM_package\test_predictions.csv")
+DEMO_FARMER_ID = "F003"
 
 
 def parse_args() -> argparse.Namespace:
@@ -93,10 +94,10 @@ def select_target(predictions_path: Path, case: str) -> tuple[str, date]:
     with predictions_path.open(newline="", encoding="utf-8-sig") as source:
         predictions = list(csv.DictReader(source))
 
-    # F001 has a verified normal test window. F002 has a verified critical
-    # window. Selection metadata is used only to choose a genuine window; the
-    # endpoint still runs the actual .keras model for every command.
-    farmer_id = "F001" if case == "normal" else "F002"
+    # The demo is tied to Kamal Hewage's existing displayId. Selection metadata
+    # chooses a genuine F003 validation window; the endpoint still runs the
+    # actual .keras model for every command.
+    farmer_id = DEMO_FARMER_ID
     candidates = [row for row in predictions if row.get("farmer_id") == farmer_id]
     if case == "normal":
         candidates = [
@@ -197,7 +198,7 @@ def main() -> int:
         if args.request_out:
             args.request_out.write_text(json.dumps(payload, indent=2), encoding="utf-8")
         print(f"DEMO_MODE: {args.case} historical validation window: {required_farmer_id}, target {target_date}")
-        print(f"The test user's approved modelFarmerId must be {required_farmer_id}.")
+        print(f"The Firebase user's displayId must be {required_farmer_id}.")
         result = post_forecast(args.endpoint, payload)
     except (FileNotFoundError, ValueError, RuntimeError) as error:
         print(f"Demo forecast not run: {error}", file=sys.stderr)

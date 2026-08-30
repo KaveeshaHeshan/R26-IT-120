@@ -30,9 +30,16 @@ import '../models/user_profile.dart' show kFarmerIdField;
 import '../services/firestore_service.dart';
 import 'verify_screen.dart';
 
-// Change this to your laptop's IP on the shared hotspot (e.g. 192.168.43.101).
-// Find it with `ipconfig` (Windows) or `ifconfig`/`ip addr` (Mac/Linux).
-const String kBackendBaseUrl = 'http://10.227.76.146:5000';
+// Backend address.
+//
+// 'localhost' is correct when the app and the backend run on the same machine
+// (Chrome via `flutter run -d chrome`), and it does not break when the laptop's
+// IP changes on reconnect.
+//
+// For a physical phone on the shared hotspot, replace this with the laptop's
+// current LAN IP from `ipconfig` (Windows) or `ifconfig`/`ip addr` — the phone
+// cannot reach 'localhost', which on the phone means the phone itself.
+const String kBackendBaseUrl = 'http://localhost:5000';
 
 // Set true to send the synthetic 12-farmer sample instead of Firestore data,
 // which is useful for checking the map renders without touching the database.

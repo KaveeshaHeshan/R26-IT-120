@@ -66,15 +66,74 @@ class _LatexGuardAppState extends State<LatexGuardApp> {
   }
 }
 
-// Wraps the app in a phone-sized frame in the browser
+/// Whether to preview the app inside a phone-sized frame on wide screens.
+///
+/// Set to false to let desktop browsers use the full window — the farmer
+/// screens carry their own adaptive layouts and are designed for that.
+const bool kUseMobileFrame = true;
+
+/// Wraps the app in a phone-sized frame when there is room for one.
+///
+/// Only wide windows are framed. On an actual phone the viewport is already
+/// phone-sized, so framing there would letterbox the app inside itself; those
+/// windows are passed straight through, which keeps the farmer screens'
+/// adaptive layouts intact.
 class MobileFrame extends StatelessWidget {
   final Widget? child;
   const MobileFrame({super.key, this.child});
 
+  static const double _phoneWidth = 390;
+  static const double _phoneHeight = 844;
+
+  /// Below this the window is treated as a real device rather than a preview.
+  static const double _frameFromWidth = 600;
+
   @override
   Widget build(BuildContext context) {
-    // Let production web, tablet and desktop layouts use their available
-    // space. Individual feature shells provide their own adaptive layouts.
-    return child ?? const SizedBox.shrink();
+    final content = child ?? const SizedBox.shrink();
+    if (!kUseMobileFrame) return content;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < _frameFromWidth) return content;
+
+        // Short windows would otherwise overflow the 844px frame.
+        final height = _phoneHeight > constraints.maxHeight - 32
+            ? constraints.maxHeight - 32
+            : _phoneHeight;
+
+        return Scaffold(
+          backgroundColor: const Color(0xFFE0E0E0),
+          body: Center(
+            child: Container(
+              width: _phoneWidth,
+              height: height,
+              decoration: BoxDecoration(
+                color: AppTheme.background,
+                borderRadius: BorderRadius.circular(44),
+                border: Border.all(color: const Color(0xFF30363D), width: 2),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.primary.withValues(alpha: 0.08),
+                    blurRadius: 60,
+                    spreadRadius: 10,
+                  ),
+                ],
+              ),
+              clipBehavior: Clip.hardEdge,
+              // Re-root MediaQuery so screens inside the frame size themselves
+              // against the frame, not the whole browser window — otherwise
+              // responsive breakpoints still see a desktop-width viewport.
+              child: MediaQuery(
+                data: MediaQuery.of(context).copyWith(
+                  size: Size(_phoneWidth, height),
+                ),
+                child: content,
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 }

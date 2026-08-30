@@ -36,7 +36,7 @@ flowing through the same call path.
 
 Send `POST /forecast` with a Firebase `userId`, chronological
 `sequenceRecords` (each with `capturedAt`), a target-day `context` object, and
-`forecastDate`. The service reads the approved `modelFarmerId` from
+`forecastDate`. The service reads and validates `displayId` from
 `users/{userId}`; callers must not supply or infer it. The exact input fields
 are listed in `model/metadata.json`.
 
@@ -84,17 +84,14 @@ not as a commitment that every one will become a model feature.
 
 ## Historical validation demo
 
-`demo_forecast.py` is a viva/demo utility, not a production data path. It
+`demo_forecast.py` is a viva/demo utility for the existing F003 farmer, not a production data path. It
 reads the original `farmer_dataset_12_farmers.csv`, selects a complete 30-row
 historical window, and posts the real rows plus real target-event context to
 the running API with `saveToFirestore: true`. It logs `DEMO_MODE` on the
 backend only and does not change farmer-facing alert text.
 
-- `--case normal` uses F001's genuine test window ending at the target event
-  on 2025-12-25.
-- `--case high` uses F002's genuine critical test window ending at the target
-  event on 2026-01-06.
+- Both `--case normal` and `--case high` select matching genuine F003 test
+  windows from the supplied prediction package.
 
-Before each command, a supervisor/trusted backend must explicitly set the
-test Firebase user's `modelFarmerId` to the corresponding ID. The utility
-does not set or infer this mapping.
+The Firebase test user's existing `displayId` must be `F003`. The utility does
+not create or modify the farmer document.

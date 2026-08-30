@@ -395,10 +395,29 @@ class FirestoreService {
     }
   }
 
-<<<<<<< Updated upstream
   /// Collection records saved today.
   Future<List<Map<String, dynamic>>> getTodaysCollections() async {
-=======
+    final now = DateTime.now();
+    final startOfDay = DateTime(now.year, now.month, now.day);
+
+    final snap = await _db
+        .collection('collections')
+        .where('collected_at', isGreaterThanOrEqualTo: startOfDay)
+        .get();
+
+    return snap.docs.map((d) => d.data()).toList();
+  }
+
+  /// Farm ids already collected today, so a round survives an app restart
+  /// without offering stops the supervisor has finished.
+  Future<Set<String>> getFarmIdsCollectedToday() async {
+    final records = await getTodaysCollections();
+    return records
+        .map((r) => (r['farm_id'] ?? '').toString())
+        .where((id) => id.isNotEmpty)
+        .toSet();
+  }
+
   /// Calls the LSTM forecast service for [userId] and asks it to persist the
   /// result to `quality_forecasts/{userId}` (write access from the client is
   /// blocked by firestore.rules; only the service's Admin SDK identity may
@@ -554,28 +573,4 @@ class FirestoreService {
 
   static double _doyCos(DateTime d) => math.cos(2 * math.pi * _dayOfYear(d) / 365.25);
 
-  /// Farm ids already collected today, so a round survives an app restart
-  /// without offering stops the supervisor has finished.
-  Future<Set<String>> getFarmIdsCollectedToday() async {
->>>>>>> Stashed changes
-    final now = DateTime.now();
-    final startOfDay = DateTime(now.year, now.month, now.day);
-
-    final snap = await _db
-        .collection('collections')
-        .where('collected_at', isGreaterThanOrEqualTo: startOfDay)
-        .get();
-
-    return snap.docs.map((d) => d.data()).toList();
-  }
-
-  /// Farm ids already collected today, so a round survives an app restart
-  /// without offering stops the supervisor has finished.
-  Future<Set<String>> getFarmIdsCollectedToday() async {
-    final records = await getTodaysCollections();
-    return records
-        .map((r) => (r['farm_id'] ?? '').toString())
-        .where((id) => id.isNotEmpty)
-        .toSet();
-  }
 }

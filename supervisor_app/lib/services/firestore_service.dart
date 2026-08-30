@@ -87,11 +87,34 @@ class FirestoreService {
     return UserProfile.fromMap(doc.id, doc.data()!);
   }
 
-  /// Most recent farmer tapping records, newest first, with each farmer's
-  /// name resolved from the `users` collection.
-  Future<List<TappingDetail>> getTappingDetails({int limit = 20}) async {
-    final snap = await _db
-        .collection('tapping_details')
+  /// Farmer tapping records, newest first, with each farmer's name resolved
+  /// from the `users` collection.
+  ///
+  /// When [day] is given, only records tapped on that calendar day come back.
+  /// The bound is applied in the query rather than to the result, because
+  /// [limit] caps the *fetched* window: filtering afterwards would report a
+  /// past day as empty whenever its records fall outside the newest [limit].
+  ///
+  /// Needs no composite index — the range and the sort are both on `date`,
+  /// which Firestore indexes on its own.
+  Future<List<TappingDetail>> getTappingDetails({
+    int limit = 20,
+    DateTime? day,
+  }) async {
+    Query<Map<String, dynamic>> query = _db.collection('tapping_details');
+
+    if (day != null) {
+      // Half-open range: from midnight up to, but not including, the next
+      // midnight. Building the end from the date parts (rather than adding 24
+      // hours) keeps month and year rollovers right.
+      final start = DateTime(day.year, day.month, day.day);
+      final end = DateTime(day.year, day.month, day.day + 1);
+      query = query
+          .where('date', isGreaterThanOrEqualTo: start)
+          .where('date', isLessThan: end);
+    }
+
+    final snap = await query
         .orderBy('date', descending: true)
         .limit(limit)
         .get();

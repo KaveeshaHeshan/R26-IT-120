@@ -30,8 +30,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool _starting = false;
   String? _error;
 
-  /// Ids of the tapping records the supervisor has picked for this round.
-  final Set<String> _selected = {};
+  /// Tapping records picked for this round, keyed by record id.
+  ///
+  /// Holds the records themselves rather than bare ids so a selection
+  /// survives a change of date filter. A round can legitimately span two days
+  /// — yesterday's uncollected latex alongside today's — and silently
+  /// dropping those farms when the filter moved would lose real work.
+  final Map<String, TappingDetail> _selectedRecords = {};
+
+  /// The calendar day being shown, or null for every date.
+  ///
+  /// Starts unset. Defaulting to today would open on an empty list whenever
+  /// no farmer has tapped yet that morning, which reads as a broken screen
+  /// rather than as a filter doing its job.
+  DateTime? _filterDate;
 
   /// Ids currently being deleted, so the card shows progress and repeat taps
   /// are ignored while the write is in flight.
@@ -58,7 +70,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   List<TappingDetail> get _selectedTappings =>
-      _tappings.where((t) => _selected.contains(t.id)).toList();
+      _selectedRecords.values.toList();
+
+  /// Selected records the current date or search filter is not showing, so
+  /// the count on the start button never looks unexplained.
+  int get _selectedHidden {
+    final visible = _visibleTappings.map((t) => t.id).toSet();
+    return _selectedRecords.keys.where((id) => !visible.contains(id)).length;
+  }
 
   /// Selected farms the DQN cannot route yet, because the farmer app has not
   /// written coordinates for them.
@@ -82,13 +101,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     try {
       final profile = await _service.getCurrentUserProfile();
-      final tappings = await _service.getTappingDetails();
+      final tappings = await _service.getTappingDetails(day: _filterDate);
       if (!mounted) return;
       setState(() {
         _profile = profile;
         _tappings = tappings;
-        // Drop selections whose records no longer exist after a refresh.
-        _selected.retainAll(tappings.map((t) => t.id));
+        // Refresh selected records that appear in this result, so an edited
+        // volume or a newly written coordinate is picked up. Ones that do not
+        // appear are kept: under a date filter, absent means "not in this
+        // day", not "deleted" — deletion clears them explicitly.
+        for (final t in tappings) {
+          if (_selectedRecords.containsKey(t.id)) _selectedRecords[t.id] = t;
+        }
         _loading = false;
       });
     } catch (e) {
@@ -239,8 +263,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         _deleting.remove(t.id);
         _tappings.removeWhere((r) => r.id == t.id);
         // The stats row and the round selection both derive from _tappings
-        // and _selected, so both correct themselves here.
-        _selected.remove(t.id);
+        // and _selectedRecords, so both correct themselves here.
+        _selectedRecords.remove(t.id);
       });
 
       if (data == null) {
@@ -376,12 +400,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   const SizedBox(height: 20),
                   _buildSectionHeader(),
                   const SizedBox(height: 10),
-                  if (_tappings.isNotEmpty) ...[
-                    _buildSearchField(),
-                    const SizedBox(height: 10),
-                  ],
+                  _buildFilterBar(),
+                  const SizedBox(height: 10),
                   if (_error != null)
                     _buildMessage(_error!, Icons.error_outline, AppTheme.error)
+                  else if (_tappings.isEmpty && _filterDate != null)
+                    _buildEmptyForDate()
                   else if (_tappings.isEmpty)
                     _buildMessage(
                       'No tapping records submitted yet.',
@@ -607,6 +631,135 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   // ── Tapping details ──────────────────────────────────────────
 
+  /// Date filter always renders; the search box only once there is
+  /// something to search. If a day with no records hid the date control, the
+  /// supervisor would have no way back to a day that has some.
+  Widget _buildFilterBar() {
+    return Row(
+      children: [
+        _buildDateChip(),
+        if (_tappings.isNotEmpty) ...[
+          const SizedBox(width: 8),
+          Expanded(child: _buildSearchField()),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildDateChip() {
+    final active = _filterDate != null;
+
+    return InkWell(
+      onTap: _pickDate,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: EdgeInsets.fromLTRB(10, 11, active ? 4 : 10, 11),
+        decoration: BoxDecoration(
+          color: AppTheme.surface,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: active ? AppTheme.primary : AppTheme.divider,
+            width: active ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.calendar_today_outlined,
+              size: 14,
+              color: active ? AppTheme.primary : AppTheme.textMuted,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              active ? _formatDate(_filterDate) : 'All dates',
+              style: GoogleFonts.inter(
+                color: active ? AppTheme.primary : AppTheme.textSecondary,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            // Nested tap target: clearing the filter is a different action
+            // from changing it, and shouldn't cost a trip to the picker.
+            if (active)
+              IconButton(
+                icon: Icon(Icons.close, size: 14, color: AppTheme.textMuted),
+                tooltip: 'Show all dates',
+                padding: EdgeInsets.zero,
+                visualDensity: VisualDensity.compact,
+                constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                onPressed: _clearDateFilter,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickDate() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _filterDate ?? now,
+      firstDate: DateTime(now.year - 2),
+      // Latex cannot have been tapped in the future, so offering later dates
+      // would only ever return an empty list.
+      lastDate: DateTime(now.year, now.month, now.day),
+      helpText: 'Show tapping records from',
+    );
+    if (picked == null || !mounted) return;
+
+    setState(() =>
+        _filterDate = DateTime(picked.year, picked.month, picked.day));
+    await _load();
+  }
+
+  Future<void> _clearDateFilter() async {
+    setState(() => _filterDate = null);
+    await _load();
+  }
+
+  /// Shown when the chosen day has no records — with the way out, so the
+  /// supervisor is never stranded on an empty day.
+  Widget _buildEmptyForDate() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppTheme.divider),
+      ),
+      child: Column(
+        children: [
+          Icon(Icons.event_busy_outlined, size: 30, color: AppTheme.textMuted),
+          const SizedBox(height: 10),
+          Text(
+            'No tapping records for ${_formatDate(_filterDate)}.',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(
+              color: AppTheme.textSecondary,
+              fontSize: 12,
+            ),
+          ),
+          const SizedBox(height: 6),
+          TextButton.icon(
+            onPressed: _clearDateFilter,
+            icon: const Icon(Icons.event_repeat, size: 16),
+            label: Text(
+              'Show all dates',
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            style: TextButton.styleFrom(foregroundColor: AppTheme.primary),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildSearchField() {
     return TextField(
       controller: _searchController,
@@ -645,8 +798,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildSectionHeader() {
-    final allSelected =
-        _tappings.isNotEmpty && _selected.length == _tappings.length;
+    // Select-all acts on the rows actually on screen. Selecting records the
+    // current date or search filter is hiding would be a surprise.
+    final visible = _visibleTappings;
+    final allSelected = visible.isNotEmpty &&
+        visible.every((t) => _selectedRecords.containsKey(t.id));
 
     return Row(
       children: [
@@ -662,16 +818,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ),
         const Spacer(),
-        if (_tappings.isNotEmpty)
+        if (visible.isNotEmpty)
           TextButton(
             onPressed: () {
               setState(() {
-                if (allSelected) {
-                  _selected.clear();
-                } else {
-                  _selected
-                    ..clear()
-                    ..addAll(_tappings.map((t) => t.id));
+                for (final t in visible) {
+                  if (allSelected) {
+                    _selectedRecords.remove(t.id);
+                  } else {
+                    _selectedRecords[t.id] = t;
+                  }
                 }
               });
             },
@@ -694,15 +850,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildTappingCard(TappingDetail t) {
-    final isSelected = _selected.contains(t.id);
+    final isSelected = _selectedRecords.containsKey(t.id);
 
     return GestureDetector(
       onTap: () {
         setState(() {
           if (isSelected) {
-            _selected.remove(t.id);
+            _selectedRecords.remove(t.id);
           } else {
-            _selected.add(t.id);
+            _selectedRecords[t.id] = t;
           }
         });
       },
@@ -970,7 +1126,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // ── Start session CTA ────────────────────────────────────────
 
   Widget _buildStartBar() {
-    final count = _selected.length;
+    final count = _selectedRecords.length;
+    final hidden = _selectedHidden;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
@@ -1016,6 +1173,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                 ],
               ),
+              if (hidden > 0) ...[
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Icon(Icons.filter_alt_outlined,
+                        size: 13, color: AppTheme.textMuted),
+                    const SizedBox(width: 5),
+                    Expanded(
+                      child: Text(
+                        '$hidden selected ${hidden == 1 ? 'farm is' : 'farms are'} '
+                        'hidden by the current filter',
+                        style: GoogleFonts.inter(
+                          color: AppTheme.textMuted,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
               const SizedBox(height: 10),
             ],
             SizedBox(

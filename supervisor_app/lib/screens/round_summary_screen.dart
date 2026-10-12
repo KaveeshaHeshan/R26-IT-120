@@ -38,6 +38,10 @@ class _RoundSummaryScreenState extends State<RoundSummaryScreen> {
   double? _avgVfa;
   int _withSensor = 0;
 
+  /// Today's records for farms on this round, kept (not just aggregated) so
+  /// the grade-correction UI below has something to list and edit.
+  List<Map<String, dynamic>> _myRecords = [];
+
   @override
   void initState() {
     super.initState();
@@ -71,6 +75,7 @@ class _RoundSummaryScreenState extends State<RoundSummaryScreen> {
         _litres = litres;
         _withSensor = vfaCount;
         _avgVfa = vfaCount == 0 ? null : vfaSum / vfaCount;
+        _myRecords = mine;
         _loading = false;
       });
     } catch (e) {
@@ -80,6 +85,70 @@ class _RoundSummaryScreenState extends State<RoundSummaryScreen> {
         _loading = false;
       });
     }
+  }
+
+  /// Opens a grade picker for one record and, if changed, routes the
+  /// correction through [FirestoreService.correctCollectionGrade] -- never
+  /// by editing Firestore directly -- so a correction to 'C' properly
+  /// re-triggers the Grade-C reason explanation for the farmer.
+  Future<void> _fixGrade(Map<String, dynamic> record) async {
+    final String? collectionId = record['_id'] as String?;
+    if (collectionId == null) return;
+
+    final String? currentGrade = record['grade'] as String?;
+    final String? chosen = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: AppTheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  'Correct grade for ${_nameFor((record['farm_id'] ?? '').toString())}',
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              for (final g in const ['A', 'B', 'C'])
+                ListTile(
+                  title: Text(
+                    'Grade $g',
+                    style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                  ),
+                  trailing: currentGrade == g
+                      ? const Icon(Icons.check, color: AppTheme.primary)
+                      : null,
+                  onTap: () => Navigator.of(ctx).pop(g),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (chosen == null || chosen == currentGrade || !mounted) return;
+
+    final result = await _service.correctCollectionGrade(collectionId, chosen);
+    if (!mounted) return;
+
+    setState(() {
+      final idx = _myRecords.indexWhere((r) => r['_id'] == collectionId);
+      if (idx != -1) _myRecords[idx] = {..._myRecords[idx], 'grade': chosen};
+    });
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(result.message)));
   }
 
   @override
@@ -94,12 +163,16 @@ class _RoundSummaryScreenState extends State<RoundSummaryScreen> {
         title: Text(
           'Round Summary',
           style: GoogleFonts.inter(
-              color: Colors.white, fontSize: 17, fontWeight: FontWeight.w700),
+            color: Colors.white,
+            fontSize: 17,
+            fontWeight: FontWeight.w700,
+          ),
         ),
       ),
       body: _loading
           ? const Center(
-              child: CircularProgressIndicator(color: AppTheme.primary))
+              child: CircularProgressIndicator(color: AppTheme.primary),
+            )
           : ListView(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
               children: [
@@ -107,20 +180,23 @@ class _RoundSummaryScreenState extends State<RoundSummaryScreen> {
                 const SizedBox(height: 14),
                 Row(
                   children: [
-                    _tile('Litres', _litres.toStringAsFixed(1),
-                        Icons.water_drop_outlined),
+                    _tile(
+                      'Litres',
+                      _litres.toStringAsFixed(1),
+                      Icons.water_drop_outlined,
+                    ),
                     const SizedBox(width: 10),
-                    _tile('Records', '$_records',
-                        Icons.description_outlined),
+                    _tile('Records', '$_records', Icons.description_outlined),
                   ],
                 ),
                 const SizedBox(height: 10),
                 Row(
                   children: [
                     _tile(
-                        'Avg VFA',
-                        _avgVfa?.toStringAsFixed(2) ?? '—',
-                        Icons.science_outlined),
+                      'Avg VFA',
+                      _avgVfa?.toStringAsFixed(2) ?? '—',
+                      Icons.science_outlined,
+                    ),
                     const SizedBox(width: 10),
                     _tile('Skipped', '$skipped', Icons.redo),
                   ],
@@ -133,8 +209,87 @@ class _RoundSummaryScreenState extends State<RoundSummaryScreen> {
                     'Average VFA covers $_withSensor of $collected collections '
                     '— the rest were recorded without a sensor reading.',
                     style: GoogleFonts.inter(
-                        fontSize: 11, color: AppTheme.textSecondary),
+                      fontSize: 11,
+                      color: AppTheme.textSecondary,
+                    ),
                   ),
+                ],
+                if (_myRecords.isNotEmpty) ...[
+                  const SizedBox(height: 18),
+                  _sectionLabel('TODAY\'S COLLECTIONS'),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Tap a grade to correct it. Corrections made here (not in '
+                    'the database directly) are what trigger the Grade-C '
+                    'explanation for the farmer.',
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ..._myRecords.map((r) {
+                    final grade = (r['grade'] as String?) ?? '—';
+                    final color = grade == 'C'
+                        ? AppTheme.riskHigh
+                        : grade == 'B'
+                        ? AppTheme.riskMedium
+                        : AppTheme.primary;
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppTheme.surface,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: AppTheme.divider),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              _nameFor((r['farm_id'] ?? '').toString()),
+                              style: GoogleFonts.inter(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          InkWell(
+                            borderRadius: BorderRadius.circular(8),
+                            onTap: () => _fixGrade(r),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: color.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    'Grade $grade',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: color,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Icon(Icons.edit, size: 13, color: color),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
                 ],
                 if (widget.efficiency != null) ...[
                   const SizedBox(height: 18),
@@ -143,13 +298,16 @@ class _RoundSummaryScreenState extends State<RoundSummaryScreen> {
                   Row(
                     children: [
                       _tile(
-                          'Planned km',
-                          widget.efficiency!.dqnKm.toStringAsFixed(1),
-                          Icons.route),
+                        'Planned km',
+                        widget.efficiency!.dqnKm.toStringAsFixed(1),
+                        Icons.route,
+                      ),
                       const SizedBox(width: 10),
-                      _tile('Est. time',
-                          '${widget.efficiency!.totalMinutes} min',
-                          Icons.schedule),
+                      _tile(
+                        'Est. time',
+                        '${widget.efficiency!.totalMinutes} min',
+                        Icons.schedule,
+                      ),
                     ],
                   ),
                 ],
@@ -168,19 +326,28 @@ class _RoundSummaryScreenState extends State<RoundSummaryScreen> {
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.redo,
-                              size: 16, color: AppTheme.riskMedium),
+                          const Icon(
+                            Icons.redo,
+                            size: 16,
+                            color: AppTheme.riskMedium,
+                          ),
                           const SizedBox(width: 10),
                           Expanded(
-                            child: Text(_nameFor(e.key),
-                                style: GoogleFonts.inter(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600)),
-                          ),
-                          Text(e.value,
+                            child: Text(
+                              _nameFor(e.key),
                               style: GoogleFonts.inter(
-                                  fontSize: 11,
-                                  color: AppTheme.textSecondary)),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            e.value,
+                            style: GoogleFonts.inter(
+                              fontSize: 11,
+                              color: AppTheme.textSecondary,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -188,9 +355,10 @@ class _RoundSummaryScreenState extends State<RoundSummaryScreen> {
                 ],
                 if (_error != null) ...[
                   const SizedBox(height: 16),
-                  Text(_error!,
-                      style: const TextStyle(
-                          color: AppTheme.error, fontSize: 12)),
+                  Text(
+                    _error!,
+                    style: const TextStyle(color: AppTheme.error, fontSize: 12),
+                  ),
                 ],
               ],
             ),
@@ -202,6 +370,7 @@ class _RoundSummaryScreenState extends State<RoundSummaryScreen> {
         (s) => s.farmerId == farmerId,
         orElse: () => CollectionStop(
           order: 0,
+          userId: farmerId,
           farmerId: farmerId,
           farmerName: farmerId,
           latitude: 0,
@@ -222,19 +391,24 @@ class _RoundSummaryScreenState extends State<RoundSummaryScreen> {
       ),
       child: Column(
         children: [
-          Text('$collected of $total',
-              style: GoogleFonts.jetBrainsMono(
-                  color: Colors.white,
-                  fontSize: 40,
-                  fontWeight: FontWeight.w700,
-                  height: 1)),
+          Text(
+            '$collected of $total',
+            style: GoogleFonts.jetBrainsMono(
+              color: Colors.white,
+              fontSize: 40,
+              fontWeight: FontWeight.w700,
+              height: 1,
+            ),
+          ),
           const SizedBox(height: 6),
           Text(
             skipped == 0
                 ? 'farms collected'
                 : 'farms collected · $skipped skipped',
             style: GoogleFonts.inter(
-                color: Colors.white.withValues(alpha: 0.85), fontSize: 13),
+              color: Colors.white.withValues(alpha: 0.85),
+              fontSize: 13,
+            ),
           ),
         ],
       ),
@@ -242,10 +416,13 @@ class _RoundSummaryScreenState extends State<RoundSummaryScreen> {
   }
 
   Widget _sectionLabel(String text) => Text(
-        text,
-        style: GoogleFonts.jetBrainsMono(
-            color: AppTheme.textMuted, fontSize: 11, letterSpacing: 1.5),
-      );
+    text,
+    style: GoogleFonts.jetBrainsMono(
+      color: AppTheme.textMuted,
+      fontSize: 11,
+      letterSpacing: 1.5,
+    ),
+  );
 
   Widget _tile(String label, String value, IconData icon) {
     return Expanded(
@@ -260,13 +437,18 @@ class _RoundSummaryScreenState extends State<RoundSummaryScreen> {
           children: [
             Icon(icon, size: 18, color: AppTheme.primary),
             const SizedBox(height: 6),
-            Text(value,
-                style: GoogleFonts.inter(
-                    fontSize: 17, fontWeight: FontWeight.w700)),
+            Text(
+              value,
+              style: GoogleFonts.inter(
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
             const SizedBox(height: 2),
-            Text(label,
-                style: GoogleFonts.inter(
-                    fontSize: 10, color: AppTheme.textMuted)),
+            Text(
+              label,
+              style: GoogleFonts.inter(fontSize: 10, color: AppTheme.textMuted),
+            ),
           ],
         ),
       ),

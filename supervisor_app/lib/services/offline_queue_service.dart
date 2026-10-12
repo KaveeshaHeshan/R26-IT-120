@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../models/sensor_reading.dart';
 import 'firestore_service.dart';
 
 class OfflineQueueService {
@@ -18,6 +19,7 @@ class OfflineQueueService {
     required double actualAmmoniaL,
     required bool followedStandardAmmoniaRatio,
     required String notes,
+    SensorReading? reading,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     final pending = await _getRawList(prefs);
@@ -29,8 +31,18 @@ class OfflineQueueService {
       'spoilage_risk_score': spoilageScore,
       // Omitted entirely when no sensor reading exists, so a queued record
       // never invents a VFA value.
-      if (vfaResult != null) 'vfa_result': vfaResult,
-      if (grade != null) 'grade': grade,
+      'vfa_result': ?vfaResult,
+      'grade': ?grade,
+      if (reading != null)
+        'sensor_reading': <String, dynamic>{
+          'sample_id': reading.sampleId,
+          'vfa': reading.vfa,
+          'grade': reading.grade,
+          'pH': reading.ph,
+          'temperature': reading.temperature,
+          'turbidity': reading.turbidity,
+          'timestamp': reading.timestamp?.toIso8601String(),
+        },
       'risk_level': riskLevel,
       'volume': volume,
       'recommended_ammonia_l': recommendedAmmoniaL,
@@ -76,18 +88,27 @@ class OfflineQueueService {
         final followedStandard = item['followed_standard_ammonia_ratio'] is bool
             ? item['followed_standard_ammonia_ratio'] as bool
             : true;
+        final readingMap = item['sensor_reading'];
+        final reading = readingMap is Map
+            ? SensorReading.fromMap(
+                (readingMap['sample_id'] ?? item['local_id'] ?? '').toString(),
+                Map<String, dynamic>.from(readingMap),
+              )
+            : null;
         await service.saveCollection(
           farmId: item['farm_id'],
           farmerName: item['farmer_name'],
-          spoilageScore: (item['spoilage_risk_score'] as num?)?.toDouble() ?? 0.0,
-          vfaResult:  (item['vfa_result'] as num?)?.toDouble(),
-          grade:      item['grade'] as String?,
-          riskLevel:  item['risk_level'],
-          volume:     volume,
+          spoilageScore:
+              (item['spoilage_risk_score'] as num?)?.toDouble() ?? 0.0,
+          vfaResult: (item['vfa_result'] as num?)?.toDouble(),
+          grade: item['grade'] as String?,
+          riskLevel: item['risk_level'],
+          volume: volume,
           recommendedAmmoniaL: recommendedAmmonia,
           actualAmmoniaL: actualAmmonia,
           followedStandardAmmoniaRatio: followedStandard,
-          notes:      item['notes'],
+          notes: item['notes'],
+          reading: reading,
         );
         // synced successfully — drop it from the queue
       } catch (e) {

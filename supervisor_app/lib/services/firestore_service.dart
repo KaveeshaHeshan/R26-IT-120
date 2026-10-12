@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -27,7 +28,12 @@ const String kGradeReasonServiceBaseUrl = 'http://localhost:5002';
 /// Result of attempting to auto-trigger a quality forecast after a Grade C
 /// collection. This is surfaced to the supervisor UI so a missing-data
 /// outcome reads as an explained limitation, not a silent no-op or a crash.
-enum ForecastTriggerOutcome { skippedNotGradeC, queued, insufficientData, serviceUnreachable }
+enum ForecastTriggerOutcome {
+  skippedNotGradeC,
+  queued,
+  insufficientData,
+  serviceUnreachable,
+}
 
 class ForecastTriggerResult {
   final ForecastTriggerOutcome outcome;
@@ -40,7 +46,12 @@ class ForecastTriggerResult {
 /// (pH/temperature/turbidity) being missing from this reading — it does
 /// not mean VFA is missing, since the model does not use VFA at all
 /// (see grade_reason_service/README.md).
-enum GradeReasonTriggerOutcome { skippedNotGradeC, queued, insufficientData, serviceUnreachable }
+enum GradeReasonTriggerOutcome {
+  skippedNotGradeC,
+  queued,
+  insufficientData,
+  serviceUnreachable,
+}
 
 class GradeReasonTriggerResult {
   final GradeReasonTriggerOutcome outcome;
@@ -52,7 +63,7 @@ class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
   static const String _collection = 'latex_sessions';
-  static const String _document   = 'live_session';
+  static const String _document = 'live_session';
 
   /// Sequence/context fields the deployed LSTM requires (model/metadata.json)
   /// that the app's current Firestore schema does not capture anywhere yet:
@@ -133,20 +144,20 @@ class FirestoreService {
     // reads of other users' documents). That should cost us the name, not
     // the whole dashboard, so failures fall through to 'Unknown Farmer'.
     final names = <String, String>{};
-    await Future.wait(userIds.map((id) async {
-      try {
-        final doc = await _db.collection('users').doc(id).get();
-        final data = doc.data();
-        if (data != null) names[id] = data['name'] ?? 'Unknown Farmer';
-      } catch (_) {
-        // Leave unresolved; the caller substitutes a placeholder.
-      }
-    }));
+    await Future.wait(
+      userIds.map((id) async {
+        try {
+          final doc = await _db.collection('users').doc(id).get();
+          final data = doc.data();
+          if (data != null) names[id] = data['name'] ?? 'Unknown Farmer';
+        } catch (_) {
+          // Leave unresolved; the caller substitutes a placeholder.
+        }
+      }),
+    );
 
     return records
-        .map((r) => r.copyWith(
-              farmerName: names[r.userId] ?? 'Unknown Farmer',
-            ))
+        .map((r) => r.copyWith(farmerName: names[r.userId] ?? 'Unknown Farmer'))
         .toList();
   }
 
@@ -183,16 +194,14 @@ class FirestoreService {
 
   // Listen to Firestore in real-time
   Stream<LatexSession> watchLiveSession() {
-    return _db
-        .collection(_collection)
-        .doc(_document)
-        .snapshots()
-        .map((snapshot) {
-          if (!snapshot.exists || snapshot.data() == null) {
-            return LatexSession.idle();
-          }
-          return LatexSession.fromMap(snapshot.data()!);
-        });
+    return _db.collection(_collection).doc(_document).snapshots().map((
+      snapshot,
+    ) {
+      if (!snapshot.exists || snapshot.data() == null) {
+        return LatexSession.idle();
+      }
+      return LatexSession.fromMap(snapshot.data()!);
+    });
   }
 
   /// The most recent `tapping_details` document per farmer, joined with the
@@ -229,14 +238,16 @@ class FirestoreService {
     }
 
     return farmers
-        .map((f) => FarmerTappingSnapshot(
-              farmerId: f.farmerId,
-              userId: f.uid,
-              farmerName: f.name,
-              district: f.district,
-              experience: f.experience,
-              tapping: latestByUser[f.uid],
-            ))
+        .map(
+          (f) => FarmerTappingSnapshot(
+            farmerId: f.farmerId,
+            userId: f.uid,
+            farmerName: f.name,
+            district: f.district,
+            experience: f.experience,
+            tapping: latestByUser[f.uid],
+          ),
+        )
         .toList();
   }
 
@@ -249,21 +260,25 @@ class FirestoreService {
   /// app has supplied them; `has_location` tells the UI which stops can be
   /// mapped and routed.
   Future<void> startSessionForFarms(List<TappingDetail> selected) async {
-    final farms = selected.map((t) => {
-          'farm_id':      t.userId,
-          'farmer_name':  t.farmerName,
-          'vfa_result':   0.0,
-          'grade':        '-',
-          'risk_level':   'pending',
-          'lat':          t.lat ?? 0.0,
-          'lng':          t.lng ?? 0.0,
-          'has_location': t.hasLocation,
-          'volume_l':     t.latexVolumeL,
-        }).toList();
+    final farms = selected
+        .map(
+          (t) => {
+            'farm_id': t.userId,
+            'farmer_name': t.farmerName,
+            'vfa_result': 0.0,
+            'grade': '-',
+            'risk_level': 'pending',
+            'lat': t.lat ?? 0.0,
+            'lng': t.lng ?? 0.0,
+            'has_location': t.hasLocation,
+            'volume_l': t.latexVolumeL,
+          },
+        )
+        .toList();
 
     await _db.collection(_collection).doc(_document).set({
-      'status':     'uploading',
-      'farms':      farms,
+      'status': 'uploading',
+      'farms': farms,
       'updated_at': FieldValue.serverTimestamp(),
     });
   }
@@ -286,31 +301,31 @@ class FirestoreService {
       'status': 'ready',
       'farms': [
         {
-          'farm_id':     'F001',
+          'farm_id': 'F001',
           'farmer_name': 'Karunaratne M.',
-          'vfa_result':  0.92,
-          'grade':       'C',
-          'risk_level':  'high',
-          'lat':         6.8211,
-          'lng':         80.1367,
+          'vfa_result': 0.92,
+          'grade': 'C',
+          'risk_level': 'high',
+          'lat': 6.8211,
+          'lng': 80.1367,
         },
         {
-          'farm_id':     'F002',
+          'farm_id': 'F002',
           'farmer_name': 'Perera S.K.',
-          'vfa_result':  0.61,
-          'grade':       'B',
-          'risk_level':  'medium',
-          'lat':         6.8150,
-          'lng':         80.1290,
+          'vfa_result': 0.61,
+          'grade': 'B',
+          'risk_level': 'medium',
+          'lat': 6.8150,
+          'lng': 80.1290,
         },
         {
-          'farm_id':     'F003',
+          'farm_id': 'F003',
           'farmer_name': 'Silva A.R.',
-          'vfa_result':  0.38,
-          'grade':       'A',
-          'risk_level':  'safe',
-          'lat':         6.8300,
-          'lng':         80.1420,
+          'vfa_result': 0.38,
+          'grade': 'A',
+          'risk_level': 'safe',
+          'lat': 6.8300,
+          'lng': 80.1420,
         },
       ],
       'updated_at': FieldValue.serverTimestamp(),
@@ -325,6 +340,7 @@ class FirestoreService {
       'updated_at': FieldValue.serverTimestamp(),
     });
   }
+
   /// Save a completed collection record.
   ///
   /// [spoilageScore] (0-100, predicted before arrival) and [vfaResult] (the
@@ -333,7 +349,7 @@ class FirestoreService {
   /// consumers such as the LSTM forecasting would read as pristine latex.
   ///
   /// The ammonia fields record preservative dosing at the point of collection.
-  Future<void> saveCollection({
+  Future<GradeReasonTriggerResult?> saveCollection({
     required String farmId,
     required String farmerName,
     required double spoilageScore,
@@ -347,31 +363,83 @@ class FirestoreService {
     required String notes,
     SensorReading? reading,
   }) async {
+    if (farmId.trim().isEmpty) {
+      throw ArgumentError.value(
+        farmId,
+        'farmId',
+        'Farmer Firebase UID is required.',
+      );
+    }
     if (!volume.isFinite || volume <= 0) {
       throw ArgumentError.value(
-          volume, 'volume', 'Latex volume must be a finite number greater than zero.');
+        volume,
+        'volume',
+        'Latex volume must be a finite number greater than zero.',
+      );
     }
     if (!actualAmmoniaL.isFinite || actualAmmoniaL < 0) {
-      throw ArgumentError.value(actualAmmoniaL, 'actualAmmoniaL',
-          'Actual ammonia must be a finite number that is zero or greater.');
+      throw ArgumentError.value(
+        actualAmmoniaL,
+        'actualAmmoniaL',
+        'Actual ammonia must be a finite number that is zero or greater.',
+      );
     }
     if (!recommendedAmmoniaL.isFinite ||
         (recommendedAmmoniaL - (volume * 0.03)).abs() > 0.000000001) {
-      throw ArgumentError.value(recommendedAmmoniaL, 'recommendedAmmoniaL',
-          'Recommended ammonia must equal 3% of the latex volume.');
+      throw ArgumentError.value(
+        recommendedAmmoniaL,
+        'recommendedAmmoniaL',
+        'Recommended ammonia must equal 3% of the latex volume.',
+      );
     }
 
-    await _db.collection('collections').add({
-      'farm_id':      farmId,
-      'farmer_name':  farmerName,
+    // Join the farmer's latest tapping record so the collection document
+    // contains the farmer-entered field data used later for ML analysis.
+    Map<String, dynamic>? tappingData;
+    String? tappingDetailId;
+    try {
+      final tappingSnap = await _db
+          .collection('tapping_details')
+          .where('userId', isEqualTo: farmId)
+          .orderBy('date', descending: true)
+          .limit(1)
+          .get();
+      if (tappingSnap.docs.isNotEmpty) {
+        tappingDetailId = tappingSnap.docs.first.id;
+        tappingData = tappingSnap.docs.first.data();
+      }
+    } catch (_) {
+      // Collection saving must still work if an old project has no index.
+    }
+
+    final collectionRef = _db.collection('collections').doc();
+    await collectionRef.set({
+      'collection_id': collectionRef.id,
+      'farm_id': farmId,
+      'farmer_name': farmerName,
+      'tapping_detail_id': ?tappingDetailId,
       'spoilage_risk_score': spoilageScore,
-      if (vfaResult != null) 'vfa_result': vfaResult,
-      if (grade != null) 'grade': grade,
-      'risk_level':   riskLevel,
-      'volume':       volume,
+      'vfa_result': ?vfaResult,
+      'grade': ?grade,
+      'risk_level': riskLevel,
+      'volume': volume,
       // Canonical collection fields for future litre-based model retraining.
       // These must not be used as a replacement for the current model's kg input.
       'latex_volume_l': volume,
+      'farmer_reported_latex_volume_l': tappingData?['latexVolumeL'],
+      'trees_count': tappingData?['treesCount'],
+      'tree_condition': tappingData?['treeCondition'],
+      'weather_condition': tappingData?['weatherCondition'],
+      'tapping_date': tappingData?['date'],
+      'tapping_start_time': tappingData?['startTime'],
+      'tapping_end_time': tappingData?['endTime'],
+      'tapping_duration_minutes': tappingData?['durationMinutes'],
+      'yield_per_tree_l':
+          (tappingData?['treesCount'] is num &&
+              (tappingData?['treesCount'] as num) > 0)
+          ? ((tappingData?['latexVolumeL'] as num?)?.toDouble() ?? 0) /
+                (tappingData?['treesCount'] as num).toDouble()
+          : null,
       'recommended_ammonia_l': recommendedAmmoniaL,
       'recommended_ammonia_ratio': 0.03,
       'actual_ammonia_l': actualAmmoniaL,
@@ -380,18 +448,19 @@ class FirestoreService {
       // Full sensor context, so a collection is traceable back to the exact
       // probe sample that graded it.
       if (reading != null) ...{
-        'sensor_sample_id':   reading.sampleId,
-        'sensor_ph':          reading.ph,
+        'sensor_sample_id': reading.sampleId,
+        'sensor_ph': reading.ph,
         'sensor_temperature': reading.temperature,
-        'sensor_turbidity':   reading.turbidity,
-        'sensor_reading_at':  reading.timestamp?.toIso8601String(),
+        'sensor_turbidity': reading.turbidity,
+        'sensor_reading_at': reading.timestamp?.toIso8601String(),
         'sensor_captured_at': DateTime.now().toIso8601String(),
       },
-      'notes':        notes,
+      'notes': notes,
       'collected_at': FieldValue.serverTimestamp(),
+      'grade_status': grade == 'C' ? 'requires_improvement' : 'accepted',
     });
 
-    if (grade == 'C') {
+    if (grade?.trim().toUpperCase() == 'C') {
       // Best-effort: a grade-C collection should prompt a fresh quality
       // forecast for the farmer's dashboard, but a slow/offline forecast
       // service must never fail or delay the collection save that already
@@ -404,21 +473,33 @@ class FirestoreService {
       }
 
       // Same best-effort contract as above, for the separate "why is this
-      // Grade C" explanation. Needs the sensor's pH/temperature/turbidity
-      // — those are the anomaly model's actual inputs, not VFA (see
-      // triggerGradeReason's doc comment) — so it's a no-op without a
-      // reading attached.
-      if (reading != null) {
-        try {
-          await triggerGradeReason(farmId, reading, vfa: vfaResult, grade: grade);
-        } catch (_) {
-          // Swallowed deliberately, same rationale as triggerQualityForecast.
-        }
+      // Grade C" explanation. The service can still write a useful
+      // contextual explanation when the sensor was skipped; it reports the
+      // missing sensor fields instead of silently omitting the alert.
+      try {
+        return await triggerGradeReason(
+          farmId,
+          reading,
+          vfa: vfaResult,
+          grade: 'C',
+          collectionId: collectionRef.id,
+          latexVolumeL: volume,
+          treesCount: (tappingData?['treesCount'] as num?)?.toInt(),
+          storageDurationHours: _storageDurationHours(tappingData),
+          actualAmmoniaRatio: actualAmmoniaL / volume,
+          weatherCondition: tappingData?['weatherCondition']?.toString(),
+          treeCondition: tappingData?['treeCondition']?.toString(),
+        );
+      } catch (_) {
+        // Swallowed deliberately, same rationale as triggerQualityForecast.
       }
     }
+    return null;
   }
 
-  /// Collection records saved today.
+  /// Collection records saved today. Each map includes '_id', the Firestore
+  /// document id, so a record can be looked up again later (e.g. for
+  /// [correctCollectionGrade]) without a second query.
   Future<List<Map<String, dynamic>>> getTodaysCollections() async {
     final now = DateTime.now();
     final startOfDay = DateTime(now.year, now.month, now.day);
@@ -428,7 +509,122 @@ class FirestoreService {
         .where('collected_at', isGreaterThanOrEqualTo: startOfDay)
         .get();
 
-    return snap.docs.map((d) => d.data()).toList();
+    return snap.docs
+        .map((d) => <String, dynamic>{...d.data(), '_id': d.id})
+        .toList();
+  }
+
+  /// Corrects the grade on an already-saved `collections/{collectionId}`
+  /// document from within the app, instead of editing Firestore by hand.
+  ///
+  /// This matters because [triggerGradeReason] and [triggerQualityForecast]
+  /// are plain Dart calls that only run when *this app's* code executes them
+  /// -- there is no Firestore-triggered Cloud Function in this project
+  /// watching `collections` for changes. A grade edited directly in the
+  /// Firebase console (or any other external tool) will never invoke either
+  /// service, so `grade_alerts/{userId}` is never written and the farmer's
+  /// "Why was your latex Grade C?" card never appears. Routing the
+  /// correction through this method is what makes the notification fire.
+  ///
+  /// Re-triggers the Grade-C explanation using the sensor readings already
+  /// stored on the record (`sensor_ph` / `sensor_temperature` /
+  /// `sensor_turbidity`, written by [saveCollection]). If the record predates
+  /// those fields, a contextual explanation is still generated with the
+  /// missing sensor fields clearly reported.
+  Future<GradeReasonTriggerResult> correctCollectionGrade(
+    String collectionId,
+    String newGrade,
+  ) async {
+    final docRef = _db.collection('collections').doc(collectionId);
+    final snap = await docRef.get();
+    final data = snap.data();
+    if (data == null) {
+      return const GradeReasonTriggerResult(
+        GradeReasonTriggerOutcome.insufficientData,
+        'That collection record no longer exists.',
+      );
+    }
+
+    await docRef.update(<String, dynamic>{
+      'grade': newGrade,
+      'grade_corrected_at': FieldValue.serverTimestamp(),
+    });
+
+    if (newGrade != 'C') {
+      return const GradeReasonTriggerResult(
+        GradeReasonTriggerOutcome.skippedNotGradeC,
+        'Grade updated.',
+      );
+    }
+
+    final farmId = (data['farm_id'] ?? '').toString();
+    final double? ph = (data['sensor_ph'] as num?)?.toDouble();
+    final double? temperature = (data['sensor_temperature'] as num?)
+        ?.toDouble();
+    final double? turbidity = (data['sensor_turbidity'] as num?)?.toDouble();
+    final double? vfaResult = (data['vfa_result'] as num?)?.toDouble();
+
+    if (farmId.isEmpty) {
+      return const GradeReasonTriggerResult(
+        GradeReasonTriggerOutcome.insufficientData,
+        'Grade updated, but this record has no farmer identity for the explanation.',
+      );
+    }
+
+    final reading = ph != null || temperature != null || turbidity != null
+        ? SensorReading(
+            key: (data['sensor_sample_id'] ?? collectionId).toString(),
+            sampleId: (data['sensor_sample_id'] ?? '').toString(),
+            ph: ph,
+            temperature: temperature,
+            turbidity: turbidity,
+            vfa: vfaResult,
+          )
+        : null;
+
+    try {
+      await triggerQualityForecast(farmId);
+    } catch (_) {
+      // Best-effort, same rationale as saveCollection.
+    }
+
+    final double? volume = (data['latex_volume_l'] as num?)?.toDouble();
+    final int? trees = (data['trees_count'] as num?)?.toInt();
+    return triggerGradeReason(
+      farmId,
+      reading,
+      vfa: vfaResult,
+      grade: newGrade,
+      collectionId: collectionId,
+      latexVolumeL: volume,
+      treesCount: trees,
+      storageDurationHours: (data['storage_duration_hours'] as num?)
+          ?.toDouble(),
+      actualAmmoniaRatio: (data['actual_ammonia_ratio'] as num?)?.toDouble(),
+      weatherCondition: data['weather_condition']?.toString(),
+      treeCondition: data['tree_condition']?.toString(),
+    );
+  }
+
+  double? _storageDurationHours(Map<String, dynamic>? tappingData) {
+    if (tappingData == null) return null;
+    final dynamic dateValue = tappingData['date'];
+    final dynamic startValue = tappingData['startTime'];
+    if (dateValue is! Timestamp || startValue is! String) return null;
+    final parts = startValue.split(':');
+    if (parts.length != 2) return null;
+    final h = int.tryParse(parts[0]);
+    final m = int.tryParse(parts[1]);
+    if (h == null || m == null) return null;
+    final start = DateTime(
+      dateValue.toDate().year,
+      dateValue.toDate().month,
+      dateValue.toDate().day,
+      h,
+      m,
+    );
+    final hours = DateTime.now().difference(start).inMinutes / 60.0;
+    return hours.isFinite && hours >= 0 ? hours : null;
   }
 
   /// Calls the LSTM forecast service for [userId] and asks it to persist the
@@ -451,7 +647,9 @@ class FirestoreService {
           .limit(30)
           .get();
 
-      final List<Map<String, dynamic>> sequenceRecords = history.docs.map((doc) {
+      final List<Map<String, dynamic>> sequenceRecords = history.docs.map((
+        doc,
+      ) {
         final data = doc.data();
         final Timestamp? collectedAt = data['collected_at'] as Timestamp?;
         return <String, dynamic>{
@@ -461,7 +659,9 @@ class FirestoreService {
           'ammonia_amount_ml': (data['actual_ammonia_l'] is num)
               ? (data['actual_ammonia_l'] as num) * 1000
               : null,
-          'ammonia_added': (data['actual_ammonia_l'] is num) ? ((data['actual_ammonia_l'] as num) > 0 ? 1 : 0) : null,
+          'ammonia_added': (data['actual_ammonia_l'] is num)
+              ? ((data['actual_ammonia_l'] as num) > 0 ? 1 : 0)
+              : null,
           'capturedAt': collectedAt?.toDate().toIso8601String(),
         };
       }).toList();
@@ -506,7 +706,10 @@ class FirestoreService {
       } catch (_) {
         // Non-JSON error body; keep the generic reason.
       }
-      return ForecastTriggerResult(ForecastTriggerOutcome.insufficientData, reason);
+      return ForecastTriggerResult(
+        ForecastTriggerOutcome.insufficientData,
+        reason,
+      );
     } catch (_) {
       return const ForecastTriggerResult(
         ForecastTriggerOutcome.serviceUnreachable,
@@ -524,37 +727,45 @@ class FirestoreService {
   /// pH, temperature and turbidity only — VFA is not one of its inputs, so
   /// [vfa] and [grade] are sent purely as context for display, never as
   /// something the model reasons over. [reading] supplies the three values
-  /// the model actually needs; a reading missing any of them correctly
-  /// comes back as [GradeReasonTriggerOutcome.insufficientData] rather than
-  /// a fabricated explanation.
+  /// the model actually needs when available. A null reading still produces
+  /// a contextual alert and clearly reports the missing sensor fields.
   Future<GradeReasonTriggerResult> triggerGradeReason(
     String userId,
-    SensorReading reading, {
+    SensorReading? reading, {
     double? vfa,
     String? grade,
+    String? collectionId,
+    double? latexVolumeL,
+    int? treesCount,
+    double? storageDurationHours,
+    double? actualAmmoniaRatio,
+    String? weatherCondition,
+    String? treeCondition,
   }) async {
-    if (reading.ph == null || reading.temperature == null || reading.turbidity == null) {
-      return const GradeReasonTriggerResult(
-        GradeReasonTriggerOutcome.insufficientData,
-        'This reading is missing pH, temperature or turbidity, so the '
-        'anomaly model cannot explain the grade.',
-      );
-    }
-
     try {
-      final response = await http.post(
-        Uri.parse('$kGradeReasonServiceBaseUrl/grade-reason'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(<String, dynamic>{
-          'userId': userId,
-          'ph': reading.ph,
-          'temperature': reading.temperature,
-          'turbidity': reading.turbidity,
-          if (vfa != null) 'vfa': vfa,
-          if (grade != null) 'grade': grade,
-          'saveToFirestore': true,
-        }),
-      );
+      final response = await http
+          .post(
+            Uri.parse('$kGradeReasonServiceBaseUrl/grade-reason'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode(<String, dynamic>{
+              'userId': userId,
+              if (reading?.ph != null) 'ph': reading!.ph,
+              if (reading?.temperature != null)
+                'temperature': reading!.temperature,
+              if (reading?.turbidity != null) 'turbidity': reading!.turbidity,
+              'vfa': ?vfa,
+              'grade': ?grade,
+              'collectionId': ?collectionId,
+              'latex_volume_l': ?latexVolumeL,
+              'trees_count': ?treesCount,
+              'storage_duration_hours': ?storageDurationHours,
+              'actual_ammonia_ratio': ?actualAmmoniaRatio,
+              'weather_condition': ?weatherCondition,
+              'tree_condition': ?treeCondition,
+              'saveToFirestore': true,
+            }),
+          )
+          .timeout(const Duration(seconds: 15));
 
       if (response.statusCode == 200) {
         return const GradeReasonTriggerResult(
@@ -567,10 +778,18 @@ class FirestoreService {
       try {
         final body = jsonDecode(response.body) as Map<String, dynamic>;
         reason = (body['message'] ?? reason).toString();
+      } on TimeoutException {
+        return const GradeReasonTriggerResult(
+          GradeReasonTriggerOutcome.serviceUnreachable,
+          'The Grade C service timed out while saving the farmer notification.',
+        );
       } catch (_) {
         // Non-JSON error body; keep the generic reason.
       }
-      return GradeReasonTriggerResult(GradeReasonTriggerOutcome.insufficientData, reason);
+      return GradeReasonTriggerResult(
+        GradeReasonTriggerOutcome.insufficientData,
+        reason,
+      );
     } catch (_) {
       return const GradeReasonTriggerResult(
         GradeReasonTriggerOutcome.serviceUnreachable,
@@ -582,9 +801,11 @@ class FirestoreService {
   static int _dayOfYear(DateTime d) =>
       d.difference(DateTime(d.year, 1, 1)).inDays;
 
-  static double _doySin(DateTime d) => math.sin(2 * math.pi * _dayOfYear(d) / 365.25);
+  static double _doySin(DateTime d) =>
+      math.sin(2 * math.pi * _dayOfYear(d) / 365.25);
 
-  static double _doyCos(DateTime d) => math.cos(2 * math.pi * _dayOfYear(d) / 365.25);
+  static double _doyCos(DateTime d) =>
+      math.cos(2 * math.pi * _dayOfYear(d) / 365.25);
 
   /// Farm ids already collected today, so a round survives an app restart
   /// without offering stops the supervisor has finished.

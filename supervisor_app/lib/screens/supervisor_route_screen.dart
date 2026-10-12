@@ -110,7 +110,8 @@ class _SupervisorRouteScreenState extends State<SupervisorRouteScreen> {
   /// supervisor has skipped.
   CollectionStop? get _nextStop {
     for (final s in _stops) {
-      if (!_completed.contains(s.farmerId) && !_skipped.containsKey(s.farmerId)) {
+      if (!_completed.contains(s.farmerId) &&
+          !_skipped.containsKey(s.farmerId)) {
         return s;
       }
     }
@@ -179,6 +180,7 @@ class _SupervisorRouteScreenState extends State<SupervisorRouteScreen> {
 
       payload.add({
         'farmer_id': id,
+        'user_id': s.userId,
         'hours_since_tapping': hours ?? 0.0,
         'weatherCondition': tapping?.weatherCondition ?? '',
         'district': s.district,
@@ -232,8 +234,7 @@ class _SupervisorRouteScreenState extends State<SupervisorRouteScreen> {
         'Not selected: ${notSelected.join(", ")}',
       if (missingTime.isNotEmpty)
         'No usable tapping time for: ${missingTime.join(", ")} (sent as 0 h)',
-      if (incomplete.isNotEmpty)
-        'Incomplete data — ${incomplete.join("; ")}',
+      if (incomplete.isNotEmpty) 'Incomplete data — ${incomplete.join("; ")}',
     ];
     if (warnings.isNotEmpty && mounted) {
       setState(() => _warning = warnings.join('\n'));
@@ -245,7 +246,12 @@ class _SupervisorRouteScreenState extends State<SupervisorRouteScreen> {
   /// Synthetic sample used only when [kUseDemoData] is true.
   List<Map<String, dynamic>> _buildDemoFarmersPayload() {
     const weathers = ['Sunny', 'Cloudy', 'Rainy', 'Stormy'];
-    const exps = ['1 - 3 years', '3 - 5 years', '5 - 10 years', 'More than 10 years'];
+    const exps = [
+      '1 - 3 years',
+      '3 - 5 years',
+      '5 - 10 years',
+      'More than 10 years',
+    ];
     return List.generate(kExpectedFarmerCount, (i) {
       final id = 'F${(i + 1).toString().padLeft(3, '0')}';
       return {
@@ -283,10 +289,12 @@ class _SupervisorRouteScreenState extends State<SupervisorRouteScreen> {
       final data = jsonDecode(res.body) as Map<String, dynamic>;
       final depot = data['depot'] as Map<String, dynamic>;
       final stops = (data['stops'] as List)
-          .map((s) => CollectionStop.fromBackend(
-                s as Map<String, dynamic>,
-                farmerName: _names[s['farmer_id']] ?? '',
-              ))
+          .map(
+            (s) => CollectionStop.fromBackend(
+              s as Map<String, dynamic>,
+              farmerName: _names[s['farmer_id']] ?? '',
+            ),
+          )
           .toList();
 
       setState(() {
@@ -297,7 +305,8 @@ class _SupervisorRouteScreenState extends State<SupervisorRouteScreen> {
         _stops = stops;
         _efficiency = data['efficiency'] is Map
             ? RouteEfficiency.fromJson(
-                (data['efficiency'] as Map).cast<String, dynamic>())
+                (data['efficiency'] as Map).cast<String, dynamic>(),
+              )
             : null;
       });
     } catch (e) {
@@ -317,36 +326,40 @@ class _SupervisorRouteScreenState extends State<SupervisorRouteScreen> {
     final markers = <Marker>[];
 
     if (_depot != null) {
-      markers.add(Marker(
-        point: _depot!,
-        width: 40,
-        height: 40,
-        child: const Icon(Icons.home, color: Colors.blue, size: 34),
-      ));
+      markers.add(
+        Marker(
+          point: _depot!,
+          width: 40,
+          height: 40,
+          child: const Icon(Icons.home, color: Colors.blue, size: 34),
+        ),
+      );
     }
 
     for (final s in _stops) {
-      markers.add(Marker(
-        point: LatLng(s.latitude, s.longitude),
-        width: 34,
-        height: 34,
-        child: Container(
-          decoration: BoxDecoration(
-            color: _scoreColour(s.spoilageScore),
-            shape: BoxShape.circle,
-            border: Border.all(color: Colors.white, width: 2),
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            '${s.order}',
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 13,
+      markers.add(
+        Marker(
+          point: LatLng(s.latitude, s.longitude),
+          width: 34,
+          height: 34,
+          child: Container(
+            decoration: BoxDecoration(
+              color: _scoreColour(s.spoilageScore),
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 2),
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              '${s.order}',
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+              ),
             ),
           ),
         ),
-      ));
+      );
     }
     return markers;
   }
@@ -392,10 +405,7 @@ class _SupervisorRouteScreenState extends State<SupervisorRouteScreen> {
             ),
           Expanded(
             child: FlutterMap(
-              options: MapOptions(
-                initialCenter: centre,
-                initialZoom: 9,
-              ),
+              options: MapOptions(initialCenter: centre, initialZoom: 9),
               children: [
                 TileLayer(
                   urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -445,14 +455,13 @@ class _SupervisorRouteScreenState extends State<SupervisorRouteScreen> {
         backgroundColor: done
             ? Colors.grey
             : skipped
-                ? Colors.orange.shade300
-                : _scoreColour(s.spoilageScore),
+            ? Colors.orange.shade300
+            : _scoreColour(s.spoilageScore),
         child: done
             ? const Icon(Icons.check, size: 18, color: Colors.white)
             : skipped
-                ? const Icon(Icons.redo, size: 18, color: Colors.white)
-                : Text('${s.order}',
-                    style: const TextStyle(color: Colors.white)),
+            ? const Icon(Icons.redo, size: 18, color: Colors.white)
+            : Text('${s.order}', style: const TextStyle(color: Colors.white)),
       ),
       title: Text(
         s.farmerName,
@@ -466,10 +475,10 @@ class _SupervisorRouteScreenState extends State<SupervisorRouteScreen> {
         done
             ? '${s.farmerId} — collected'
             : skipped
-                ? '${s.farmerId} — skipped: ${_skipped[s.farmerId]}'
-                : isNext
-                    ? '${s.farmerId} — next stop'
-                    : s.farmerId,
+            ? '${s.farmerId} — skipped: ${_skipped[s.farmerId]}'
+            : isNext
+            ? '${s.farmerId} — next stop'
+            : s.farmerId,
         style: const TextStyle(fontSize: 11),
       ),
       trailing: Column(
@@ -479,7 +488,9 @@ class _SupervisorRouteScreenState extends State<SupervisorRouteScreen> {
           Text(
             'risk ${s.spoilageScore.toStringAsFixed(0)}',
             style: TextStyle(
-                fontSize: 12, color: inactive ? Colors.grey : null),
+              fontSize: 12,
+              color: inactive ? Colors.grey : null,
+            ),
           ),
           if (s.etaMinutes != null)
             Text(
@@ -516,9 +527,13 @@ class _SupervisorRouteScreenState extends State<SupervisorRouteScreen> {
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
               child: Align(
                 alignment: Alignment.centerLeft,
-                child: Text('Skip ${s.farmerName}?',
-                    style: const TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.w700)),
+                child: Text(
+                  'Skip ${s.farmerName}?',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ),
             ),
             for (final r in reasons)
@@ -538,8 +553,11 @@ class _SupervisorRouteScreenState extends State<SupervisorRouteScreen> {
     // The remaining farms are a different routing problem, so offer to plan
     // them again rather than following an order that assumed this stop.
     final remaining = _stops
-        .where((x) =>
-            !_completed.contains(x.farmerId) && !_skipped.containsKey(x.farmerId))
+        .where(
+          (x) =>
+              !_completed.contains(x.farmerId) &&
+              !_skipped.containsKey(x.farmerId),
+        )
         .length;
     if (remaining >= 2) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -574,8 +592,9 @@ class _SupervisorRouteScreenState extends State<SupervisorRouteScreen> {
         style: ElevatedButton.styleFrom(
           backgroundColor: AppTheme.primary,
           foregroundColor: Colors.white,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
       ),
     );
@@ -598,42 +617,62 @@ class _SupervisorRouteScreenState extends State<SupervisorRouteScreen> {
         children: [
           Row(
             children: [
-              Icon(good ? Icons.insights : Icons.warning_amber_rounded,
-                  size: 16, color: colour),
+              Icon(
+                good ? Icons.insights : Icons.warning_amber_rounded,
+                size: 16,
+                color: colour,
+              ),
               const SizedBox(width: 8),
-              Text('Route efficiency',
-                  style: GoogleFonts.inter(
-                      fontSize: 13, fontWeight: FontWeight.w700, color: colour)),
+              Text(
+                'Route efficiency',
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: colour,
+                ),
+              ),
               const Spacer(),
-              Text('${e.totalMinutes} min round',
-                  style: GoogleFonts.inter(
-                      fontSize: 11, color: AppTheme.textSecondary)),
+              Text(
+                '${e.totalMinutes} min round',
+                style: GoogleFonts.inter(
+                  fontSize: 11,
+                  color: AppTheme.textSecondary,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 10),
-          _effRow('Distance', '${e.dqnKm.toStringAsFixed(1)} km',
-              '${e.baselineKm.toStringAsFixed(1)} km', e.kmSavingPct),
+          _effRow(
+            'Distance',
+            '${e.dqnKm.toStringAsFixed(1)} km',
+            '${e.baselineKm.toStringAsFixed(1)} km',
+            e.kmSavingPct,
+          ),
           const SizedBox(height: 4),
           _effRow(
-              'Risk exposure',
-              e.dqnRiskExposure.toStringAsFixed(0),
-              e.baselineRiskExposure.toStringAsFixed(0),
-              e.riskSavingPct),
+            'Risk exposure',
+            e.dqnRiskExposure.toStringAsFixed(0),
+            e.baselineRiskExposure.toStringAsFixed(0),
+            e.riskSavingPct,
+          ),
           const SizedBox(height: 8),
           Text(
             e.worseOnBoth
                 // Losing on the metric it optimises means the policy does not
                 // fit this geometry — worth saying plainly rather than hiding.
                 ? 'The AI route is longer AND carries more spoilage risk than '
-                    'simply driving to the nearest farm each time. The DQN was '
-                    'trained on different coordinates — retrain it before '
-                    'relying on these figures.'
+                      'simply driving to the nearest farm each time. The DQN was '
+                      'trained on different coordinates — retrain it before '
+                      'relying on these figures.'
                 : e.drivesFurther
-                    ? 'The AI route drives further but reaches the most '
-                        'perishable latex sooner — distance traded for freshness.'
-                    : 'Compared with driving to the nearest farm each time.',
+                ? 'The AI route drives further but reaches the most '
+                      'perishable latex sooner — distance traded for freshness.'
+                : 'Compared with driving to the nearest farm each time.',
             style: GoogleFonts.inter(
-                fontSize: 10.5, color: AppTheme.textSecondary, height: 1.35),
+              fontSize: 10.5,
+              color: AppTheme.textSecondary,
+              height: 1.35,
+            ),
           ),
         ],
       ),
@@ -646,16 +685,28 @@ class _SupervisorRouteScreenState extends State<SupervisorRouteScreen> {
       children: [
         SizedBox(
           width: 92,
-          child: Text(label,
-              style: GoogleFonts.inter(
-                  fontSize: 11, color: AppTheme.textSecondary)),
+          child: Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 11,
+              color: AppTheme.textSecondary,
+            ),
+          ),
         ),
-        Text(dqn,
-            style: GoogleFonts.jetBrainsMono(
-                fontSize: 12, fontWeight: FontWeight.w700)),
-        Text('  vs $base',
-            style: GoogleFonts.jetBrainsMono(
-                fontSize: 11, color: AppTheme.textMuted)),
+        Text(
+          dqn,
+          style: GoogleFonts.jetBrainsMono(
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        Text(
+          '  vs $base',
+          style: GoogleFonts.jetBrainsMono(
+            fontSize: 11,
+            color: AppTheme.textMuted,
+          ),
+        ),
         const Spacer(),
         Text(
           '${better ? '−' : '+'}${pct.abs().toStringAsFixed(1)}%',
@@ -680,17 +731,23 @@ class _SupervisorRouteScreenState extends State<SupervisorRouteScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Stop ${s.order} — ${s.farmerName}',
-                style: const TextStyle(
-                    fontSize: 17, fontWeight: FontWeight.w700)),
+            Text(
+              'Stop ${s.order} — ${s.farmerName}',
+              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+            ),
             const SizedBox(height: 4),
-            Text(s.farmerId,
-                style: const TextStyle(color: Colors.grey, fontSize: 12)),
+            Text(
+              s.farmerId,
+              style: const TextStyle(color: Colors.grey, fontSize: 12),
+            ),
             const SizedBox(height: 14),
             Row(
               children: [
-                Icon(Icons.warning_amber_rounded,
-                    size: 18, color: _scoreColour(s.spoilageScore)),
+                Icon(
+                  Icons.warning_amber_rounded,
+                  size: 18,
+                  color: _scoreColour(s.spoilageScore),
+                ),
                 const SizedBox(width: 8),
                 Text(
                   'Predicted spoilage risk '
@@ -752,11 +809,8 @@ class _SupervisorRouteScreenState extends State<SupervisorRouteScreen> {
     await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => VerifyScreen(
-          farm: stop,
-          stopNumber: stop.order,
-          reading: reading,
-        ),
+        builder: (_) =>
+            VerifyScreen(farm: stop, stopNumber: stop.order, reading: reading),
       ),
     );
     // VerifyScreen writes to `collections` (or the offline queue), so re-read

@@ -66,7 +66,11 @@ service cloud.firestore {
     match /tapping_details/{recordId} {
       allow create: if signedIn()
         && request.resource.data.userId == request.auth.uid;
-      allow read, delete: if signedIn() && resource.data.userId == request.auth.uid;
+      // Supervisors need to review farmer submissions before starting a
+      // collection round. The supervisor claim is trusted here; the editable
+      // users/{uid}.role field is intentionally not used for authorization.
+      allow read, delete: if (signedIn() && resource.data.userId == request.auth.uid)
+        || isSupervisor();
       allow update: if signedIn()
         && resource.data.userId == request.auth.uid
         && request.resource.data.userId == request.auth.uid;

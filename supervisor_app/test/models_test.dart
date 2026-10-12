@@ -377,7 +377,7 @@ void main() {
           'temperature': 30.2,
           'timestamp': ts ?? '2026-08-21T12:30:44.284728',
           'turbidity': 2671.64844,
-          if (vfa != null) 'vfa': vfa,
+          'vfa': ?vfa,
         };
 
     test('parses a device record', () {
@@ -454,8 +454,8 @@ void main() {
           'latitude': 6.7,
           'longitude': 80.0,
           'spoilage_risk_score': 50,
-          if (eta != null) 'eta_minutes': eta,
-          if (leg != null) 'leg_km': leg,
+          'eta_minutes': ?eta,
+          'leg_km': ?leg,
         });
 
     test('parses leg distance and ETA', () {

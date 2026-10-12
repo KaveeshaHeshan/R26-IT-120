@@ -600,7 +600,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     style: TextStyle(color: p.textPrimary, fontSize: 15, fontWeight: FontWeight.w900),
                   ),
                 ),
-                if (trailing != null) trailing,
+                ?trailing,
               ],
             ),
             const SizedBox(height: 12),

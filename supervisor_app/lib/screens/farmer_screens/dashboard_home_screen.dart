@@ -901,7 +901,13 @@ class DashboardHomeScreen extends StatelessWidget {
     return FirebaseFirestore.instance.collection('grade_alerts').doc(userId).snapshots().map(
       (DocumentSnapshot<Map<String, dynamic>> snapshot) {
         final Map<String, dynamic>? alert = snapshot.data();
-        if (alert == null || alert['reason'] == null) return <Map<String, dynamic>>[];
+        // Keep the Grade C notification visible even when the explanation
+        // service saved a partial payload. The farmer must still see the
+        // supervisor's confirmed grade while the detailed analysis is being
+        // regenerated.
+        if (alert == null || alert['grade']?.toString().toUpperCase() != 'C') {
+          return <Map<String, dynamic>>[];
+        }
         return <Map<String, dynamic>>[
           <String, dynamic>{...alert, 'source': 'grade_c_reason'},
         ];
@@ -910,10 +916,25 @@ class DashboardHomeScreen extends StatelessWidget {
   }
 
   Widget _gradeReasonAlertTile(FarmerPalette p, Map<String, dynamic> alert) {
-    final bool isAnomaly = alert['is_anomaly'] == true;
-    final Color color = isAnomaly ? p.danger : p.warning;
-    final List<dynamic> deviations =
-        alert['deviations'] is List<dynamic> ? alert['deviations'] as List<dynamic> : <dynamic>[];
+    final Color color = p.danger;
+    final List<dynamic> factors = alert['top_factors'] is List<dynamic>
+        ? alert['top_factors'] as List<dynamic>
+        : <dynamic>[];
+    final List<dynamic> tips = alert['tips'] is List<dynamic>
+        ? alert['tips'] as List<dynamic>
+        : <dynamic>[
+            'Send latex for processing as soon as possible after collection.',
+            'Keep collected latex clean, cool and covered while it is waiting.',
+            'Check preservative mixing and sensor readings during the next collection.',
+          ];
+    final Map<String, dynamic> measured = alert['measured'] is Map<String, dynamic>
+        ? alert['measured'] as Map<String, dynamic>
+        : <String, dynamic>{};
+
+    String value(dynamic v, String unit) {
+      if (v is num) return '${v.toStringAsFixed(2)}$unit';
+      return '--';
+    }
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -921,54 +942,117 @@ class DashboardHomeScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: color.withOpacity(p.isDark ? 0.14 : 0.07),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: color.withOpacity(0.30)),
+        border: Border.all(color: color.withOpacity(0.32), width: 1.2),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               Container(
                 padding: const EdgeInsets.all(9),
                 decoration: BoxDecoration(color: color.withOpacity(0.16), shape: BoxShape.circle),
-                child: Icon(Icons.priority_high_rounded, color: color, size: 21),
+                child: Icon(Icons.warning_amber_rounded, color: color, size: 22),
               ),
               const SizedBox(width: 11),
               Expanded(
-                child: Text(
-                  'Why was your latex Grade C?',
-                  style: TextStyle(color: p.textPrimary, fontSize: 16, fontWeight: FontWeight.w900),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text('Latex Grade C', style: TextStyle(color: p.textPrimary, fontSize: 17, fontWeight: FontWeight.w900)),
+                    const SizedBox(height: 2),
+                    Text('Why your collection received Grade C', style: TextStyle(color: p.textSecondary, fontSize: 12)),
+                  ],
                 ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(20)),
+                child: Text('C', style: TextStyle(color: color, fontWeight: FontWeight.w900, fontSize: 16)),
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          Text(_stringOrDefault(alert['reason']), style: TextStyle(color: p.textSecondary, height: 1.38)),
-          if (deviations.isNotEmpty) ...<Widget>[
-            const SizedBox(height: 12),
-            ...deviations.map((dynamic d) {
-              final Map<String, dynamic> dev = _mapValue(d);
-              final num? z = dev['z_score'] is num ? dev['z_score'] as num : null;
-              final String feature = _stringOrDefault(dev['feature'], fallback: '--');
-              final num? value = dev['value'] is num ? dev['value'] as num : null;
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 4),
+          const SizedBox(height: 14),
+          Text(_stringOrDefault(alert['reason'], fallback: 'The analysis found quality factors that should be improved.'), style: TextStyle(color: p.textSecondary, height: 1.4)),
+
+          if (factors.isNotEmpty) ...<Widget>[
+            const SizedBox(height: 14),
+            Text('MAIN FACTORS', style: TextStyle(color: p.textMuted, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1.2)),
+            const SizedBox(height: 8),
+            ...factors.take(4).map((dynamic raw) {
+              final Map<String, dynamic> f = _mapValue(raw);
+              final String label = _stringOrDefault(f['label'] ?? f['feature'], fallback: 'Quality factor');
+              final String severity = _stringOrDefault(f['severity'], fallback: 'medium').toLowerCase();
+              final Color factorColor = severity == 'high' ? p.danger : severity == 'medium' ? p.warning : p.info;
+              final String reason = _stringOrDefault(f['reason'], fallback: 'This factor was flagged during the quality analysis.');
+              final dynamic fv = f['value'];
+              final String unit = _stringOrDefault(f['unit'], fallback: '');
+              return Container(
+                margin: const EdgeInsets.only(bottom: 7),
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(color: p.surface, borderRadius: BorderRadius.circular(12), border: Border.all(color: p.border)),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Text(feature, style: TextStyle(color: p.textSecondary, fontSize: 12)),
-                    Text(
-                      value == null ? '--' : '${value.toStringAsFixed(2)}${z == null ? '' : ' (z=${z.toStringAsFixed(2)})'}',
-                      style: TextStyle(color: p.textPrimary, fontSize: 12, fontWeight: FontWeight.w700),
-                    ),
+                    Container(width: 7, height: 7, margin: const EdgeInsets.only(top: 5), decoration: BoxDecoration(color: factorColor, shape: BoxShape.circle)),
+                    const SizedBox(width: 9),
+                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[
+                      Row(children: <Widget>[
+                        Expanded(child: Text(label, style: TextStyle(color: p.textPrimary, fontWeight: FontWeight.w800, fontSize: 12))),
+                        Text(value(fv, unit), style: TextStyle(color: factorColor, fontWeight: FontWeight.w800, fontSize: 12)),
+                      ]),
+                      const SizedBox(height: 3),
+                      Text(reason, style: TextStyle(color: p.textSecondary, fontSize: 11, height: 1.3)),
+                    ])),
                   ],
                 ),
               );
             }),
           ],
+
+          const SizedBox(height: 12),
+          Text('YOUR MEASUREMENTS', style: TextStyle(color: p.textMuted, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1.2)),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 7,
+            runSpacing: 7,
+            children: <Widget>[
+              _miniMetric(p, 'pH', value(measured['ph'], '')),
+              _miniMetric(p, 'Temp', value(measured['temperature'], ' °C')),
+              _miniMetric(p, 'Turbidity', value(measured['turbidity'], ' NTU')),
+              _miniMetric(p, 'VFA', value(measured['vfa'], '')),
+            ],
+          ),
+
+          if (tips.isNotEmpty) ...<Widget>[
+            const SizedBox(height: 15),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(color: p.success.withOpacity(0.08), borderRadius: BorderRadius.circular(13), border: Border.all(color: p.success.withOpacity(0.22))),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[
+                Row(children: <Widget>[Icon(Icons.lightbulb_outline_rounded, color: p.success, size: 18), const SizedBox(width: 7), Text('HOW TO IMPROVE YOUR NEXT GRADE', style: TextStyle(color: p.success, fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 1.0))]),
+                const SizedBox(height: 8),
+                ...tips.take(5).map((dynamic tip) => Padding(padding: const EdgeInsets.only(bottom: 5), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[Text('• ', style: TextStyle(color: p.success, fontWeight: FontWeight.w900)), Expanded(child: Text(tip.toString(), style: TextStyle(color: p.textSecondary, fontSize: 11, height: 1.3)))]))),
+              ]),
+            ),
+          ],
+
+          const SizedBox(height: 8),
+          Text('Analysis model: ${_stringOrDefault(alert['model_version'], fallback: 'quality analysis')}', style: TextStyle(color: p.textMuted, fontSize: 9)),
         ],
       ),
+    );
+  }
+
+  Widget _miniMetric(FarmerPalette p, String label, String value) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
+      decoration: BoxDecoration(color: p.surface, borderRadius: BorderRadius.circular(10), border: Border.all(color: p.border)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[
+        Text(value, style: TextStyle(color: p.textPrimary, fontSize: 12, fontWeight: FontWeight.w800)),
+        const SizedBox(height: 2),
+        Text(label, style: TextStyle(color: p.textMuted, fontSize: 9)),
+      ]),
     );
   }
 

@@ -11,6 +11,10 @@
 ///    because a fabricated 0.0 would read as pristine latex.
 class CollectionStop {
   final int order;
+
+  /// Firebase Auth UID used for Firestore ownership and farmer alerts.
+  /// This is separate from [farmerId], which may be a model id such as F001.
+  final String userId;
   final String farmerId;
   final String farmerName;
   final double latitude;
@@ -34,6 +38,7 @@ class CollectionStop {
 
   const CollectionStop({
     required this.order,
+    required this.userId,
     required this.farmerId,
     required this.farmerName,
     required this.latitude,
@@ -61,6 +66,7 @@ class CollectionStop {
   }) {
     return CollectionStop(
       order: (json['order'] as num).toInt(),
+      userId: (json['user_id'] ?? json['farmer_id'] ?? '').toString(),
       farmerId: json['farmer_id'] as String,
       farmerName: farmerName.isEmpty ? json['farmer_id'] as String : farmerName,
       latitude: (json['latitude'] as num).toDouble(),
@@ -86,6 +92,7 @@ class CollectionStop {
   }) {
     return CollectionStop(
       order: order,
+      userId: userId,
       farmerId: farmerId,
       farmerName: farmerName ?? this.farmerName,
       latitude: latitude,

@@ -34,8 +34,19 @@ class _VerifyScreenState extends State<VerifyScreen> {
       TextEditingController();
   final TextEditingController _notesController = TextEditingController();
   bool? _followedStandardAmmoniaRatio;
+  String? _selectedGrade;
   bool _isSigned = false;
   bool _isSubmitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final existing = widget.farm.grade?.trim().toUpperCase();
+    final sensorGrade = widget.reading?.grade?.trim().toUpperCase();
+    _selectedGrade = <String>{'A', 'B', 'C'}.contains(existing)
+        ? existing
+        : (<String>{'A', 'B', 'C'}.contains(sensorGrade) ? sensorGrade : null);
+  }
 
   @override
   void dispose() {
@@ -71,6 +82,19 @@ class _VerifyScreenState extends State<VerifyScreen> {
             style: GoogleFonts.inter(),
           ),
           backgroundColor: AppTheme.riskHigh,
+        ),
+      );
+      return;
+    }
+
+    if (_selectedGrade == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Please enter the final latex grade (A, B or C)',
+            style: GoogleFonts.inter(),
+          ),
+          backgroundColor: AppTheme.riskMedium,
         ),
       );
       return;
@@ -122,6 +146,7 @@ class _VerifyScreenState extends State<VerifyScreen> {
     setState(() => _isSubmitting = true);
 
     bool savedOnline = false;
+    GradeReasonTriggerResult? gradeReasonResult;
     try {
       final connectivity = await Connectivity().checkConnectivity();
       final isOnline = connectivity.any(
@@ -133,12 +158,12 @@ class _VerifyScreenState extends State<VerifyScreen> {
 
       if (isOnline) {
         try {
-          await FirestoreService().saveCollection(
-            farmId: widget.farm.farmerId,
+          gradeReasonResult = await FirestoreService().saveCollection(
+            farmId: widget.farm.userId,
             farmerName: widget.farm.farmerName,
             spoilageScore: widget.farm.spoilageScore,
             vfaResult: widget.farm.vfaResult,
-            grade: widget.farm.grade,
+            grade: _selectedGrade,
             riskLevel: widget.farm.riskLevel,
             volume: volume,
             recommendedAmmoniaL: recommendedAmmonia,
@@ -155,17 +180,18 @@ class _VerifyScreenState extends State<VerifyScreen> {
 
       if (!savedOnline) {
         await OfflineQueueService().addPendingCollection(
-          farmId: widget.farm.farmerId,
+          farmId: widget.farm.userId,
           farmerName: widget.farm.farmerName,
           spoilageScore: widget.farm.spoilageScore,
           vfaResult: widget.farm.vfaResult,
-          grade: widget.farm.grade,
+          grade: _selectedGrade,
           riskLevel: widget.farm.riskLevel,
           volume: volume,
           recommendedAmmoniaL: recommendedAmmonia,
           actualAmmoniaL: actualAmmonia,
           followedStandardAmmoniaRatio: _followedStandardAmmoniaRatio!,
           notes: _notesController.text.trim(),
+          reading: widget.reading,
         );
       }
     } catch (error) {
@@ -185,6 +211,22 @@ class _VerifyScreenState extends State<VerifyScreen> {
     }
 
     if (!mounted) return;
+
+    if (savedOnline &&
+        _selectedGrade == 'C' &&
+        gradeReasonResult != null &&
+        gradeReasonResult.outcome != GradeReasonTriggerOutcome.queued) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Collection saved, but Grade C notification was not created: '
+            '${gradeReasonResult.message}',
+          ),
+          backgroundColor: AppTheme.riskMedium,
+          duration: const Duration(seconds: 6),
+        ),
+      );
+    }
 
     showDialog(
       context: context,
@@ -455,9 +497,11 @@ class _VerifyScreenState extends State<VerifyScreen> {
                               children: [
                                 Text(
                                   widget.farm.hasSensorReading
-                                      ? widget.farm.vfaResult!.toStringAsFixed(2)
+                                      ? widget.farm.vfaResult!.toStringAsFixed(
+                                          2,
+                                        )
                                       : widget.farm.spoilageScore
-                                          .toStringAsFixed(0),
+                                            .toStringAsFixed(0),
                                   style: GoogleFonts.jetBrainsMono(
                                     color: riskColor,
                                     fontSize: 28,
@@ -573,6 +617,55 @@ class _VerifyScreenState extends State<VerifyScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
+
+                  // Supervisor enters/confirms the final laboratory/quality grade.
+                  Text(
+                    'FINAL LATEX GRADE',
+                    style: GoogleFonts.jetBrainsMono(
+                      color: AppTheme.textMuted,
+                      fontSize: 10,
+                      letterSpacing: 1.3,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<String>(
+                    initialValue: _selectedGrade,
+                    decoration: InputDecoration(
+                      prefixIcon: const Icon(
+                        Icons.verified_outlined,
+                        color: AppTheme.primary,
+                        size: 18,
+                      ),
+                      filled: true,
+                      fillColor: AppTheme.background,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: AppTheme.divider),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: AppTheme.divider),
+                      ),
+                    ),
+                    hint: const Text('Select final grade'),
+                    items: const [
+                      DropdownMenuItem(
+                        value: 'A',
+                        child: Text('Grade A — Good quality'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'B',
+                        child: Text('Grade B — Acceptable quality'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'C',
+                        child: Text('Grade C — Needs improvement'),
+                      ),
+                    ],
+                    onChanged: (value) =>
+                        setState(() => _selectedGrade = value),
+                  ),
+                  const SizedBox(height: 14),
 
                   // Volume input
                   TextField(
@@ -691,15 +784,11 @@ class _VerifyScreenState extends State<VerifyScreen> {
                           fillColor: AppTheme.background,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(
-                              color: AppTheme.divider,
-                            ),
+                            borderSide: BorderSide(color: AppTheme.divider),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(
-                              color: AppTheme.divider,
-                            ),
+                            borderSide: BorderSide(color: AppTheme.divider),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),

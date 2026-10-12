@@ -43,3 +43,10 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Firebase Admin SDK service account keys -- these grant full admin access
+# to Firestore/Auth for this project. Never commit them, wherever they're
+# placed (grade_reason_service/, lstm_forecast_service/, backend/, etc.).
+*firebase-adminsdk*.json
+*serviceAccountKey*.json
+service-account*.json

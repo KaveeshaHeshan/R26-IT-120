@@ -315,7 +315,7 @@ def plan_collection():
 
     # Coordinates are routing inputs, not model features — keep them out of
     # the record handed to the spoilage model.
-    non_feature = {"farmer_id", "latitude", "longitude"}
+    non_feature = {"farmer_id", "user_id", "latitude", "longitude"}
     scores = {}
     for rec in records:
         fid = rec["farmer_id"]
@@ -352,6 +352,7 @@ def plan_collection():
         stops.append({
             "order": i + 1,
             "farmer_id": fid,
+            "user_id": records[idx].get("user_id", fid),
             "latitude": pts[idx][0],
             "longitude": pts[idx][1],
             "spoilage_risk_score": round(scores[fid], 1),

@@ -167,8 +167,7 @@ def _context_factors(data):
             "source": "quality_threshold", "reason": "Longer holding time can reduce freshness; move latex to processing sooner.",
         })
 
-    # Weather/tree condition are advisory context. They are never presented as
-    # model-derived causes unless a real value is supplied.
+    
     weather = str(data.get("weather_condition") or "").strip().lower()
     if weather in {"rain", "rainy", "heavy rain", "storm"}:
         factors.append({

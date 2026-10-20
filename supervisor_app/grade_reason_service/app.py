@@ -1,17 +1,3 @@
-"""
-Grade-C Reason Service
-----------------------
-Uses the existing Isolation Forest model for the three features it was actually
-trained on (pH, temperature_c, turbidity_ntu), then combines that model signal
-with the measured collection context to produce an explainable Grade-C report.
-
-The service never claims that fields not present in the trained model were used
-by the model prediction. Context fields (VFA, ammonia ratio, volume, trees,
-storage duration, weather, tree condition, etc.) are analysed separately and
-reported as contributing factors when they are outside the configured quality
-baseline. This keeps the explanation honest while still making it useful to the
-farmer.
-"""
 import os
 from datetime import datetime, timezone
 from pathlib import Path
@@ -44,9 +30,7 @@ REQUEST_TO_FEATURE = {
 Z_FLAG = 1.0
 MODEL_VERSION = "grade-c-explainer-v2"
 
-# These are application-level guidance thresholds, not model inputs.
-# They are deliberately exposed in the response so the UI can explain what
-# was checked rather than hiding magic numbers.
+
 CONTEXT_THRESHOLDS = {
     "vfa": {"high": 0.85, "label": "VFA"},
     "actual_ammonia_ratio": {"low": 0.025, "high": 0.035, "label": "Ammonia ratio"},

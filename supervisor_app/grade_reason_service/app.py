@@ -22,6 +22,7 @@ FEATURES = list(SCALER.feature_names_in_)
 MEAN = dict(zip(FEATURES, SCALER.mean_))
 SCALE = dict(zip(FEATURES, SCALER.scale_))
 
+#features 
 REQUEST_TO_FEATURE = {
     "ph": "pH",
     "temperature": "temperature_c",

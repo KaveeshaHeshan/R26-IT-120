@@ -1,102 +1,70 @@
 // src/App.jsx
 
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, Outlet } from 'react-router-dom'
 
 import LoginPage from './pages/LoginPage'
-import DailySummaryPage from './pages/DailySummaryPage'
+import OverviewPage from './pages/OverviewPage'
+import FarmersPage from './pages/FarmersPage'
+import FarmerDetailPage from './pages/FarmerDetailPage'
+import SupervisorsPage from './pages/SupervisorsPage'
+import QualityReportPage from './pages/QualityReportPage'
 import UnauthorizedPage from './pages/UnauthorizedPage'
 import Navbar from './components/layout/Navbar'
 import Sidebar from './components/layout/Sidebar'
-import { ROLES } from './constants/roles'
+import { FactoryDataProvider } from './context/FactoryDataContext'
+import { ALL_ROLES } from './constants/roles'
 
-// Auth helpers 
+// Auth helpers
 const getToken = () => localStorage.getItem('token')
 const getRole = () => localStorage.getItem('role')
 const getUserId = () => localStorage.getItem('user_id')
 
-//  Protected Route 
-const ProtectedRoute = ({ allowedRoles, children }) => {
+// Guarded dashboard shell — one mount for the whole authenticated area
+const DashboardLayout = () => {
   const token = getToken()
   const role = getRole()
   const userId = getUserId()
 
-  if (!token || !role || !userId) {
-    return <Navigate to="/login" replace />
-  }
-  if (allowedRoles && !allowedRoles.includes(role)) {
-    return <Navigate to="/unauthorized" replace />
-  }
-  return children
+  if (!token || !role || !userId) return <Navigate to="/login" replace />
+  if (!ALL_ROLES.includes(role)) return <Navigate to="/unauthorized" replace />
+
+  return (
+    <FactoryDataProvider>
+      <div className="flex flex-wrap items-stretch min-h-screen bg-ground">
+        <Sidebar />
+        <div className="flex-[999_1_560px] min-w-0 flex flex-col">
+          <Navbar />
+          <main className="flex-1 overflow-y-auto">
+            <div className="max-w-350 mx-auto px-10 py-8">
+              <Outlet />
+            </div>
+          </main>
+        </div>
+      </div>
+    </FactoryDataProvider>
+  )
 }
 
-// Dashboard Layout 
-const DashboardLayout = ({ children }) => (
-  <div className="flex min-h-screen bg-white">
-    <Sidebar />
-    <div className="flex-1 flex flex-col min-h-screen overflow-hidden relative">
-      <Navbar />
-      
-      <main className="flex-1 overflow-y-auto relative z-10">
-        <div className="max-w-7xl mx-auto p-4 md:p-6">
-          {children}
-        </div>
-      </main>
-    </div>
-  </div>
-)
-
-// ── App ───────────────────────────────────────────────────────────────────────
 const App = () => {
-  const token = getToken()
-  const role = getRole()
-  const userId = getUserId()
-  const isAuth = Boolean(token && role && userId)
+  const isAuth = Boolean(getToken() && getRole() && getUserId())
 
   return (
     <Routes>
+      <Route path="/login" element={isAuth ? <Navigate to="/overview" replace /> : <LoginPage />} />
+      <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
-      {/* Login */}
-      <Route
-        path="/login"
-        element={
-          isAuth
-            ? <Navigate to="/summary" replace />
-            : <LoginPage />
-        }
-      />
+      <Route path="/" element={<Navigate to={isAuth ? '/overview' : '/login'} replace />} />
+      <Route path="/summary" element={<Navigate to="/quality" replace />} />
 
-      {/* Unauthorized */}
-      <Route
-        path="/unauthorized"
-        element={<UnauthorizedPage />}
-      />
+      <Route element={<DashboardLayout />}>
+        <Route path="/overview" element={<OverviewPage />} />
+        <Route path="/farmers" element={<FarmersPage />} />
+        <Route path="/farmers/:uid" element={<FarmerDetailPage />} />
+        <Route path="/supervisors" element={<SupervisorsPage />} />
+        <Route path="/quality" element={<QualityReportPage />} />
+      </Route>
 
-      {/* Redirect to login */}
-      <Route
-        path="/"
-        element={<Navigate to="/login" replace />}
-      />
-
-      {/* Daily Summary */}
-      <Route
-        path="/summary"
-        element={
-          <ProtectedRoute allowedRoles={[
-            ROLES.MANAGER, ROLES.QA_OFFICER, ROLES.ADMIN
-          ]}>
-            <DashboardLayout>
-              <DailySummaryPage />
-            </DashboardLayout>
-          </ProtectedRoute>
-        }
-      />
-
-      {/* Catch-all */}
-      <Route
-        path="*"
-        element={<Navigate to="/login" replace />}
-      />
-
+      <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   )
 }

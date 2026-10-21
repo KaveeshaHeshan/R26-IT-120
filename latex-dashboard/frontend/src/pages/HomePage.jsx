@@ -31,7 +31,7 @@ const HomePage = () => {
     <div className="w-full min-h-screen bg-white font-sans overflow-x-hidden selection:bg-teal-500/30 text-gray-800">
 
       {/* ── NAVBAR ──────────────────────────────────────────────────────── */}
-      <nav className="w-full bg-[#0a3622] text-white px-8 py-3 flex items-center justify-between z-50 relative shadow-md">
+      <nav className="w-full bg-[#0bb524] text-white px-8 py-3 flex items-center justify-between z-50 relative shadow-md">
         <div className="flex items-center gap-2">
           <img
             src={logoImg}
@@ -48,7 +48,7 @@ const HomePage = () => {
         </div>
 
         <Link to="/login">
-          <button className="bg-[#e9eff1] hover:bg-white text-[#0a3622] px-8 py-2.5 rounded-full text-sm font-bold tracking-wide transition-all shadow-sm">
+          <button className="bg-[#e9eff1] hover:bg-white text-[#0bb524] px-8 py-2.5 rounded-full text-sm font-bold tracking-wide transition-all shadow-sm">
             LOGIN TO PORTAL
           </button>
         </Link>
@@ -100,7 +100,7 @@ const HomePage = () => {
             >
               <button
                 onClick={() => navigate('/login')}
-                className="w-full sm:w-auto bg-[#0a3622] hover:bg-[#072618] text-white px-8 py-3.5 rounded-full text-sm font-bold tracking-wide transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5">
+                className="w-full sm:w-auto bg-[#0bb524] hover:bg-[#07751a] text-white px-8 py-3.5 rounded-full text-sm font-bold tracking-wide transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5">
                 EXPLORE SOLUTIONS
               </button>
               <button
@@ -119,7 +119,7 @@ const HomePage = () => {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: "easeOut", delay: 0.5 }}
-          className="bg-white/90 backdrop-blur-md rounded-3xl shadow-[0_20px_40px_rgba(10,54,34,0.08)] border border-emerald-50/50 p-6 md:p-8 grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-4 text-center"
+          className="bg-white/90 backdrop-blur-md rounded-3xl shadow-[0_20px_40px_rgba(11,181,36,0.08)] border border-emerald-50/50 p-6 md:p-8 grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-4 text-center"
         >
           {/* Stat 1 */}
           <div className="flex flex-col items-center justify-center p-2 border-b md:border-b-0 md:border-r border-emerald-100/50 pb-6 md:pb-0">
@@ -131,7 +131,7 @@ const HomePage = () => {
           {/* Stat 2 */}
           <div className="flex flex-col items-center justify-center p-2 border-b md:border-b-0 md:border-r border-emerald-100/50 pb-6 md:pb-0">
             <div className="text-3xl mb-2 filter drop-shadow-sm">✅</div>
-            <div className="text-xl sm:text-2xl font-extrabold text-[#0a3622] tracking-tight">96.9% Grade A</div>
+            <div className="text-xl sm:text-2xl font-extrabold text-[#0bb524] tracking-tight">96.9% Grade A</div>
             <div className="text-[10px] sm:text-xs font-semibold text-emerald-800/70 uppercase tracking-wider mt-1">Accuracy & Quality</div>
           </div>
 
@@ -243,7 +243,7 @@ const HomePage = () => {
                     step="0.1"
                     value={pH}
                     onChange={(e) => setPH(parseFloat(e.target.value))}
-                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#0a3622]"
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#0bb524]"
                   />
                   <div className="flex justify-between text-[10px] text-gray-400 font-bold mt-1">
                     <span>8.0 (Acidic/Degraded)</span>
@@ -265,7 +265,7 @@ const HomePage = () => {
                     step="0.5"
                     value={temperature}
                     onChange={(e) => setTemperature(parseFloat(e.target.value))}
-                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#0a3622]"
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#0bb524]"
                   />
                   <div className="flex justify-between text-[10px] text-gray-400 font-bold mt-1">
                     <span>20.0°C</span>
@@ -287,7 +287,7 @@ const HomePage = () => {
                     step="10"
                     value={turbidity}
                     onChange={(e) => setTurbidity(parseInt(e.target.value))}
-                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#0a3622]"
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#0bb524]"
                   />
                   <div className="flex justify-between text-[10px] text-gray-400 font-bold mt-1">
                     <span>10 NTU (Watery)</span>
@@ -299,7 +299,7 @@ const HomePage = () => {
             </div>
 
             {/* Right side: Real-time Grade Output Display */}
-            <div className="bg-white rounded-3xl p-8 border border-emerald-50 shadow-[0_20px_50px_rgba(10,54,34,0.05)] text-center relative overflow-hidden flex flex-col justify-between min-h-[360px]">
+            <div className="bg-white rounded-3xl p-8 border border-emerald-50 shadow-[0_20px_50px_rgba(11,181,36,0.05)] text-center relative overflow-hidden flex flex-col justify-between min-h-[360px]">
               <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-50/50 rounded-full blur-2xl -z-10"></div>
               
               <div>
@@ -360,10 +360,10 @@ const HomePage = () => {
               <motion.div
                 whileHover={{ y: -6, scale: 1.02 }}
                 transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                className="bg-white rounded-3xl p-8 border border-emerald-50 shadow-[0_10px_30px_rgba(0,0,0,0.02)] group-hover:shadow-[0_20px_45px_rgba(10,54,34,0.08)] transition-all h-full flex flex-col justify-between"
+                className="bg-white rounded-3xl p-8 border border-emerald-50 shadow-[0_10px_30px_rgba(0,0,0,0.02)] group-hover:shadow-[0_20px_45px_rgba(11,181,36,0.08)] transition-all h-full flex flex-col justify-between"
               >
                 <div>
-                  <div className="w-14 h-14 bg-emerald-50 rounded-2xl flex items-center justify-center text-3xl mb-6 group-hover:bg-[#0a3622] group-hover:text-white transition-all">
+                  <div className="w-14 h-14 bg-emerald-50 rounded-2xl flex items-center justify-center text-3xl mb-6 group-hover:bg-[#0bb524] group-hover:text-white transition-all">
                     📊
                   </div>
                   <h3 className="text-xl font-bold text-gray-900 mb-2">Daily Summary</h3>
@@ -371,7 +371,7 @@ const HomePage = () => {
                     Daily analytics breakdown, aggregate yield KPIs, and quality scores reports.
                   </p>
                 </div>
-                <div className="flex items-center text-[#0a3622] font-extrabold text-sm group-hover:translate-x-2 transition-transform">
+                <div className="flex items-center text-[#0bb524] font-extrabold text-sm group-hover:translate-x-2 transition-transform">
                   View Summaries <span className="ml-2 text-lg">→</span>
                 </div>
               </motion.div>
@@ -395,7 +395,7 @@ const HomePage = () => {
             
             {/* Step 1 */}
             <div className="relative">
-              <div className="w-16 h-16 bg-[#0a3622] text-white rounded-2xl flex items-center justify-center font-bold text-2xl mx-auto mb-6 shadow-md">
+              <div className="w-16 h-16 bg-[#0bb524] text-white rounded-2xl flex items-center justify-center font-bold text-2xl mx-auto mb-6 shadow-md">
                 1
               </div>
               <h3 className="text-lg font-bold text-gray-900 mb-2">IoT Smart Sensors</h3>
@@ -406,7 +406,7 @@ const HomePage = () => {
 
             {/* Step 2 */}
             <div className="relative">
-              <div className="w-16 h-16 bg-[#0a3622] text-white rounded-2xl flex items-center justify-center font-bold text-2xl mx-auto mb-6 shadow-md">
+              <div className="w-16 h-16 bg-[#0bb524] text-white rounded-2xl flex items-center justify-center font-bold text-2xl mx-auto mb-6 shadow-md">
                 2
               </div>
               <h3 className="text-lg font-bold text-gray-900 mb-2">Telemetry Pipeline</h3>
@@ -417,7 +417,7 @@ const HomePage = () => {
 
             {/* Step 3 */}
             <div className="relative">
-              <div className="w-16 h-16 bg-[#0a3622] text-white rounded-2xl flex items-center justify-center font-bold text-2xl mx-auto mb-6 shadow-md">
+              <div className="w-16 h-16 bg-[#0bb524] text-white rounded-2xl flex items-center justify-center font-bold text-2xl mx-auto mb-6 shadow-md">
                 3
               </div>
               <h3 className="text-lg font-bold text-gray-900 mb-2">RF Model Evaluation</h3>
@@ -428,7 +428,7 @@ const HomePage = () => {
 
             {/* Step 4 */}
             <div className="relative">
-              <div className="w-16 h-16 bg-[#0a3622] text-white rounded-2xl flex items-center justify-center font-bold text-2xl mx-auto mb-6 shadow-md">
+              <div className="w-16 h-16 bg-[#0bb524] text-white rounded-2xl flex items-center justify-center font-bold text-2xl mx-auto mb-6 shadow-md">
                 4
               </div>
               <h3 className="text-lg font-bold text-gray-900 mb-2">Instant Alerts & Action</h3>
@@ -442,7 +442,7 @@ const HomePage = () => {
       </section>
 
       {/* ── SYSTEM STATUS SECTION ────────────────────────────────────────────── */}
-      <section className="w-full py-16 bg-[#0a3622] text-white border-t border-emerald-900/60">
+      <section className="w-full py-16 bg-[#0bb524] text-white border-t border-emerald-900/60">
         <div className="max-w-7xl mx-auto px-8">
           <div className="flex flex-col lg:flex-row items-center justify-between gap-8">
             <div className="max-w-md text-center lg:text-left">

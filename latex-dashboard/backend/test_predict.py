@@ -14,8 +14,8 @@ from app import process_and_predict
 
 # ── Edit these values to whatever you want to test ──
 samples = [
-    {"pH": 10.9,  "turbidity": 35,  "temperature": 29,   "farmer_id": "TEST010"},
-    # your real reading
+    
+    {"pH": 5.0, "turbidity": 190, "temperature": 30, "farmer_id": "TEST011"},  # Grade C (verified against model directly)
 ]
 
 for i, s in enumerate(samples, start=1):

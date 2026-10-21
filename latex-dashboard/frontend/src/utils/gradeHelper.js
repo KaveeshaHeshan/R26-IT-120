@@ -1,5 +1,7 @@
 // src/utils/gradeHelper.js
 
+import { GRADE_COLORS } from '../constants/theme'
+
 // ── Grade from VFA value ──────────────────────────────────────────────────────
 export const getGrade = (vfa) => {
   if (vfa < 0.05)  return 'A'
@@ -7,12 +9,8 @@ export const getGrade = (vfa) => {
   return 'C'
 }
 
-// ── Grade color (hex) ─────────────────────────────────────────────────────────
-export const getGradeColor = (grade) => {
-  if (grade === 'A') return '#1F6B38'
-  if (grade === 'B') return '#C9A84C'
-  return '#C00000'
-}
+// ── Grade color (hex) — single source: constants/theme.js ─────────────────────
+export const getGradeColor = (grade) => GRADE_COLORS[grade] || GRADE_COLORS.C
 
 // ── Grade background + border (Tailwind) ──────────────────────────────────────
 export const getGradeBg = (grade) => {

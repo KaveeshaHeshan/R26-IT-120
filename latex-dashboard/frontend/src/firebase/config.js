@@ -1,6 +1,7 @@
 // src/firebase/config.js
 import { initializeApp }  from 'firebase/app'
 import { getDatabase }    from 'firebase/database'
+import { getFirestore }   from 'firebase/firestore'
 import { getAuth }        from 'firebase/auth'
 
 const firebaseConfig = {
@@ -17,7 +18,8 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig)
 
 // Initialize and export services
-export const db   = getDatabase(app)   // Realtime Database
-export const auth = getAuth(app)
+export const db          = getDatabase(app)    // Realtime Database — predictions/, daily_summary/
+export const firestoreDb = getFirestore(app)   // Cloud Firestore — users/, tapping_details/
+export const auth        = getAuth(app)
 
 export default app

@@ -2,7 +2,6 @@
 
 import threading
 import datetime
-import time
 from functools import wraps
 
 from flask import Flask, request, jsonify
@@ -18,18 +17,18 @@ from config import Config
 app = Flask(__name__)
 CORS(app)
 
-# ── Firebase ──────────────────────────────────────────────────────────────────
+#  Firebase 
 cred = credentials.Certificate(Config.FIREBASE_CRED)
 firebase_admin.initialize_app(cred, {
     'databaseURL': Config.FIREBASE_DB_URL
 })
 
-# ── Load Model ──────────────────────────────────────────────────────────────
+#  Load Model 
 model = joblib.load(Config.MODEL_PATH)
 scaler = joblib.load(Config.SCALER_PATH)
 print("✅ RF Model loaded!")
 
-# ── JWT Decorator ─────────────────────────────────────────────────────────────
+# JWT Decorator 
 def require_auth(f):
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -49,7 +48,7 @@ def require_auth(f):
         return f(*args, **kwargs)
     return decorated
 
-# ── Grade ─────────────────────────────────────────────────────────────────────
+#  Grade 
 def assign_grade(vfa):
     if vfa < 0.05:
         return 'A'
@@ -57,14 +56,14 @@ def assign_grade(vfa):
         return 'B'
     return 'C'
 
-# ── Sensor range validation (matches SENSOR_RANGES spec) ──────────────────────
+# Sensor range validation (matches SENSOR_RANGES spec)
 # ⚠️ PH_RANGE temporarily widened (2.0-30.0) to allow ammonia-preserved latex
 # readings through for pipeline testing. Model was trained on pH 5.0-8.0 data,
 # so predictions outside that range are extrapolation — not reliable for
 # real decisions. Narrow this back once dataset/model reflects true field pH.
 PH_RANGE = (2.0, 30.0)
 TURBIDITY_RANGE = (0, 3000)
-TEMP_RANGE = (26, 34)
+TEMP_RANGE = (15, 40)
 
 def validate_ranges(pH, turbidity, temperature):
     errors = []
@@ -128,22 +127,8 @@ def process_and_predict(pH, turbidity, temperature, farmer_id, device_id, timest
     print(f"✅ Predicted VFA={vfa_pred:.5f} -> Grade {grade} (farmer={farmer_id})")
     return prediction_data
 
-# ── Single deployed device — hardcoded since there's only one ESP32 ───────────
-DEVICE_ID = "DEV_01"
-
-# ── Prediction debounce ─────────────────────────────────────────────────────
-# The ESP32 does 3 SEPARATE writes per reading cycle (temperature, ph,
-# turbidity) — each one fires the listener, so a single physical dip can
-# trigger 2-3 predictions in quick succession. This enforces a minimum gap
-# between predictions, matching the ESP32's own send interval, so only one
-# prediction goes through per real reading cycle.
-MIN_PREDICT_INTERVAL_SECONDS = 10
-_last_predict_time = 0
-_predict_lock = threading.Lock()
-
-# ── Auto listener — triggers on every sensorData/ write from the ESP32 ────────
+# ── Auto listener — triggers on every sensorData/ write from the ESP32 
 def on_sensor_data(event):
-    global _last_predict_time
     try:
         if event.data is None:
             return
@@ -155,28 +140,13 @@ def on_sensor_data(event):
         pH = snapshot.get('ph')
         turbidity = snapshot.get('turbidity')
         temperature = snapshot.get('temperature')
+        farmer_id = snapshot.get('farmer_id', 'UNKNOWN')
+        device_id = snapshot.get('device_id', 'UNKNOWN')
 
         if pH is None or turbidity is None or temperature is None:
             return
 
-        # Debounce — skip if a prediction just ran within the cooldown window.
-        with _predict_lock:
-            now = time.time()
-            if now - _last_predict_time < MIN_PREDICT_INTERVAL_SECONDS:
-                return
-            _last_predict_time = now
-
-        # Look up which farmer this device is currently assigned to.
-        # The supervisor's mobile app writes this when they tap "Start Collection".
-        session = firebase_db.reference(f'activeSessions/{DEVICE_ID}').get()
-        if not session or not session.get('farmer_id'):
-            print(f"⚠️  Skipped prediction — no active session for device {DEVICE_ID} "
-                  f"(supervisor hasn't started a collection on the mobile app)")
-            return
-
-        farmer_id = session['farmer_id']  # Firestore farmer doc ID
-
-        process_and_predict(pH, turbidity, temperature, farmer_id, DEVICE_ID)
+        process_and_predict(pH, turbidity, temperature, farmer_id, device_id)
 
     except Exception as e:
         print(f"❌ Error in sensor listener: {e}")
@@ -184,7 +154,7 @@ def on_sensor_data(event):
 def start_listener():
     firebase_db.reference('sensorData').listen(on_sensor_data)
 
-# ── Health Check ──────────────────────────────────────────────────────────────
+# ── Health Check 
 @app.route('/health', methods=['GET'])
 def health():
     return jsonify({
@@ -219,7 +189,7 @@ def predict():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# ── Get Predictions ───────────────────────────────────────────────────────────
+# ── Get Predictions 
 @app.route('/predictions', methods=['GET'])
 @require_auth
 def get_predictions():
@@ -233,33 +203,19 @@ def get_predictions():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# ── Start Session ────────────────────────────────────────────────────────────
-# NOTE: this is called by the SUPERVISOR'S MOBILE APP when they tap
-# "Start Collection" and pick a farmer — NOT by the factory web dashboard.
-# The web dashboard stays read-only (predictions/alerts/summary views only);
-# it should never trigger an active test session.
-@app.route('/start-session', methods=['POST'])
+# ── Get Alerts 
+@app.route('/alerts', methods=['GET'])
 @require_auth
-def start_session():
+def get_alerts():
     try:
-        data = request.json or {}
-        farmer_id = data.get('farmer_id')
-        if not farmer_id:
-            return jsonify({'error': 'farmer_id required'}), 400
-
-        firebase_db.reference(f'activeSessions/{DEVICE_ID}').set({
-            'farmer_id': farmer_id,
-            'started_at': datetime.datetime.now().isoformat(),
-        })
-        return jsonify({
-            'status': 'session started',
-            'farmer_id': farmer_id,
-            'device_id': DEVICE_ID,
-        })
+        data = firebase_db.reference('alerts').get()
+        if not data:
+            return jsonify([])
+        return jsonify(list(data.values()))
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# ── Run ───────────────────────────────────────────────────────────────────────
+# ── Run 
 if __name__ == '__main__':
     listener_thread = threading.Thread(target=start_listener, daemon=True)
     listener_thread.start()

@@ -44,3 +44,29 @@ export const ROUTE_ROLES = {
   '/summary':       ['manager', 'qa_officer', 'admin'],
   '/unauthorized':  ['manager', 'qa_officer', 'admin'],
 }
+
+// ── All dashboard roles ───────────────────────────────────────────────────────
+export const ALL_ROLES = [ROLES.MANAGER, ROLES.QA_OFFICER, ROLES.ADMIN]
+
+// ── Grouped sidebar navigation ────────────────────────────────────────────────
+export const NAV_SECTIONS = [
+  {
+    heading: 'Overview',
+    items: [
+      { path: '/overview', label: 'Dashboard', icon: '◆', roles: ALL_ROLES },
+    ],
+  },
+  {
+    heading: 'People',
+    items: [
+      { path: '/farmers',     label: 'Farmers',     icon: '❖', roles: ALL_ROLES },
+      { path: '/supervisors', label: 'Supervisors', icon: '✦', roles: ALL_ROLES },
+    ],
+  },
+  {
+    heading: 'Quality Reports',
+    items: [
+      { path: '/quality', label: 'Quality Summary', icon: '▤', roles: ALL_ROLES },
+    ],
+  },
+]

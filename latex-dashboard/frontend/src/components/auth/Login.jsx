@@ -3,15 +3,17 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
+import { LuMail, LuLock, LuEye, LuEyeOff, LuArrowRight, LuShieldCheck } from 'react-icons/lu'
 import { auth, db } from '../../firebase/config'
 import { signInWithEmailAndPassword } from 'firebase/auth'
 import { ref, get } from 'firebase/database'
 
 const Login = () => {
-  const [email, setEmail]       = useState('')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError]       = useState('')
-  const [loading, setLoading]   = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
 
   const handleLogin = async () => {
@@ -27,7 +29,7 @@ const Login = () => {
       const snap = await get(ref(db, `roles/${uid}`))
       const roleData = snap.val()
       if (!roleData) {
-        setError('Identity not registered. Contact Hub.')
+        setError('Identity not registered. Contact your administrator.')
         setLoading(false)
         return
       }
@@ -38,7 +40,7 @@ const Login = () => {
       localStorage.setItem('user_id', roleData.user_id)
       localStorage.setItem('name', roleData.name)
       if (['manager', 'qa_officer', 'admin'].includes(roleData.role)) {
-        navigate('/summary')
+        navigate('/overview')
       } else {
         navigate('/unauthorized')
       }
@@ -63,94 +65,78 @@ const Login = () => {
     if (e.key === 'Enter') handleLogin()
   }
 
+  const fieldClass =
+    'flex items-center gap-3 h-[54px] rounded-[14px] border border-[#DDE4D8] bg-white px-4 focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-500/20 transition'
+  const inputClass =
+    'flex-1 min-w-0 bg-transparent border-0 outline-none text-base font-medium text-[#11231A] placeholder:text-[#8FA093]'
+
   return (
-    <div className="w-full max-w-md mx-auto">
-      <div className="bg-white rounded-2xl shadow-[0_8px_40px_rgba(0,0,0,0.12)] overflow-hidden border border-gray-100">
-
-        {/* Card Header */}
-        <div className="bg-[#0a3622] px-8 py-5 flex items-center gap-3">
-          <span className="text-[#c9a84c] text-lg font-black uppercase tracking-widest">LATEX GUARD</span>
-          <span className="text-white text-lg font-black uppercase tracking-widest">PORTAL LOGIN</span>
+    <div className="flex flex-col gap-5">
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.05 }}>
+        <label htmlFor="login-email" className="block text-sm font-semibold text-[#11231A] mb-1.5">
+          Email
+        </label>
+        <div className={fieldClass}>
+          <LuMail size={20} className="text-[#8FA093] shrink-0" />
+          <input
+            id="login-email"
+            type="email"
+            placeholder="name@company.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            onKeyDown={handleKeyDown}
+            className={inputClass}
+          />
         </div>
-        {/* Gold accent divider */}
-        <div className="h-0.5 bg-[#c9a84c] w-full" />
+      </motion.div>
 
-        {/* Card Body */}
-        <div className="px-8 py-8 space-y-5">
-
-          {/* Email */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: 'easeOut', delay: 0.1 }}
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1 }}>
+        <label htmlFor="login-password" className="block text-sm font-semibold text-[#11231A] mb-1.5">
+          Password
+        </label>
+        <div className={fieldClass}>
+          <LuLock size={20} className="text-[#8FA093] shrink-0" />
+          <input
+            id="login-password"
+            type={showPassword ? 'text' : 'password'}
+            placeholder="Enter your password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            onKeyDown={handleKeyDown}
+            className={inputClass}
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword((v) => !v)}
+            aria-label={showPassword ? 'Hide password' : 'Show password'}
+            className="shrink-0 w-11 h-11 -mr-2 rounded-[10px] flex items-center justify-center text-[#8FA093] hover:bg-[#F7FAF4] transition-colors"
           >
-            <input
-              id="login-email"
-              type="email"
-              placeholder="EMAIL / USERNAME"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              onKeyDown={handleKeyDown}
-              className="block w-full px-5 py-3.5 text-sm font-semibold tracking-wide placeholder:text-gray-400 placeholder:uppercase placeholder:tracking-wider bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:border-[#0a3622] transition-all"
-            />
-          </motion.div>
-
-          {/* Password */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: 'easeOut', delay: 0.2 }}
-          >
-            <input
-              id="login-password"
-              type="password"
-              placeholder="PASSWORD"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              onKeyDown={handleKeyDown}
-              className="block w-full px-5 py-3.5 text-sm font-semibold tracking-wide placeholder:text-gray-400 placeholder:uppercase placeholder:tracking-wider bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:border-[#0a3622] transition-all"
-            />
-          </motion.div>
-
-          {/* Error */}
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 flex items-center gap-2">
-              <span className="text-red-500 text-sm">⚠️</span>
-              <p className="text-xs font-semibold text-red-600">{error}</p>
-            </div>
-          )}
-
-          {/* Login Button */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: 'easeOut', delay: 0.3 }}
-          >
-            <button
-              id="login-submit"
-              onClick={handleLogin}
-              disabled={loading}
-              className="w-full bg-[#0a3622] hover:bg-[#072618] text-white py-3.5 rounded-xl text-sm font-black uppercase tracking-widest transition-all shadow-md hover:shadow-lg disabled:opacity-60 active:scale-[0.98]"
-            >
-              {loading ? (
-                <div className="flex items-center justify-center gap-2">
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                  <span>Logging in...</span>
-                </div>
-              ) : 'LOGIN'}
-            </button>
-          </motion.div>
-
-          {/* Links */}
-          <div className="pt-2 border-t border-gray-100">
-            <div className="text-center space-y-2 pt-2">
-              <p className="text-sm text-gray-500 hover:text-gray-700 cursor-pointer transition-colors">Forgot Password?</p>
-              <p className="text-sm text-gray-500 hover:text-gray-700 cursor-pointer transition-colors">Request Access (Contact Us)</p>
-              <p className="text-sm font-black text-gray-800 hover:text-[#0a3622] cursor-pointer transition-colors tracking-wider uppercase pt-1">Learn More</p>
-            </div>
-          </div>
-
+            {showPassword ? <LuEyeOff size={20} /> : <LuEye size={20} />}
+          </button>
         </div>
+      </motion.div>
+
+      {error && <p className="text-sm font-medium text-[#B42318]">{error}</p>}
+
+      <button
+        id="login-submit"
+        onClick={handleLogin}
+        disabled={loading}
+        className="w-full h-14 rounded-[14px] bg-brand-600 text-white text-base font-bold flex items-center justify-center gap-2 transition disabled:opacity-60"
+        style={{ boxShadow: '0 6px 16px rgba(19,138,67,0.28)' }}
+      >
+        {loading ? (
+          'Signing in…'
+        ) : (
+          <>
+            Sign in <LuArrowRight size={18} />
+          </>
+        )}
+      </button>
+
+      <div className="flex items-center gap-2 rounded-[14px] border border-[#DDE4D8] bg-white px-4 py-[14px] text-sm text-[#5A6B5F]">
+        <LuShieldCheck size={18} className="text-[#5A6B5F] shrink-0" />
+        Access is provisioned by your administrator.
       </div>
     </div>
   )
